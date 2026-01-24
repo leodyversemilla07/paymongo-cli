@@ -1,4 +1,4 @@
-# Contributing to PayMongo CLI 🚀
+# Contributing to PayMongo CLI
 
 Thank you for your interest in contributing to the PayMongo CLI! This project is built by and for Filipino developers to streamline payment integration. By contributing, you're helping the local fintech ecosystem grow.
 
@@ -6,7 +6,7 @@ This guide provides everything you need to know to get started with local develo
 
 ---
 
-## 🛠 Development Setup
+## Development Setup
 
 ### 1. Prerequisites
 
@@ -65,7 +65,7 @@ We use ESLint and Prettier to maintain a consistent code style.
 
 ---
 
-## 🔄 Contribution Workflow
+## Contribution Workflow
 
 ### 1. Issue Creation
 
@@ -132,7 +132,7 @@ The CLI uses a custom `ApiClient` built on `axios`. It automatically handles:
 
 ---
 
-## 💡 Development Guidelines
+## Development Guidelines
 
 ### 1. Error Handling
 
@@ -166,7 +166,7 @@ try {
 
 ---
 
-## 🚀 Release Process
+## Release Process
 
 ### 1. Versioning
 
@@ -199,6 +199,6 @@ All contributors who have their PRs merged will be listed in our `CONTRIBUTORS` 
 
 ---
 
-## 🇵🇭 Built for the Philippines
+## Built for the Philippines
 
 PayMongo CLI is a labor of love for the Filipino dev community. Thank you for making it better!

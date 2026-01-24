@@ -1,4 +1,4 @@
-# Troubleshooting Guide 🛠️
+# Troubleshooting Guide
 
 This guide provides solutions to common issues you might encounter while using the PayMongo CLI. If you're stuck, check this document first.
 
@@ -151,7 +151,7 @@ This guide provides solutions to common issues you might encounter while using t
 
 ---
 
-## 🛠 Diagnostic Tools
+## Diagnostic Tools
 
 Run these commands to provide more info when reporting a bug:
 
@@ -167,7 +167,7 @@ Run these commands to provide more info when reporting a bug:
 
 ---
 
-## 🚀 Advanced Troubleshooting
+## Advanced Troubleshooting
 
 ### Manual Webhook Testing
 
@@ -193,7 +193,7 @@ Visit [http://localhost:4040](http://localhost:4040) while `paymongo dev` is run
 
 ---
 
-## 💡 Prevention Tips
+## Prevention Tips
 
 1.  **Always use Test Keys**: Never use live keys for development.
 2.  **Git Ignore**: Ensure `.paymongo` and `.env` are in your `.gitignore`.

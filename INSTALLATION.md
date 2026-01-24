@@ -13,7 +13,7 @@ This guide provides step-by-step instructions for installing the PayMongo CLI on
 
 ---
 
-## 📦 Global Installation
+## Global Installation
 
 The easiest way to install PayMongo CLI is via npm. This makes the `paymongo` command available globally on your system.
 
@@ -33,7 +33,7 @@ paymongo --version
 
 ---
 
-## 🛠 Platform-Specific Setup
+## Platform-Specific Setup
 
 ### 🪟 Windows
 
@@ -154,7 +154,7 @@ To ensure everything is working correctly:
 
 ---
 
-## 🔄 Upgrading
+## Upgrading
 
 To upgrade to the latest version of PayMongo CLI:
 

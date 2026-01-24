@@ -1,4 +1,4 @@
-# PayMongo CLI User Guide 🚀
+# PayMongo CLI User Guide
 
 Welcome to the comprehensive guide for the **PayMongo CLI**. This tool is designed to provide Filipino developers with a premium development experience when integrating PayMongo payments.
 
@@ -95,7 +95,7 @@ This will create two files in your directory:
 - `.paymongo`: Internal configuration (contains API keys and settings).
 - `.env`: Standard environment variables for your application.
 
-> 💡 **Tip**: Both files are automatically added to your `.gitignore` by `paymongo init`.
+> **Tip**: Both files are automatically added to your `.gitignore` by `paymongo init`.
 
 ---
 
@@ -232,7 +232,7 @@ This allows everyone on the team to use the same project settings without sharin
 
 ---
 
-## 🇵🇭 Built for the Philippine Fintech Ecosystem
+## Built for the Philippine Fintech Ecosystem
 
 The PayMongo CLI is optimized for the specific needs of Filipino developers. We support all local payment methods including GCash, Maya, GrabPay, and QRPh.
 

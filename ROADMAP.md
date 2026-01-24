@@ -23,7 +23,7 @@ The development of PayMongo CLI is structured into four main phases, focusing on
 
 The foundation of the CLI is robust and ready for daily use.
 
-#### 🛠️ Core Commands
+#### Core Commands
 
 - **Project Initialization (`paymongo init`)**
   - [x] Interactive setup wizard for new projects
@@ -46,7 +46,7 @@ The foundation of the CLI is robust and ready for daily use.
   - [x] View and modify CLI settings
   - [x] Reset configuration to default values
 
-#### 🔒 Infrastructure & Security
+#### Infrastructure & Security
 
 - [x] API key validation before storage
 - [x] Webhook signature verification (HMAC-SHA256)
@@ -82,7 +82,7 @@ We have optimized the CLI for speed and added event simulation capabilities.
 
 Enhanced observability and monitoring for PayMongo integrations.
 
-#### 📊 GUI Features
+#### GUI Features
 
 - **Web Dashboard (`paymongo gui`)**
   - [x] Modern, responsive web interface
@@ -111,7 +111,7 @@ We are currently focusing on enhancing team collaboration features.
 
 ---
 
-## 🚀 Next Steps
+## Next Steps
 
 ### 🎯 Short-term Goals (Q1 2026)
 
@@ -136,7 +136,7 @@ The ultimate goal is to enable the community to extend the CLI.
 - **Extensible Architecture**: A modular system for adding custom commands.
 - **Plugin Marketplace**: A central hub for discovering community-built extensions.
 - **Security Sandboxing**: Ensuring plugins run safely with restricted permissions.
-- 📖 [Plugin System Design Document](docs/plugin-system.md)
+- [Plugin System Design Document](docs/plugin-system.md)
 
 ### Long-term Goals
 

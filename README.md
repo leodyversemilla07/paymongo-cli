@@ -1,4 +1,4 @@
-# PayMongo CLI 🚀
+# PayMongo CLI
 
 > **A developer-first CLI for PayMongo integration with local webhook forwarding.**
 
@@ -10,19 +10,19 @@ PayMongo CLI is the official-feel command-line tool designed to streamline your 
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-- 🔄 **Local Webhook Forwarding**: Seamlessly receive PayMongo webhooks on your localhost using integrated `ngrok` tunneling.
-- 🚀 **Zero-Config Setup**: Get started in seconds with `paymongo init`.
-- 💳 **Payment Testing**: Create and monitor payment intents and payments directly from your terminal.
-- 📊 **Real-time Monitoring**: Watch webhook events as they happen with formatted logs or a web-based GUI.
-- 👥 **Team Collaboration**: Sync configurations across your team using GitHub integration.
-- 🎛️ **Web Dashboard**: Use `paymongo gui` for a premium visual monitoring experience.
-- 🔒 **Secure Management**: Encrypted storage for your API keys.
+- **Local Webhook Forwarding**: Seamlessly receive PayMongo webhooks on your localhost using integrated `ngrok` tunneling.
+- **Zero-Config Setup**: Get started in seconds with `paymongo init`.
+- **Payment Testing**: Create and monitor payment intents and payments directly from your terminal.
+- **Real-time Monitoring**: Watch webhook events as they happen with formatted logs or a web-based GUI.
+- **Team Collaboration**: Sync configurations across your team using GitHub integration.
+- **Web Dashboard**: Use `paymongo gui` for a premium visual monitoring experience.
+- **Secure Management**: Encrypted storage for your API keys.
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 
@@ -49,7 +49,7 @@ paymongo config set ngrok.authtoken YOUR_AUTHTOKEN
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Initialize Project
 
@@ -77,7 +77,7 @@ paymongo trigger --event payment.paid
 
 ---
 
-## 🛠 Commands Reference
+## Commands Reference
 
 | Command             | Description                                             |
 | :------------------ | :------------------------------------------------------ |
@@ -90,11 +90,11 @@ paymongo trigger --event payment.paid
 | `paymongo gui`      | Launch the web-based monitoring dashboard.              |
 | `paymongo trigger`  | Simulate webhook events locally for testing.            |
 
-> 💡 Use `paymongo <command> --help` for detailed information on any command.
+> Use `paymongo <command> --help` for detailed information on any command.
 
 ---
 
-## 📖 Documentation
+## Documentation
 
 - **[Installation Guide](INSTALLATION.md)** - Platform-specific setup instructions.
 - **[User Guide](USER_GUIDE.md)** - Detailed step-by-step instructions.
@@ -104,10 +104,10 @@ paymongo trigger --event payment.paid
 
 ---
 
-## 🇵🇭 Built for Filipino Developers
+## Built for Filipino Developers
 
-PayMongo CLI is crafted with ❤️ to empower Filipino developers building the next generation of fintech solutions.
+PayMongo CLI is crafted to empower Filipino developers building the next generation of fintech solutions.
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
