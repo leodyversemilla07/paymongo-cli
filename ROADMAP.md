@@ -150,7 +150,7 @@ The ultimate goal is to enable the community to extend the CLI.
 
 We believe in community-driven development. If you'd like to help us reach our milestones:
 
-1. **Check the Issues**: Look for "good first issue" or "help wanted" labels on [GitHub](https://github.com/leodyver/paymongo-cli/issues).
+1. **Check the Issues**: Look for "good first issue" or "help wanted" labels on [GitHub](https://github.com/leodyversemilla07/paymongo-cli/issues).
 2. **Feature Requests**: Have an idea? Open an issue to discuss it.
 3. **Pull Requests**:
    - Fork the repository.

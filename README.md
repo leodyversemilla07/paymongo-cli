@@ -28,7 +28,7 @@ npm install -g paymongo-cli
 ### Build from source
 
 ```bash
-git clone https://github.com/leodyver/paymongo-cli.git
+git clone https://github.com/leodyversemilla07/paymongo-cli.git
 cd paymongo-cli
 npm install
 npm run build
@@ -135,7 +135,7 @@ The CLI includes several performance optimizations to ensure fast startup and ef
 ### Setup
 
 ```bash
-git clone https://github.com/leodyver/paymongo-cli.git
+git clone https://github.com/leodyversemilla07/paymongo-cli.git
 cd paymongo-cli
 npm install
 npm run build

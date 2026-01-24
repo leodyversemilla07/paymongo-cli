@@ -96,7 +96,7 @@ paymongo --help
 
 ```bash
 # Clone the repository
-git clone https://github.com/leodyver/paymongo-cli.git
+git clone https://github.com/leodyversemilla07/paymongo-cli.git
 cd paymongo-cli
 
 # Install dependencies
@@ -927,8 +927,8 @@ monitorPayments();
 ## Support and Resources
 
 - **PayMongo Documentation**: [developers.paymongo.com](https://developers.paymongo.com)
-- **GitHub Repository**: [github.com/leodyver/paymongo-cli](https://github.com/leodyver/paymongo-cli)
-- **Issue Tracker**: [github.com/leodyver/paymongo-cli/issues](https://github.com/leodyver/paymongo-cli/issues)
+- **GitHub Repository**: [github.com/leodyversemilla07/paymongo-cli](https://github.com/leodyversemilla07/paymongo-cli)
+- **Issue Tracker**: [github.com/leodyversemilla07/paymongo-cli/issues](https://github.com/leodyversemilla07/paymongo-cli/issues)
 - **Community**: [Discord Community](https://discord.gg/paymongo)
 
 ## Contributing

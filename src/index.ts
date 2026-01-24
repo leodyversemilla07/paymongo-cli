@@ -45,7 +45,7 @@ EXAMPLES
   $ paymongo payments list
   $ paymongo team sync
 
-For more information, visit: https://github.com/leodyver/paymongo-cli
+For more information, visit: https://github.com/leodyversemilla07/paymongo-cli
 `
 );
 
