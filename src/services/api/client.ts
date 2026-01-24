@@ -132,7 +132,15 @@ export class ApiClient {
         const limitCheck = this.rateLimiter.checkLimit(endpoint);
 
         if (!limitCheck.allowed) {
-          const waitTime = Math.ceil(limitCheck.backoffMs! / 1000);
+          const backoffMs = limitCheck.backoffMs;
+          if (backoffMs === undefined) {
+            throw new PayMongoError(
+              'Rate limit exceeded but no backoff time available.',
+              'RATE_LIMIT_ERROR',
+              429
+            );
+          }
+          const waitTime = Math.ceil(backoffMs / 1000);
           throw new PayMongoError(
             `Rate limit exceeded. Next request available in ${waitTime} seconds. ` +
               `Consider using --rate-limit-max-requests to increase limits or wait before retrying.`,
@@ -350,7 +358,10 @@ export class ApiClient {
     amount?: number,
     reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer'
   ): Promise<RefundData> {
-    const attributes: any = {};
+    const attributes: {
+      amount?: number;
+      reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer';
+    } = {};
     if (amount !== undefined) {
       attributes.amount = amount;
     }

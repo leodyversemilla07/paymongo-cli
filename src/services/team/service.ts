@@ -134,7 +134,7 @@ export class TeamService {
           config.apiKeys = {};
         }
         if (!config.apiKeys[env]) {
-          config.apiKeys[env] = bundle.keys[env]!;
+          config.apiKeys[env] = bundle.keys[env];
         } else {
           // Ask user if they want to overwrite (this will be handled in the command)
           console.log(`⚠️  ${env.toUpperCase()} keys already exist. Use --force to overwrite.`);
@@ -168,8 +168,12 @@ export class TeamService {
     const team = config?.team;
 
     const environments = new Set<string>();
-    if (config?.apiKeys?.test) environments.add('test');
-    if (config?.apiKeys?.live) environments.add('live');
+    if (config?.apiKeys?.test) {
+      environments.add('test');
+    }
+    if (config?.apiKeys?.live) {
+      environments.add('live');
+    }
 
     return {
       name: team?.name || undefined,
@@ -201,7 +205,7 @@ export class TeamService {
       }
 
       return parsed as KeyBundle;
-    } catch (error) {
+    } catch (_error) {
       throw new PayMongoError('Invalid key bundle JSON.', 'INVALID_JSON', 400);
     }
   }
