@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-01-25
+
 ### Added
 
 - **Rate Limiting Protection** - Comprehensive API abuse prevention with configurable limits:
@@ -16,6 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CLI configuration commands (`paymongo config rate-limit enable/disable/status/set-max-requests/set-window`)
   - Automatic exponential backoff for rate limit errors with user feedback
   - Global `--no-rate-limit` override flag for emergency bypass
+
+### Changed
+
+- **Bulk Operations** - Complete import/export functionality for payments and webhooks
+- **Team Collaboration** - GitHub-based team configuration sync and member management
+- **Enhanced Commands** - Improved CLI commands with better error handling and user experience
+
+### Removed
+
+- **Deprecated GitHub Services** - Removed outdated GitHub authentication and sync services
 
 ## [1.2.0] - 2026-01-24
 
