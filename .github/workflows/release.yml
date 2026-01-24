@@ -33,6 +33,18 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+    - name: Setup for GitHub Packages
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@leodyversemilla07'
+
+    - name: Publish to GitHub Packages
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Create GitHub Release
       uses: actions/create-release@v1
       env:

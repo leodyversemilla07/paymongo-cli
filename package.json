@@ -33,6 +33,9 @@
     "type": "git",
     "url": "git+https://github.com/leodyversemilla07/paymongo-cli.git"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "bugs": {
     "url": "https://github.com/leodyversemilla07/paymongo-cli/issues"
   },
