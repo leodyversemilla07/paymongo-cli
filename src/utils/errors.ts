@@ -1,0 +1,90 @@
+export class PayMongoError extends Error {
+  constructor(
+    message: string,
+    public code?: string,
+    public statusCode?: number
+  ) {
+    super(message);
+    this.name = 'PayMongoError';
+  }
+}
+
+export class ConfigError extends Error {
+  constructor(message: string, public configPath?: string) {
+    super(message);
+    this.name = 'ConfigError';
+  }
+}
+
+export class ApiKeyError extends Error {
+  constructor(message: string, public keyType?: 'public' | 'secret') {
+    super(message);
+    this.name = 'ApiKeyError';
+  }
+}
+
+export class NetworkError extends Error {
+  constructor(message: string, public originalError?: Error) {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
+export class ValidationError extends Error {
+  constructor(message: string, public field?: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+export class WebhookError extends Error {
+  constructor(message: string, public webhookId?: string) {
+    super(message);
+    this.name = 'WebhookError';
+  }
+}
+
+export interface RetryOptions {
+  maxRetries?: number;
+  delayMs?: number;
+  backoffMultiplier?: number;
+  retryCondition?: (error: Error) => boolean;
+}
+
+export async function withRetry<T>(
+  operation: () => Promise<T>,
+  options: RetryOptions = {}
+): Promise<T> {
+  const {
+    maxRetries = 3,
+    delayMs = 1000,
+    backoffMultiplier = 2,
+    retryCondition = (error: Error) => {
+      // Default: retry on network errors and 5xx status codes
+      return error.name === 'NetworkError' ||
+             (error.message.includes('Network error') && !error.message.includes('401')) ||
+             (error.message.includes('timeout') || error.message.includes('ECONNRESET'));
+    }
+  } = options;
+
+  let lastError: Error;
+  let currentDelay = delayMs;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error as Error;
+
+      if (attempt === maxRetries || !retryCondition(lastError)) {
+        throw lastError;
+      }
+
+      console.log(`Attempt ${attempt + 1} failed, retrying in ${currentDelay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, currentDelay));
+      currentDelay *= backoffMultiplier;
+    }
+  }
+
+  throw lastError!;
+}

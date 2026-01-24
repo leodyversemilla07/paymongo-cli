@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run linter
+      run: npm run lint
+
+    - name: Run tests
+      run: npm test
+
+    - name: Build project
+      run: npm run build
+
+    - name: Run build tests
+      run: |
+        # Test CLI help commands
+        node bin/paymongo.js --help
+        node bin/paymongo.js init --help
+        node bin/paymongo.js dev --help
+        node bin/paymongo.js login --help
+        node bin/paymongo.js config --help
+        node bin/paymongo.js webhooks --help

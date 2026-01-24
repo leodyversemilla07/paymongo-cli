@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PayMongo CLI Dashboard</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f5f5f5;
+        color: #333;
+        line-height: 1.6;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .header p {
+        opacity: 0.9;
+        font-size: 1.1rem;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .analytics-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        text-align: center;
+        border: 2px solid #f8f9fa;
+      }
+
+      .analytics-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 0.5rem;
+      }
+
+      .analytics-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .analytics-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .analytics-section h3 {
+        margin: 0 0 1rem 0;
+        color: #495057;
+        font-size: 1.2rem;
+        border-bottom: 2px solid #f8f9fa;
+        padding-bottom: 0.5rem;
+      }
+
+      .analytics-events,
+      .analytics-errors {
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .event-type-item,
+      .error-type-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+        border-left: 3px solid #007bff;
+      }
+
+      .error-type-item {
+        border-left-color: #dc3545;
+        background: #f8d7da;
+      }
+
+      .event-type-name,
+      .error-type-name {
+        font-weight: 500;
+        color: #495057;
+      }
+
+      .event-type-count,
+      .error-type-count {
+        background: #007bff;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        min-width: 24px;
+        text-align: center;
+      }
+
+      .error-type-count {
+        background: #dc3545;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+      }
+
+      .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .card-header {
+        background: #f8f9fa;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+      }
+
+      .card-header h2 {
+        font-size: 1.2rem;
+        color: #495057;
+      }
+
+      .card-body {
+        padding: 1.5rem;
+      }
+
+      .status-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+      }
+
+      .status-online {
+        background: #28a745;
+      }
+
+      .status-offline {
+        background: #dc3545;
+      }
+
+      .config-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f8f9fa;
+      }
+
+      .config-item:last-child {
+        border-bottom: none;
+      }
+
+      .config-key {
+        font-weight: 500;
+        color: #495057;
+      }
+
+      .config-value {
+        color: #6c757d;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.9rem;
+      }
+
+      .webhook-list {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .webhook-item {
+        padding: 1rem;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+        background: #f8f9fa;
+      }
+
+      .webhook-url {
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.9rem;
+        color: #007bff;
+        word-break: break-all;
+      }
+
+      .webhook-events {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+      }
+
+      .webhook-status {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+      }
+
+      .status-enabled {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .status-disabled {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .events-log {
+        max-height: 400px;
+        overflow-y: auto;
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        padding: 1rem;
+      }
+
+      .event-item {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border-left: 3px solid #007bff;
+        background: white;
+        border-radius: 4px;
+      }
+
+      .event-type {
+        font-weight: 500;
+        color: #007bff;
+      }
+
+      .event-time {
+        font-size: 0.8rem;
+        color: #6c757d;
+      }
+
+      .event-data {
+        margin-top: 0.5rem;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.8rem;
+        background: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+      }
+
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 1rem;
+        border-radius: 4px;
+        margin: 1rem 0;
+      }
+
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .header {
+          padding: 1rem;
+        }
+
+        .header h1 {
+          font-size: 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <h1>PayMongo CLI Dashboard</h1>
+      <p>Real-time webhook monitoring and configuration management</p>
+    </header>
+
+    <div class="container">
+      <div id="error-message" class="error" style="display: none"></div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-header">
+            <h2>
+              <span class="status-indicator status-offline" id="connection-status"></span>System
+              Status
+            </h2>
+          </div>
+          <div class="card-body">
+            <div id="system-status" class="loading">Loading system status...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Configuration</h2>
+          </div>
+          <div class="card-body">
+            <div id="config-list" class="loading">Loading configuration...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Webhooks</h2>
+          </div>
+          <div class="card-body">
+            <div id="webhooks-list" class="loading">Loading webhooks...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Analytics</h2>
+          </div>
+          <div class="card-body">
+            <div id="analytics-data" class="loading">Loading analytics...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Recent Events</h2>
+          </div>
+          <div class="card-body">
+            <div id="events-log" class="events-log">
+              <div class="loading">Waiting for webhook events...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      class Dashboard {
+        constructor() {
+          this.socket = null;
+          this.init();
+        }
+
+        init() {
+          this.connectWebSocket();
+          this.loadSystemStatus();
+          this.loadConfiguration();
+          this.loadWebhooks();
+          this.loadAnalytics();
+        }
+
+        connectWebSocket() {
+          this.socket = io();
+
+          this.socket.on('connect', () => {
+            this.updateConnectionStatus(true);
+          });
+
+          this.socket.on('disconnect', () => {
+            this.updateConnectionStatus(false);
+          });
+
+          this.socket.on('webhook:event', (event) => {
+            this.addWebhookEvent(event);
+          });
+
+          this.socket.on('config:updated', (data) => {
+            this.showNotification(`Configuration updated: ${data.key} = ${data.value}`);
+            this.loadConfiguration();
+          });
+        }
+
+        updateConnectionStatus(connected) {
+          const indicator = document.getElementById('connection-status');
+          const status = document.getElementById('system-status');
+
+          if (connected) {
+            indicator.className = 'status-indicator status-online';
+            status.innerHTML = '<strong>✅ Connected</strong><br>Real-time updates active';
+          } else {
+            indicator.className = 'status-indicator status-offline';
+            status.innerHTML = '<strong>❌ Disconnected</strong><br>Real-time updates disabled';
+          }
+        }
+
+        async loadSystemStatus() {
+          try {
+            const response = await fetch('/api/config');
+            const data = await response.json();
+
+            if (data.success) {
+              const config = data.data;
+              const status = document.getElementById('system-status');
+              status.innerHTML = `
+                            <div class="config-item">
+                                <span class="config-key">Project:</span>
+                                <span class="config-value">${config.projectName || 'Not set'}</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-key">Environment:</span>
+                                <span class="config-value">${config.environment || 'Not set'}</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-key">Webhook URL:</span>
+                                <span class="config-value">${config.webhooks?.url || 'Not set'}</span>
+                            </div>
+                        `;
+            }
+          } catch (error) {
+            this.showError('Failed to load system status: ' + error.message);
+          }
+        }
+
+        async loadConfiguration() {
+          try {
+            const response = await fetch('/api/config');
+            const data = await response.json();
+
+            if (data.success) {
+              const config = data.data;
+              const configList = document.getElementById('config-list');
+              configList.innerHTML = '';
+
+              // Flatten nested config for display
+              const flattenConfig = (obj, prefix = '') => {
+                const items = [];
+                for (const [key, value] of Object.entries(obj)) {
+                  const fullKey = prefix ? `${prefix}.${key}` : key;
+                  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                    items.push(...flattenConfig(value, fullKey));
+                  } else {
+                    items.push({
+                      key: fullKey,
+                      value: Array.isArray(value) ? value.join(', ') : String(value),
+                    });
+                  }
+                }
+                return items;
+              };
+
+              const configItems = flattenConfig(config);
+              configItems.forEach((item) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'config-item';
+                itemDiv.innerHTML = `
+                                <span class="config-key">${item.key}:</span>
+                                <span class="config-value">${item.value}</span>
+                            `;
+                configList.appendChild(itemDiv);
+              });
+            }
+          } catch (error) {
+            this.showError('Failed to load configuration: ' + error.message);
+          }
+        }
+
+        async loadWebhooks() {
+          try {
+            const response = await fetch('/api/webhooks');
+            const data = await response.json();
+
+            if (data.success) {
+              const webhooks = data.data;
+              const webhooksList = document.getElementById('webhooks-list');
+
+              if (webhooks.length === 0) {
+                webhooksList.innerHTML = '<p>No webhooks configured</p>';
+                return;
+              }
+
+              webhooksList.innerHTML = '<div class="webhook-list">';
+              webhooks.forEach((webhook) => {
+                const webhookDiv = document.createElement('div');
+                webhookDiv.className = 'webhook-item';
+                webhookDiv.innerHTML = `
+                                <div class="webhook-url">${webhook.attributes.url}</div>
+                                <div class="webhook-events">Events: ${webhook.attributes.events.join(', ')}</div>
+                                <span class="webhook-status status-${webhook.attributes.status}">${webhook.attributes.status}</span>
+                            `;
+                webhooksList.appendChild(webhookDiv);
+              });
+              webhooksList.innerHTML += '</div>';
+            }
+          } catch (error) {
+            this.showError('Failed to load webhooks: ' + error.message);
+          }
+        }
+
+        async loadAnalytics() {
+          try {
+            const response = await fetch('/api/analytics');
+            const data = await response.json();
+
+            if (data.success) {
+              const analytics = data.data;
+              const analyticsDiv = document.getElementById('analytics-data');
+              analyticsDiv.innerHTML = this.renderAnalytics(analytics);
+            }
+          } catch (error) {
+            this.showError('Failed to load analytics: ' + error.message);
+          }
+        }
+
+        renderAnalytics(analytics) {
+          const { totalEvents, successRate, eventsByType, averageResponseTime, errorsByType } =
+            analytics;
+
+          return `
+            <div class="analytics-grid">
+              <div class="analytics-card">
+                <div class="analytics-value">${totalEvents}</div>
+                <div class="analytics-label">Total Events</div>
+              </div>
+              <div class="analytics-card">
+                <div class="analytics-value">${successRate}%</div>
+                <div class="analytics-label">Success Rate</div>
+              </div>
+              <div class="analytics-card">
+                <div class="analytics-value">${averageResponseTime}ms</div>
+                <div class="analytics-label">Avg Response Time</div>
+              </div>
+            </div>
+
+            <div class="analytics-section">
+              <h3>Events by Type</h3>
+              <div class="analytics-events">
+                ${Object.entries(eventsByType)
+                  .map(
+                    ([type, count]) => `
+                  <div class="event-type-item">
+                    <span class="event-type-name">${type}</span>
+                    <span class="event-type-count">${count}</span>
+                  </div>
+                `
+                  )
+                  .join('')}
+              </div>
+            </div>
+
+            ${
+              Object.keys(errorsByType).length > 0
+                ? `
+              <div class="analytics-section">
+                <h3>Errors by Type</h3>
+                <div class="analytics-errors">
+                  ${Object.entries(errorsByType)
+                    .map(
+                      ([type, count]) => `
+                    <div class="error-type-item">
+                      <span class="error-type-name">${type}</span>
+                      <span class="error-type-count">${count}</span>
+                    </div>
+                  `
+                    )
+                    .join('')}
+                </div>
+              </div>
+            `
+                : ''
+            }
+          `;
+        }
+
+        addWebhookEvent(event) {
+          const eventsLog = document.getElementById('events-log');
+          const eventDiv = document.createElement('div');
+          eventDiv.className = 'event-item';
+
+          const timestamp = new Date().toLocaleTimeString();
+          eventDiv.innerHTML = `
+                    <div class="event-type">${event.type || 'Unknown Event'}</div>
+                    <div class="event-time">${timestamp}</div>
+                    <div class="event-data">${JSON.stringify(event.data || event, null, 2)}</div>
+                `;
+
+          // Remove loading message if present
+          const loading = eventsLog.querySelector('.loading');
+          if (loading) {
+            loading.remove();
+          }
+
+          eventsLog.insertBefore(eventDiv, eventsLog.firstChild);
+
+          // Keep only last 50 events
+          while (eventsLog.children.length > 50) {
+            eventsLog.removeChild(eventsLog.lastChild);
+          }
+        }
+
+        showError(message) {
+          const errorDiv = document.getElementById('error-message');
+          errorDiv.textContent = message;
+          errorDiv.style.display = 'block';
+          setTimeout(() => {
+            errorDiv.style.display = 'none';
+          }, 5000);
+        }
+
+        showNotification(message) {
+          // Simple notification - could be enhanced
+          console.log('Notification:', message);
+        }
+      }
+
+      // Initialize dashboard when page loads
+      document.addEventListener('DOMContentLoaded', () => {
+        new Dashboard();
+      });
+    </script>
+    <script src="/socket.io/socket.io.js"></script>
+  </body>
+</html>
