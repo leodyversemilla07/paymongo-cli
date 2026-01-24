@@ -44,12 +44,24 @@ describe('ApiClient', () => {
   let apiClient: InstanceType<typeof ApiClient>;
 
   const validConfig = {
-    environment: 'test',
+    version: '1.0.0',
+    projectName: 'test-project',
+    environment: 'test' as const,
     apiKeys: {
       test: {
         public: 'pk_test_1234567890123456789012',
         secret: 'sk_test_1234567890123456789012',
       },
+    },
+    webhooks: {
+      url: 'https://example.com',
+      events: ['payment.paid'],
+    },
+    webhookSecrets: {},
+    dev: {
+      port: 3000,
+      autoRegisterWebhook: false,
+      verifyWebhookSignatures: false,
     },
   };
 
