@@ -11,6 +11,14 @@
       rel="stylesheet"
     />
     <style>
+      /* PayMongo Brand Colors */
+      :root {
+        --pm-green: #349b18;
+        --pm-lime: #e2f485;
+        --pm-forest: #0c332b;
+        --pm-bg: #eff7ec;
+      }
+
       /* Icon definitions */
       .icon {
         display: inline-block;
@@ -21,7 +29,7 @@
       }
 
       .icon-check {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2328a745' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20,6 9,17 4,12'%3E%3C/polyline%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23349B18' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20,6 9,17 4,12'%3E%3C/polyline%3E%3C/svg%3E");
       }
 
       .icon-x {
@@ -41,13 +49,13 @@
           'Segoe UI',
           Roboto,
           sans-serif;
-        background: #f5f5f5;
-        color: #333;
+        background: var(--pm-bg);
+        color: var(--pm-forest);
         line-height: 1.6;
       }
 
       .header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, var(--pm-green) 0%, var(--pm-forest) 100%);
         color: white;
         padding: 2rem;
         text-align: center;
@@ -88,13 +96,13 @@
       .analytics-value {
         font-size: 2rem;
         font-weight: bold;
-        color: #495057;
+        color: var(--pm-forest);
         margin-bottom: 0.5rem;
       }
 
       .analytics-label {
         font-size: 0.9rem;
-        color: #6c757d;
+        color: var(--pm-green);
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
@@ -109,9 +117,9 @@
 
       .analytics-section h3 {
         margin: 0 0 1rem 0;
-        color: #495057;
+        color: var(--pm-forest);
         font-size: 1.2rem;
-        border-bottom: 2px solid #f8f9fa;
+        border-bottom: 2px solid var(--pm-lime);
         padding-bottom: 0.5rem;
       }
 
@@ -127,9 +135,9 @@
         justify-content: space-between;
         align-items: center;
         padding: 0.75rem;
-        background: #f8f9fa;
+        background: var(--pm-bg);
         border-radius: 4px;
-        border-left: 3px solid #007bff;
+        border-left: 3px solid var(--pm-green);
       }
 
       .error-type-item {
@@ -140,12 +148,12 @@
       .event-type-name,
       .error-type-name {
         font-weight: 500;
-        color: #495057;
+        color: var(--pm-forest);
       }
 
       .event-type-count,
       .error-type-count {
-        background: #007bff;
+        background: var(--pm-green);
         color: white;
         padding: 0.25rem 0.5rem;
         border-radius: 12px;
@@ -181,7 +189,7 @@
 
       .card-header h2 {
         font-size: 1.2rem;
-        color: #495057;
+        color: var(--pm-forest);
       }
 
       .card-body {
@@ -197,7 +205,7 @@
       }
 
       .status-online {
-        background: #28a745;
+        background: var(--pm-green);
       }
 
       .status-offline {
@@ -218,11 +226,11 @@
 
       .config-key {
         font-weight: 500;
-        color: #495057;
+        color: var(--pm-forest);
       }
 
       .config-value {
-        color: #6c757d;
+        color: var(--pm-green);
         font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
         font-size: 0.9rem;
       }
@@ -243,13 +251,13 @@
       .webhook-url {
         font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
         font-size: 0.9rem;
-        color: #007bff;
+        color: var(--pm-green);
         word-break: break-all;
       }
 
       .webhook-events {
         font-size: 0.9rem;
-        color: #6c757d;
+        color: var(--pm-forest);
         margin-top: 0.25rem;
       }
 
@@ -284,19 +292,19 @@
       .event-item {
         padding: 0.5rem;
         margin-bottom: 0.5rem;
-        border-left: 3px solid #007bff;
-        background: white;
+        border-left: 3px solid var(--pm-green);
+        background: var(--pm-bg);
         border-radius: 4px;
       }
 
       .event-type {
         font-weight: 500;
-        color: #007bff;
+        color: var(--pm-green);
       }
 
       .event-time {
         font-size: 0.8rem;
-        color: #6c757d;
+        color: var(--pm-forest);
       }
 
       .event-data {
@@ -312,7 +320,7 @@
       .loading {
         text-align: center;
         padding: 2rem;
-        color: #6c757d;
+        color: var(--pm-forest);
       }
 
       .error {
