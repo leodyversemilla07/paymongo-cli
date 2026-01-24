@@ -18,6 +18,8 @@ PayMongo CLI is the official-feel command-line tool designed to streamline your 
 - **Real-time Monitoring**: Watch webhook events as they happen with formatted logs or a web-based GUI.
 - **Team Collaboration**: Sync configurations across your team using GitHub integration.
 - **Web Dashboard**: Use `paymongo gui` for a premium visual monitoring experience.
+- **Bulk Operations**: Import/export payments and webhooks for easy migration between environments.
+- **Rate Limiting Protection**: Built-in API abuse prevention with configurable limits and automatic backoff.
 - **Secure Management**: Encrypted storage for your API keys.
 
 ---
@@ -77,18 +79,57 @@ paymongo trigger --event payment.paid
 
 ---
 
+## Rate Limiting Protection
+
+PayMongo CLI includes built-in rate limiting to prevent accidental API abuse and protect your test credits. Rate limits are automatically enforced with:
+
+- **Default Limits**: 100 requests/minute in test environment, 50 in live
+- **Endpoint-Specific Limits**: Stricter limits for expensive operations like webhook creation
+- **Automatic Backoff**: Failed requests are automatically retried with exponential backoff
+- **Configurable Settings**: Customize limits via `paymongo config rate-limit`
+
+### Managing Rate Limits
+
+```bash
+# Enable rate limiting
+paymongo config rate-limit enable
+
+# Set maximum requests per minute
+paymongo config rate-limit set-max-requests 200
+
+# Set time window in seconds
+paymongo config rate-limit set-window 120
+
+# Check current status
+paymongo config rate-limit status
+
+# Disable rate limiting (not recommended)
+paymongo config rate-limit disable
+```
+
+### Global Override
+
+Use `--no-rate-limit` with any command to temporarily disable rate limiting:
+
+```bash
+paymongo payments list --no-rate-limit
+```
+
+---
+
 ## Commands Reference
 
-| Command             | Description                                             |
-| :------------------ | :------------------------------------------------------ |
-| `paymongo init`     | Initialize a new project and set up credentials.        |
-| `paymongo dev`      | Start local development server with webhook forwarding. |
-| `paymongo payments` | Manage payments and payment intents.                    |
-| `paymongo webhooks` | List, create, and manage PayMongo webhooks.             |
-| `paymongo config`   | View and modify CLI configuration.                      |
-| `paymongo team`     | Sync configurations with your team via GitHub.          |
-| `paymongo gui`      | Launch the web-based monitoring dashboard.              |
-| `paymongo trigger`  | Simulate webhook events locally for testing.            |
+| Command                      | Description                                             |
+| :--------------------------- | :------------------------------------------------------ |
+| `paymongo init`              | Initialize a new project and set up credentials.        |
+| `paymongo dev`               | Start local development server with webhook forwarding. |
+| `paymongo payments`          | Manage payments and payment intents.                    |
+| `paymongo webhooks`          | List, create, and manage PayMongo webhooks.             |
+| `paymongo config`            | View and modify CLI configuration.                      |
+| `paymongo config rate-limit` | Configure rate limiting settings.                       |
+| `paymongo team`              | Sync configurations with your team via GitHub.          |
+| `paymongo gui`               | Launch the web-based monitoring dashboard.              |
+| `paymongo trigger`           | Simulate webhook events locally for testing.            |
 
 > Use `paymongo <command> --help` for detailed information on any command.
 

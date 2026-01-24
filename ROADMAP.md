@@ -69,14 +69,15 @@ We have optimized the CLI for speed and added event simulation capabilities.
   - [x] Incremental TypeScript compilation
   - [x] Optimized production bundling
 
-#### 🎭 Event Simulation
+#### 🎭 Payment Method Simulation (NEW - Completed)
 
-- **`paymongo trigger`**: Fully implemented local event simulation
-  - [x] Interactive event selection from available webhook events
-  - [x] Realistic webhook payload generation for all event types
-  - [x] Optional JSON output for testing
-  - [x] HTTP POST to webhook URLs with proper headers
-  - [x] Support for payment, source, checkout, and link events
+- **`paymongo payments confirm --simulate`**: Complete payment method simulation
+  - [x] **GCash/Maya/GrabPay Support**: Mock all major Philippine payment methods
+  - [x] **Realistic Delays**: Method-specific delays (GCash: 2-3s, Maya: 1-2s, GrabPay: 4-6s)
+  - [x] **Outcome Simulation**: Success, failure, and timeout scenarios
+  - [x] **Custom Delays**: Override default delays with `--delay` option
+  - [x] **Validation**: Comprehensive input validation and error handling
+  - [x] **User Feedback**: Clear simulation mode indicators and results
 
 ### ✅ Phase 3: GUI Dashboard & Analytics (Completed)
 
@@ -87,6 +88,7 @@ Enhanced observability and monitoring for PayMongo integrations.
 - **Web Dashboard (`paymongo gui`)**
   - [x] Modern, responsive web interface
   - [x] Real-time webhook event monitoring via Socket.io
+  - [x] ES module compatibility fix (`fileURLToPath` for `__dirname`)
 - **Advanced Analytics**
   - [x] Event count tracking and success/failure rates
   - [x] Response time monitoring
@@ -95,35 +97,56 @@ Enhanced observability and monitoring for PayMongo integrations.
   - [x] Manage CLI settings directly from the browser
   - [x] Webhook status overview and toggle
 
----
+#### Dev Server Enhancements
 
-## 🚧 In Progress
+- **Background Mode (`paymongo dev --detach`)**
+  - [x] Run dev server in detached/background mode
+  - [x] `paymongo dev status` - Check server status
+  - [x] `paymongo dev stop` - Stop background server
+  - [x] `paymongo dev logs` - View server logs with `-f` follow option
+- **Project-Specific Webhook Management**
+  - [x] Webhooks tracked per-project with auto-cleanup on restart
+  - [x] Automatic stale webhook cleanup from previous sessions
+- **Improved Error Handling**
+  - [x] Comprehensive HTTP response validation in trigger command
+  - [x] Specific error messages for 404, 4xx, 5xx, connection refused, timeouts
+  - [x] Clear dual-URL display (external vs local) for webhook forwarding
 
-We are currently focusing on enhancing team collaboration features.
+#### Team Collaboration Features
 
-- **`paymongo team`**: Team collaboration framework (partially implemented)
-  - [x] Command structure with sync, invite, and members subcommands
-  - [ ] GitHub integration for configuration syncing
-  - [ ] User invitation and role management system
-  - [ ] Team member listing and permissions
-- **Enhanced Error Handling**: Improved recovery and descriptive messages for networking/API issues
-- **Config Portability**: Export and import configurations for easy environment switching
+- **`paymongo team`**: Complete team collaboration framework with API key sharing
+  - [x] **API Key Sharing**: Share PayMongo API keys securely with team members
+  - [x] **Key Bundle Management**: Generate shareable key bundles for test/live environments
+  - [x] **Member Tracking**: Track team members and which keys they've received
+  - [x] **Import/Export**: Easy import of shared keys with member attribution
+  - [x] **Team Management**: Rename teams, remove members, view team information
 
----
+#### Bulk Operations (NEW - Completed)
 
-## Next Steps
+- **`paymongo payments export/import` & `paymongo webhooks export/import`**: Complete bulk data management
+  - [x] **JSON Export/Import**: Export payments and webhooks to/from JSON files
+  - [x] **Environment Migration**: Easy migration of configurations between test/live environments
+  - [x] **Validation**: Comprehensive data validation during import operations
+  - [x] **Progress Feedback**: Clear progress indicators for large bulk operations
+  - [x] **Conflict Resolution**: Smart handling of duplicate data and conflicts
+
+#### Rate Limiting Protection (NEW - Completed)
+
+- **Built-in API Abuse Prevention**: Comprehensive rate limiting system
+  - [x] **Configurable Limits**: Different limits for test/live environments (100/min test, 50/min live)
+  - [x] **Endpoint-Specific Rules**: Stricter limits for expensive operations (webhooks: 30/min, refunds: 20/min)
+  - [x] **Automatic Backoff**: Exponential backoff with user feedback for rate limit hits
+  - [x] **CLI Configuration**: `paymongo config rate-limit` commands for customization
+  - [x] **Global Override**: `--no-rate-limit` flag for special cases
 
 ### 🎯 Short-term Goals (Q1 2026)
 
-- **Team Sync Implementation**: Complete GitHub-based configuration syncing for teams
-- **Enhanced Error Handling**: Improved recovery and descriptive messages for networking/API issues
-- **Config Portability**: Export and import configurations for easy environment switching
-- **Framework Integrations**: Official plugins or wrappers for Next.js, Express, and NestJS
+- **Rate Limiting**: Built-in protection to prevent accidental API abuse in test environments ✅ **COMPLETED**
+- **Bulk Operations**: Import/export multiple payments and webhooks via JSON ✅ **COMPLETED**
 
 ### 📈 Mid-term Goals
 
-- **Environment Management**: Better support for staging vs production environment toggles
-- **CLI Telemetry**: Optional, anonymous usage statistics to help prioritize feature development
+- **Advanced Monitoring**: Enhanced analytics and performance monitoring
 
 ---
 
@@ -131,39 +154,137 @@ We are currently focusing on enhancing team collaboration features.
 
 ### Phase 4: Plugin System (Planned)
 
-The ultimate goal is to enable the community to extend the CLI.
+The ultimate goal is to enable the community to extend the CLI through a modular plugin architecture.
 
-- **Extensible Architecture**: A modular system for adding custom commands.
-- **Plugin Marketplace**: A central hub for discovering community-built extensions.
-- **Security Sandboxing**: Ensuring plugins run safely with restricted permissions.
-- [Plugin System Design Document](docs/plugin-system.md)
+#### Core Components
+
+##### Plugin Manager (`src/services/plugins/manager.ts`)
+
+- Plugin discovery and loading
+- Plugin lifecycle management (install, enable, disable, uninstall)
+- Dependency resolution and validation
+- Plugin isolation and security
+
+##### Plugin Interface (`src/types/plugin.ts`)
+
+```typescript
+export interface PayMongoPlugin {
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+
+  // Lifecycle hooks
+  onLoad(): Promise<void>;
+  onUnload(): Promise<void>;
+
+  // Plugin metadata
+  commands?: Command[];
+  services?: Service[];
+  hooks?: PluginHook[];
+}
+
+export interface PluginHook {
+  event: string;
+  handler: (...args: any[]) => Promise<void> | void;
+}
+```
+
+##### Plugin Registry (`src/services/plugins/registry.ts`)
+
+- Maintain list of installed/enabled plugins
+- Plugin metadata storage
+- Version conflict resolution
+- Plugin marketplace integration
+
+#### Plugin Types
+
+| Type                | Purpose                       | Example Use Case                                 |
+| :------------------ | :---------------------------- | :----------------------------------------------- |
+| **Command Plugins** | Add new CLI commands          | Custom webhook handlers, payment flow automation |
+| **Service Plugins** | Integrate new services        | Database integrations, third-party APIs          |
+| **Hook Plugins**    | Extend existing functionality | Enhanced logging, analytics tracking             |
+
+#### Plugin Discovery and Loading
+
+- **Local Plugins**: Stored in `.paymongo/plugins/` directory
+- **NPM Packages**: Packages with `paymongo-plugin-` prefix
+- **Git Repositories**: Plugins loaded from Git repos with plugin configuration
+
+#### Security and Isolation
+
+- **Sandboxing**: Plugin code runs in isolated context with limited Node.js API access
+- **Permissions**: Declarative permission system for filesystem, network, and config access
+
+#### Plugin API
+
+Plugins can access core CLI services through dependency injection:
+
+```typescript
+export class MyPlugin implements PayMongoPlugin {
+  constructor(
+    private configManager: ConfigManager,
+    private apiClient: ApiClient,
+    private analyticsService: AnalyticsService
+  ) {}
+
+  onLoad() {
+    const config = this.configManager.load();
+    // ... plugin logic
+  }
+}
+```
+
+#### Example Plugin Structure
+
+```
+my-paymongo-plugin/
+├── package.json
+├── src/
+│   ├── index.ts          # Main plugin class
+│   ├── commands/         # CLI commands
+│   ├── services/         # Services to register
+│   └── hooks.ts          # Event hooks
+├── README.md
+└── paymongo-plugin.json  # Plugin metadata
+```
+
+#### Implementation Plan
+
+| Phase   | Focus               | Deliverables                                                 |
+| :------ | :------------------ | :----------------------------------------------------------- |
+| **4.1** | Core Infrastructure | Plugin interfaces, plugin manager, `paymongo plugin` command |
+| **4.2** | Plugin Development  | Plugin templates, documentation, example plugins             |
+| **4.3** | Advanced Features   | Dependencies, version management, hot reloading              |
+
+#### Benefits
+
+- **Extensibility**: Add functionality without core changes
+- **Modularity**: Clean separation of concerns
+- **Community**: Enable third-party integrations
+- **Maintenance**: Easier updates and bug fixes
+- **Innovation**: Rapid prototyping of new features
+
+> **Note**: The plugin system is opt-in and doesn't affect core CLI performance when no plugins are installed.
 
 ### Long-term Goals
 
-- **Cross-platform Desktop App**: A dedicated electron-based application for non-CLI users.
-- **Cloud Configuration Sync**: Securely sync non-sensitive project settings across devices.
 - **Automated Integration Testing**: Built-in tools for running E2E tests against PayMongo's test environment.
+- **Subscription Support**: Payment link and subscription management when PayMongo API supports it.
+- **Advanced Webhook Features**: Webhook filtering, transformation, and conditional routing.
 
 ---
 
-## 🤝 Contributing Guidelines
+## 🤝 Contributing
 
-We believe in community-driven development. If you'd like to help us reach our milestones:
-
-1. **Check the Issues**: Look for "good first issue" or "help wanted" labels on [GitHub](https://github.com/leodyversemilla07/paymongo-cli/issues).
-2. **Feature Requests**: Have an idea? Open an issue to discuss it.
-3. **Pull Requests**:
-   - Fork the repository.
-   - Create your feature branch (`git checkout -b feature/new-capability`).
-   - Ensure tests pass with `npm test`.
-   - Submit a PR with a comprehensive description.
+We welcome contributions from the community! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and the pull request process.
 
 ---
 
 ## 📚 Relevant Documentation
 
 - [Main README](README.md)
-- [Plugin System Architecture](docs/plugin-system.md)
+- [User Guide](USER_GUIDE.md)
 - [PayMongo Developer Docs](https://developers.paymongo.com)
 
 ---
