@@ -238,6 +238,22 @@ command
         const spinner = new Spinner();
         const configManager = new ConfigManager();
 
+        // Map user-friendly dot notation to actual config keys
+        const keyMappings: Record<string, string> = {
+          'project.name': 'projectName',
+          'webhook.url': 'webhooks.url',
+          'webhook.events': 'webhooks.events',
+          'dev.port': 'dev.port',
+          'dev.autoRegister': 'dev.autoRegisterWebhook',
+          'dev.verifySignatures': 'dev.verifyWebhookSignatures',
+          'rateLimit.enabled': 'rateLimiting.enabled',
+          'rateLimit.maxRequests': 'rateLimiting.maxRequests',
+          'rateLimit.windowMs': 'rateLimiting.windowMs',
+        };
+
+        // Apply key mapping if exists
+        const mappedKey = keyMappings[key] || key;
+
         try {
           spinner.start('Loading configuration...');
 
@@ -254,7 +270,7 @@ command
           // Parse and set the value
           spinner.start('Updating configuration...');
 
-          const keys = key.split('.');
+          const keys = mappedKey.split('.');
           let current: Record<string, unknown> = config as unknown as Record<string, unknown>;
 
           // Navigate to the parent object
