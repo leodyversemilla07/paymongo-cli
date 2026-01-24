@@ -1,9 +1,23 @@
 import { Command } from 'commander';
-import inquirer from 'inquirer';
+import { select, input } from '@inquirer/prompts';
 import chalk from 'chalk';
-import ConfigManager from '../services/config/manager';
-import Spinner from '../utils/spinner';
-import Logger from '../utils/logger';
+import ConfigManager from '../services/config/manager.js';
+import Spinner from '../utils/spinner.js';
+import Logger from '../utils/logger.js';
+
+interface WebhookPayload {
+  data: {
+    id: string;
+    type: string;
+    attributes: {
+      type: string;
+      livemode: boolean;
+      created_at: number;
+      updated_at: number;
+      data: Record<string, unknown>;
+    };
+  };
+}
 
 const command = new Command('trigger');
 
@@ -39,34 +53,29 @@ command
       if (!selectedEvent) {
         spinner.stop();
 
-        const answers = await inquirer.prompt([
-          {
-            type: 'list',
-            name: 'event',
-            message: 'Select webhook event to trigger:',
-            choices: availableEvents.map(event => ({
-              name: event,
-              value: event
-            }))
-          },
-          {
-            type: 'input',
-            name: 'url',
-            message: 'Webhook URL:',
-            default: webhookUrl,
-            validate: (input) => {
-              try {
-                new URL(input);
-                return true;
-              } catch {
-                return 'Please enter a valid URL';
-              }
+        const eventChoice = await select({
+          message: 'Select webhook event to trigger:',
+          choices: availableEvents.map(event => ({
+            name: event,
+            value: event
+          }))
+        });
+
+        const urlInput = await input({
+          message: 'Webhook URL:',
+          default: webhookUrl,
+          validate: (value) => {
+            try {
+              new URL(value);
+              return true;
+            } catch {
+              return 'Please enter a valid URL';
             }
           }
-        ]);
+        });
 
-        selectedEvent = answers.event;
-        webhookUrl = answers.url;
+        selectedEvent = eventChoice;
+        webhookUrl = urlInput;
       }
 
       spinner.start('Generating webhook payload...');
@@ -114,17 +123,19 @@ command
           console.log(JSON.stringify(response.data, null, 2));
         }
 
-      } catch (error: any) {
-        if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      } catch (error) {
+        const err = error as Error & { code?: string };
+        if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
           spinner.warn('Webhook URL not reachable - payload generated for testing');
         } else {
-          spinner.fail(`Webhook failed: ${error.message}`);
+          spinner.fail(`Webhook failed: ${err.message}`);
         }
       }
 
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       spinner.fail('Failed to trigger webhook event');
-      logger.error('Trigger command error:', error.message);
+      logger.error('Trigger command error:', err.message);
       process.exit(1);
     }
   });
@@ -132,7 +143,7 @@ command
 /**
  * Generate webhook payload based on event type
  */
-function generateWebhookPayload(eventType: string): any {
+function generateWebhookPayload(eventType: string): WebhookPayload {
   const basePayload = {
     data: {
       id: `evt_${generateId()}`,

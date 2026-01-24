@@ -1,4 +1,4 @@
-import { PayMongoConfig } from '../types/paymongo';
+import { PayMongoConfig } from '../types/paymongo.js';
 
 export class ValidationError extends Error {
   constructor(

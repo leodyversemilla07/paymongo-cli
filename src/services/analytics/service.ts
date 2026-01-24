@@ -1,6 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import Logger from '../../utils/logger';
+import Logger from '../../utils/logger.js';
+
+export interface WebhookEventData {
+  type?: string;
+  amount?: number;
+  status?: string;
+  [key: string]: unknown;
+}
 
 export interface WebhookEvent {
   id: string;
@@ -9,7 +16,7 @@ export interface WebhookEvent {
   success: boolean;
   error?: string;
   responseTime?: number;
-  data?: any;
+  data?: WebhookEventData;
 }
 
 export interface AnalyticsData {

@@ -2,11 +2,11 @@ import { Command } from 'commander';
 import * as http from 'http';
 import * as crypto from 'crypto';
 import chalk from 'chalk';
-import ConfigManager from '../services/config/manager';
-import ApiClient from '../services/api/client';
-import Spinner from '../utils/spinner';
-import { withRetry } from '../utils/errors';
-import { PayMongoConfig, WebhookEvent, TunnelInfo } from '../types/paymongo';
+import ConfigManager from '../services/config/manager.js';
+import ApiClient from '../services/api/client.js';
+import Spinner from '../utils/spinner.js';
+import { withRetry } from '../utils/errors.js';
+import { PayMongoConfig, TunnelInfo, WebhookEventPayload } from '../types/paymongo.js';
 
 interface DevOptions {
   port?: string;
@@ -90,18 +90,19 @@ class DevServer {
     });
   }
 
-  private logWebhookEvent(event: WebhookEvent): void {
+  private logWebhookEvent(event: WebhookEventPayload): void {
     const timestamp = new Date().toLocaleTimeString();
-    const eventType = (event as any).data?.type || 'unknown';
-    const eventId = (event as any).data?.id || 'unknown';
+    const eventType = event.data?.type || 'unknown';
+    const eventId = event.data?.id || 'unknown';
 
     console.log('');
     console.log(chalk.gray('────────────────────────────────────────────────────────────'));
     console.log(chalk.blue(`[${timestamp}]`), chalk.bold(eventType.toUpperCase()));
 
     if (eventType === 'payment') {
-      const amount = (event as any).data.attributes.amount;
-      const status = (event as any).data.attributes.status;
+      const attributes = event.data.attributes as { amount?: number; status?: string };
+      const amount = attributes.amount ?? 0;
+      const status = attributes.status ?? 'unknown';
 
       console.log(chalk.gray('└─'), `Amount: ₱${(amount / 100).toFixed(2)}`);
       console.log(chalk.gray('└─'), `Status: ${status}`);

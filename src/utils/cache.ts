@@ -1,15 +1,24 @@
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { homedir } from 'os';
 
 export interface CacheOptions {
   ttl?: number; // Time to live in milliseconds
   maxSize?: number; // Maximum cache size in MB
 }
 
+interface FileInfo {
+  name: string;
+  path: string;
+  mtime: number;
+  size: number;
+}
+
 export class Cache {
   private cacheDir: string;
   private options: Required<CacheOptions>;
+  private initialized: Promise<void>;
 
   constructor(options: CacheOptions = {}) {
     this.options = {
@@ -17,12 +26,19 @@ export class Cache {
       maxSize: options.maxSize || 10, // 10MB default
     };
 
-    // Create cache directory in user's home
-    const homeDir = process.env.HOME || process.env.USERPROFILE || '/tmp';
-    this.cacheDir = path.join(homeDir, '.paymongo-cli', 'cache');
+    // Create cache directory in user's home - use os.homedir() as primary
+    const homeDirectory = process.env.HOME || process.env.USERPROFILE || homedir();
+    this.cacheDir = path.join(homeDirectory, '.paymongo-cli', 'cache');
 
-    if (!fs.existsSync(this.cacheDir)) {
-      fs.mkdirSync(this.cacheDir, { recursive: true });
+    // Initialize cache directory asynchronously
+    this.initialized = this.initCacheDir();
+  }
+
+  private async initCacheDir(): Promise<void> {
+    try {
+      await fs.mkdir(this.cacheDir, { recursive: true });
+    } catch {
+      // Directory might already exist or creation failed
     }
   }
 
@@ -34,9 +50,9 @@ export class Cache {
     return path.join(this.cacheDir, this.getCacheKey(key) + '.json');
   }
 
-  private isExpired(filePath: string): boolean {
+  private async isExpired(filePath: string): Promise<boolean> {
     try {
-      const stats = fs.statSync(filePath);
+      const stats = await fs.stat(filePath);
       const age = Date.now() - stats.mtime.getTime();
       return age > this.options.ttl;
     } catch {
@@ -44,14 +60,14 @@ export class Cache {
     }
   }
 
-  private getCacheSize(): number {
+  private async getCacheSize(): Promise<number> {
     try {
-      const files = fs.readdirSync(this.cacheDir);
+      const files = await fs.readdir(this.cacheDir);
       let totalSize = 0;
 
       for (const file of files) {
         const filePath = path.join(this.cacheDir, file);
-        const stats = fs.statSync(filePath);
+        const stats = await fs.stat(filePath);
         totalSize += stats.size;
       }
 
@@ -61,24 +77,34 @@ export class Cache {
     }
   }
 
-  private cleanup(): void {
+  private async cleanup(): Promise<void> {
     try {
-      const files = fs
-        .readdirSync(this.cacheDir)
-        .map((file) => ({
+      const fileNames = await fs.readdir(this.cacheDir);
+      const files: FileInfo[] = [];
+      
+      for (const file of fileNames) {
+        const filePath = path.join(this.cacheDir, file);
+        const stats = await fs.stat(filePath);
+        files.push({
           name: file,
-          path: path.join(this.cacheDir, file),
-          stats: fs.statSync(path.join(this.cacheDir, file)),
-        }))
-        .sort((a, b) => a.stats.mtime.getTime() - b.stats.mtime.getTime());
+          path: filePath,
+          mtime: stats.mtime.getTime(),
+          size: stats.size,
+        });
+      }
+      
+      // Sort by modification time (oldest first)
+      files.sort((a, b) => a.mtime - b.mtime);
 
       // Remove oldest files if cache is too large
-      let currentSize = this.getCacheSize();
+      let currentSize = await this.getCacheSize();
       for (const file of files) {
-        if (currentSize <= this.options.maxSize * 0.8) {break;} // Keep 80% of max size
+        if (currentSize <= this.options.maxSize * 0.8) {
+          break;
+        } // Keep 80% of max size
 
-        fs.unlinkSync(file.path);
-        currentSize -= file.stats.size / (1024 * 1024);
+        await fs.unlink(file.path);
+        currentSize -= file.size / (1024 * 1024);
       }
     } catch {
       // Ignore cleanup errors
@@ -86,14 +112,22 @@ export class Cache {
   }
 
   async get<T>(key: string): Promise<T | null> {
+    await this.initialized;
     const cachePath = this.getCachePath(key);
 
     try {
-      if (!fs.existsSync(cachePath) || this.isExpired(cachePath)) {
+      // Check if file exists
+      try {
+        await fs.access(cachePath);
+      } catch {
+        return null;
+      }
+      
+      if (await this.isExpired(cachePath)) {
         return null;
       }
 
-      const data = fs.readFileSync(cachePath, 'utf-8');
+      const data = await fs.readFile(cachePath, 'utf-8');
       const cached = JSON.parse(data);
 
       return cached.data;
@@ -103,6 +137,7 @@ export class Cache {
   }
 
   async set<T>(key: string, data: T): Promise<void> {
+    await this.initialized;
     const cachePath = this.getCachePath(key);
 
     try {
@@ -111,11 +146,12 @@ export class Cache {
         timestamp: Date.now(),
       };
 
-      fs.writeFileSync(cachePath, JSON.stringify(cacheData));
+      await fs.writeFile(cachePath, JSON.stringify(cacheData));
 
       // Cleanup if cache is getting too large
-      if (this.getCacheSize() > this.options.maxSize) {
-        this.cleanup();
+      const currentSize = await this.getCacheSize();
+      if (currentSize > this.options.maxSize) {
+        await this.cleanup();
       }
     } catch {
       // Ignore cache write errors
@@ -123,25 +159,25 @@ export class Cache {
   }
 
   async clear(): Promise<void> {
+    await this.initialized;
     try {
-      const files = fs.readdirSync(this.cacheDir);
-      for (const file of files) {
-        fs.unlinkSync(path.join(this.cacheDir, file));
-      }
+      const files = await fs.readdir(this.cacheDir);
+      await Promise.all(
+        files.map((file) => fs.unlink(path.join(this.cacheDir, file)))
+      );
     } catch {
       // Ignore clear errors
     }
   }
 
   async invalidate(key: string): Promise<void> {
+    await this.initialized;
     const cachePath = this.getCachePath(key);
 
     try {
-      if (fs.existsSync(cachePath)) {
-        fs.unlinkSync(cachePath);
-      }
+      await fs.unlink(cachePath);
     } catch {
-      // Ignore delete errors
+      // Ignore delete errors (file might not exist)
     }
   }
 }

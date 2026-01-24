@@ -136,3 +136,61 @@ export interface TunnelInfo {
   url(): string | null;
   close(): Promise<void>;
 }
+
+// Extended Payment Data with full attributes
+export interface PaymentDataFull {
+  id: string;
+  type: 'payment';
+  attributes: {
+    amount: number;
+    currency: string;
+    status: 'paid' | 'failed' | 'pending' | 'expired';
+    description?: string;
+    external_reference_number?: string;
+    fees?: number;
+    net_amount?: number;
+    paid_at?: number;
+    created_at: number;
+    updated_at: number;
+    source?: {
+      attributes: {
+        type: string;
+      };
+    };
+    payment_intent_id?: string;
+  };
+}
+
+// Payment Intent Data
+export interface PaymentIntentData {
+  id: string;
+  type: 'payment_intent';
+  attributes: {
+    amount: number;
+    currency: string;
+    status: 'awaiting_payment_method' | 'awaiting_next_action' | 'processing' | 'succeeded';
+    description?: string;
+    payment_method_allowed: string[];
+    created_at: number;
+    updated_at: number;
+  };
+}
+
+// Webhook Data with secret (returned on creation)
+export interface WebhookDataWithSecret extends WebhookData {
+  attributes: WebhookData['attributes'] & {
+    secret?: string;
+  };
+}
+
+// Webhook Event Payload (incoming webhook)
+export interface WebhookEventPayload {
+  data: {
+    id: string;
+    type: string;
+    attributes: Record<string, unknown>;
+  };
+}
+
+// Logger meta types
+export type LogMeta = Error | Record<string, unknown> | string | number | boolean;

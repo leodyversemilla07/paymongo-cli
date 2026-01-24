@@ -2,18 +2,21 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { version } from '../package.json';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
 
 // Import commands
-import initCommand from './commands/init';
-import devCommand from './commands/dev';
-import loginCommand from './commands/login';
-import configCommand from './commands/config';
-import webhooksCommand from './commands/webhooks';
-import triggerCommand from './commands/trigger';
-import guiCommand from './commands/gui';
-import teamCommand from './commands/team';
-import paymentsCommand from './commands/payments';
+import initCommand from './commands/init.js';
+import devCommand from './commands/dev.js';
+import loginCommand from './commands/login.js';
+import configCommand from './commands/config.js';
+import webhooksCommand from './commands/webhooks.js';
+import triggerCommand from './commands/trigger.js';
+import guiCommand from './commands/gui.js';
+import teamCommand from './commands/team/index.js';
+import paymentsCommand from './commands/payments.js';
 
 const program = new Command();
 
@@ -61,8 +64,3 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 program.parse();
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error(chalk.red('Unhandled Rejection at:'), promise, 'reason:', reason);
-  process.exit(1);
-});

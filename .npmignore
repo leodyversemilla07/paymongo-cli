@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+
+# Source code (not needed for published package)
+src/
+
+# Tests
+tests/
+
+# Build scripts and configs
+scripts/
+tsconfig.json
+jest.config.js
+.eslintrc.js
+.prettierrc
+
+# Environment files
+.env*
+
+# PayMongo specific config
+.paymongo
+.paymongo/
+*.paymongo.json
+
+# IDE and editors
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Git
+.git/
+.gitignore
+
+# Documentation (keep README, but exclude others if not needed)
+# Keep README.md
+CONTRIBUTING.md
+ROADMAP.md
+TROUBLESHOOTING.md
+API_REFERENCE.md
+USER_GUIDE.md
+INSTALLATION.md
+docs/
+
+# Web folder is needed for the GUI command
+# web/
+
+# License and README are included by default

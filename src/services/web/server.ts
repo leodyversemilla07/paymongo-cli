@@ -2,10 +2,12 @@ import express from 'express';
 import { Server as HttpServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import path from 'path';
-import { ConfigManager } from '../config/manager';
-import { ApiClient } from '../api/client';
-import { AnalyticsService } from '../analytics/service';
-import Logger from '../../utils/logger';
+import rateLimit from 'express-rate-limit';
+import { ConfigManager } from '../config/manager.js';
+import { ApiClient } from '../api/client.js';
+import { AnalyticsService } from '../analytics/service.js';
+import Logger from '../../utils/logger.js';
+import { WebhookEventPayload } from '../../types/paymongo.js';
 
 export interface WebServerOptions {
   port: number;
@@ -50,9 +52,47 @@ export class WebServer {
     // Parse JSON bodies
     this.app.use(express.json());
 
-    // CORS for local development
+    // Rate limiting for API endpoints
+    const apiLimiter = rateLimit({
+      windowMs: 1 * 60 * 1000, // 1 minute window
+      max: 100, // limit each IP to 100 requests per window
+      standardHeaders: true, // Return rate limit info in headers
+      legacyHeaders: false, // Disable X-RateLimit-* headers
+      message: { success: false, error: 'Too many requests, please try again later' },
+    });
+
+    // Apply rate limiting to API routes
+    this.app.use('/api/', apiLimiter);
+
+    // Stricter rate limit for config modifications
+    const configWriteLimiter = rateLimit({
+      windowMs: 1 * 60 * 1000, // 1 minute window
+      max: 20, // limit config writes to 20 per minute
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { success: false, error: 'Too many configuration updates, please slow down' },
+    });
+
+    this.app.use('/api/config', (req, res, next) => {
+      if (req.method === 'PUT' || req.method === 'POST') {
+        configWriteLimiter(req, res, next);
+      } else {
+        next();
+      }
+    });
+
+    // CORS for local development - restricted to localhost origins
+    const allowedOrigins = [
+      `http://localhost:${this.port}`,
+      `http://127.0.0.1:${this.port}`,
+      `http://${this.host}:${this.port}`,
+    ];
+    
     this.app.use((req, res, next) => {
-      res.header('Access-Control-Allow-Origin', '*');
+      const origin = req.headers.origin;
+      if (origin && allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+      }
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
       res.header(
         'Access-Control-Allow-Headers',
@@ -90,16 +130,22 @@ export class WebServer {
           return res.status(404).json({ success: false, error: 'Configuration not found' });
         }
 
-        // Set the configuration value
+        // Set the configuration value using type-safe nested access
         const keys = key.split('.');
-        let current: any = config;
+        let current: Record<string, unknown> = config as unknown as Record<string, unknown>;
         for (let i = 0; i < keys.length - 1; i++) {
-          if (!current[keys[i]]) {
-            current[keys[i]] = {};
+          const k = keys[i];
+          if (k && !current[k]) {
+            current[k] = {};
           }
-          current = current[keys[i]];
+          if (k) {
+            current = current[k] as Record<string, unknown>;
+          }
         }
-        current[keys[keys.length - 1]] = value;
+        const lastKey = keys[keys.length - 1];
+        if (lastKey) {
+          current[lastKey] = value;
+        }
 
         await this.configManager.save(config);
 
@@ -186,7 +232,7 @@ export class WebServer {
     return this.port;
   }
 
-  public emitWebhookEvent(event: any): void {
+  public emitWebhookEvent(event: WebhookEventPayload): void {
     this.io.emit('webhook:event', event);
   }
 }

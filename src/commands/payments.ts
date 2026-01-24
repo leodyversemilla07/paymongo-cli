@@ -1,8 +1,9 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import ConfigManager from '../services/config/manager';
-import ApiClient from '../services/api/client';
-import Spinner from '../utils/spinner';
+import ConfigManager from '../services/config/manager.js';
+import ApiClient from '../services/api/client.js';
+import Spinner from '../utils/spinner.js';
+import { PaymentDataFull } from '../types/paymongo.js';
 
 const command = new Command('payments');
 
@@ -48,7 +49,7 @@ command
           console.log('\n' + chalk.bold('Recent Payments'));
           console.log(chalk.gray('─'.repeat(80)));
 
-          payments.forEach((payment: any) => {
+          payments.forEach((payment: PaymentDataFull) => {
             const amount = (payment.attributes.amount / 100).toFixed(2);
             const currency = payment.attributes.currency;
             const status = payment.attributes.status;
@@ -60,9 +61,10 @@ command
           });
 
           console.log('');
-        } catch (error: any) {
+        } catch (error) {
           spinner.stop();
-          console.error(chalk.red('❌ Failed to fetch payments:'), error.message);
+          const err = error as Error;
+          console.error(chalk.red('❌ Failed to fetch payments:'), err.message);
           process.exit(1);
         }
       })
@@ -139,9 +141,10 @@ command
           console.log(
             chalk.gray(`View in dashboard: https://dashboard.paymongo.com/payments/${payment.id}`)
           );
-        } catch (error: any) {
+        } catch (error) {
           spinner.stop();
-          console.error(chalk.red('❌ Failed to fetch payment:'), error.message);
+          const err = error as Error;
+          console.error(chalk.red('❌ Failed to fetch payment:'), err.message);
           process.exit(1);
         }
       })
@@ -207,9 +210,10 @@ command
           console.log(
             chalk.gray(`Use this ID to attach a payment method and confirm the payment.`)
           );
-        } catch (error: any) {
+        } catch (error) {
           spinner.stop();
-          console.error(chalk.red('❌ Failed to create payment intent:'), error.message);
+          const err = error as Error;
+          console.error(chalk.red('❌ Failed to create payment intent:'), err.message);
           process.exit(1);
         }
       })

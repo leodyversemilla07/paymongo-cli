@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { NetworkError, withRetry } from '../../utils/errors';
+import { NetworkError, withRetry } from '../../utils/errors.js';
 
 export interface GitHubClientOptions {
   token?: string;
@@ -128,8 +128,8 @@ export class GitHubClient {
     message: string,
     branch: string = 'main',
     sha?: string
-  ): Promise<any> {
-    const data: any = {
+  ): Promise<GitHubFileContent> {
+    const data: { message: string; content: string; branch: string; sha?: string } = {
       message,
       content: Buffer.from(content).toString('base64'),
       branch,
@@ -152,7 +152,7 @@ export class GitHubClient {
     path?: string,
     since?: string
   ): Promise<GitHubCommit[]> {
-    const params: any = { per_page: 10 };
+    const params: { per_page: number; path?: string; since?: string } = { per_page: 10 };
     if (path) {params.path = path;}
     if (since) {params.since = since;}
 

@@ -1,19 +1,19 @@
 import { Command } from 'commander';
-import inquirer from 'inquirer';
+import { select, password } from '@inquirer/prompts';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import * as os from 'os';
 import chalk from 'chalk';
-import ConfigManager from '../services/config/manager';
-import ApiClient from '../services/api/client';
-import { validateApiKey } from '../utils/validator';
-import Spinner from '../utils/spinner';
+import ConfigManager from '../services/config/manager.js';
+import ApiClient from '../services/api/client.js';
+import { validateApiKey } from '../utils/validator.js';
+import Spinner from '../utils/spinner.js';
 
 interface LoginAnswers {
   environment: 'test' | 'live';
   secretKey: string;
-  publicKey?: string;
+  publicKey?: string | undefined;
 }
 
 class CredentialManager {
@@ -134,40 +134,38 @@ command
         // Interactive mode
         const storedCredentials = await credentialManager.loadCredentials();
 
-        answers = await inquirer.prompt<LoginAnswers>([
-          {
-            type: 'list',
-            name: 'environment',
-            message: 'Environment:',
-            choices: [
-              { name: 'Test (recommended for development)', value: 'test' },
-              { name: 'Live (for production)', value: 'live' },
-            ],
-            default: options.env || storedCredentials?.environment || 'test',
+        const environment = await select({
+          message: 'Environment:',
+          choices: [
+            { name: 'Test (recommended for development)', value: 'test' as const },
+            { name: 'Live (for production)', value: 'live' as const },
+          ],
+          default: options.env || storedCredentials?.environment || 'test',
+        });
+
+        const secretKey = await password({
+          message: 'Secret API key:',
+          validate: (input) => {
+            if (!input) {return 'Secret API key is required';}
+            if (!validateApiKey(input, 'secret')) {return 'Invalid secret API key format';}
+            return true;
           },
-          {
-            type: 'password',
-            name: 'secretKey',
-            message: 'Secret API key:',
-            default: options.key || storedCredentials?.secretKey,
-            validate: (input) => {
-              if (!input) {return 'Secret API key is required';}
-              if (!validateApiKey(input, 'secret')) {return 'Invalid secret API key format';}
-              return true;
-            },
+        });
+
+        const publicKey = await password({
+          message: 'Public API key (optional):',
+          validate: (input) => {
+            if (!input) {return true;} // Optional
+            if (!validateApiKey(input, 'public')) {return 'Invalid public API key format';}
+            return true;
           },
-          {
-            type: 'password',
-            name: 'publicKey',
-            message: 'Public API key (optional):',
-            default: options.publicKey || storedCredentials?.publicKey,
-            validate: (input) => {
-              if (!input) {return true;} // Optional
-              if (!validateApiKey(input, 'public')) {return 'Invalid public API key format';}
-              return true;
-            },
-          },
-        ]);
+        });
+
+        answers = {
+          environment: environment as 'test' | 'live',
+          secretKey,
+          publicKey: publicKey || undefined,
+        };
       }
 
       // Validate API key
@@ -184,7 +182,8 @@ command
           },
         },
         webhooks: { url: '', events: [] },
-        dev: { port: 3000, autoRegisterWebhook: true },
+        webhookSecrets: {},
+        dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
 
       const apiClient = new ApiClient({ config: tempConfig });

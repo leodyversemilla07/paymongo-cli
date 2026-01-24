@@ -1,7 +1,8 @@
 {
   "name": "paymongo-cli",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Developer-first CLI tool for PayMongo integration development with local webhook forwarding, payment testing, and team collaboration features. See USER_GUIDE.md for comprehensive documentation.",
+  "type": "module",
   "main": "dist/index.js",
   "bin": {
     "paymongo": "bin/paymongo.js"
@@ -11,12 +12,12 @@
     "build:incremental": "tsc --incremental",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "lint": "eslint src/**/*.ts tests/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
-    "benchmark": "npx ts-node scripts/benchmark.ts",
+    "benchmark": "npx tsx scripts/benchmark.ts",
     "prepare": "npm run build"
   },
   "keywords": [
@@ -40,29 +41,34 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@inquirer/prompts": "^8.2.0",
     "@ngrok/ngrok": "^1.7.0",
     "@types/express": "^5.0.6",
     "axios": "^1.6.0",
-    "chalk": "^4.1.2",
-    "commander": "^11.1.0",
-    "cosmiconfig": "^8.3.6",
+    "chalk": "^5.3.0",
+    "commander": "^14.0.2",
+    "cosmiconfig": "^9.0.0",
     "express": "^5.2.1",
-    "inquirer": "^8.2.6",
-    "ora": "^5.4.1",
+    "express-rate-limit": "^8.2.1",
+    "jiti": "^2.6.1",
+    "ora": "^9.1.0",
     "socket.io": "^4.8.3",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/inquirer": "^9.0.7",
-    "@types/jest": "^29.5.8",
-    "@types/node": "^20.10.0",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
-    "eslint": "^8.55.0",
-    "jest": "^29.7.0",
+    "@eslint/js": "^9.0.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.0.10",
+    "eslint": "^9.0.0",
+    "globals": "^17.1.0",
+    "jest": "^30.2.0",
     "prettier": "^3.1.1",
-    "ts-jest": "^29.1.1",
-    "typescript": "^5.3.3"
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.0.0"
   },
   "publishConfig": {
     "access": "public"

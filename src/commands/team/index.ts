@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import Spinner from '../../utils/spinner';
+import Spinner from '../../utils/spinner.js';
 import chalk from 'chalk';
-import { ConfigManager } from '../../services/config/manager';
-import { GitHubAuthService } from '../../services/github/auth';
-import { TeamSyncService } from '../../services/github/sync';
+import { ConfigManager } from '../../services/config/manager.js';
+import { GitHubAuthService } from '../../services/github/auth.js';
+import { TeamSyncService } from '../../services/github/sync.js';
 
 const command = new Command('team').description('Team collaboration features').showHelpAfterError();
 

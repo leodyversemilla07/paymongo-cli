@@ -1,6 +1,7 @@
-import { ConfigManager } from '../config/manager';
-import { GitHubClient, GitHubFileContent } from './client';
-import { GitHubAuthService } from './auth';
+import { ConfigManager } from '../config/manager.js';
+import { GitHubClient, GitHubFileContent } from './client.js';
+import { GitHubAuthService } from './auth.js';
+import { PayMongoConfig } from '../../types/paymongo.js';
 
 export interface TeamSyncOptions {
   config: ConfigManager;
@@ -12,6 +13,11 @@ export interface SyncOptions {
   branch?: string;
   force?: boolean;
   direction?: 'push' | 'pull' | 'sync';
+}
+
+// Partial config structure for remote config validation
+interface RemoteConfig extends Partial<PayMongoConfig> {
+  version: string;
 }
 
 export class TeamSyncService {
@@ -163,8 +169,10 @@ export class TeamSyncService {
     // Merge with local config
     const localConfig = await this.config.load();
     if (!localConfig) {
-      // No local config, use remote as base
-      await this.config.save(remoteConfig);
+      // No local config, use remote as base (convert to full config)
+      const defaultConfig = this.config.getDefaultConfig();
+      const fullConfig: PayMongoConfig = { ...defaultConfig, ...remoteConfig };
+      await this.config.save(fullConfig);
       return;
     }
 
@@ -184,9 +192,9 @@ export class TeamSyncService {
     await this.config.save(mergedConfig);
   }
 
-  private sanitizeConfig(config: any): any {
+  private sanitizeConfig(config: PayMongoConfig): Partial<PayMongoConfig> {
     // Create a copy without sensitive data
-    const sanitized = { ...config };
+    const sanitized: Partial<PayMongoConfig> = { ...config };
 
     // Remove webhook secrets (they should be environment-specific)
     if (sanitized.webhookSecrets) {
@@ -195,25 +203,28 @@ export class TeamSyncService {
 
     // Remove GitHub token (should be set per user)
     if (sanitized.team?.githubToken) {
-      delete sanitized.team.githubToken;
+      const team = { ...sanitized.team };
+      delete team.githubToken;
+      sanitized.team = team;
     }
 
     return sanitized;
   }
 
-  private validateRemoteConfig(config: any): void {
+  private validateRemoteConfig(config: unknown): asserts config is RemoteConfig {
     if (!config || typeof config !== 'object') {
       throw new Error('Remote configuration is not a valid object.');
     }
 
-    if (!config.version) {
+    const configObj = config as Record<string, unknown>;
+    if (!configObj.version) {
       throw new Error('Remote configuration is missing version field.');
     }
 
     // Add more validation as needed
   }
 
-  private checkConfigConflicts(local: any, remote: any): string[] {
+  private checkConfigConflicts(local: PayMongoConfig, remote: RemoteConfig): string[] {
     const conflicts: string[] = [];
 
     // Check for API key conflicts
@@ -252,9 +263,9 @@ export class TeamSyncService {
     return conflicts;
   }
 
-  private mergeConfigs(local: any, remote: any): any {
+  private mergeConfigs(local: PayMongoConfig, remote: RemoteConfig): PayMongoConfig {
     // Start with remote as base, then merge local specifics
-    const merged = { ...remote };
+    const merged: PayMongoConfig = { ...local, ...remote } as PayMongoConfig;
 
     // Keep local API keys if they exist (user-specific)
     if (local.apiKeys) {

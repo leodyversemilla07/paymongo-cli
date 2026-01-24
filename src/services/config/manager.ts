@@ -1,8 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { cosmiconfig } from 'cosmiconfig';
-import { ConfigManagerOptions, PayMongoConfig } from '../../types/paymongo';
-import { ConfigError, ValidationError } from '../../utils/errors';
+import { ConfigManagerOptions, PayMongoConfig } from '../../types/paymongo.js';
+import { ConfigError, ValidationError } from '../../utils/errors.js';
+import { validateConfig as zodValidateConfig } from '../../types/schemas.js';
 
 const CONFIG_FILE_NAME = '.paymongo';
 
@@ -54,7 +55,8 @@ export class ConfigManager {
 
       return config;
     } catch (error) {
-      if ((error as any).code === 'ENOENT') {
+      const err = error as Error & { code?: string };
+      if (err.code === 'ENOENT') {
         return null;
       }
 
@@ -63,7 +65,7 @@ export class ConfigManager {
         throw error;
       }
 
-      throw new ConfigError(`Failed to load config: ${(error as Error).message}`, this.configPath);
+      throw new ConfigError(`Failed to load config: ${err.message}`, this.configPath);
     }
   }
 
@@ -136,49 +138,33 @@ export class ConfigManager {
     };
   }
 
-  private validateConfig(config: any): void {
-    // Check required fields
-    if (!config.version) {
-      throw new ValidationError('Config file is missing required "version" field', 'version');
+  private validateConfig(config: unknown): asserts config is PayMongoConfig {
+    // Use Zod for comprehensive schema validation
+    const result = zodValidateConfig(config);
+    
+    if (!result.success && result.errors) {
+      // Throw the first validation error with field context
+      const firstError = result.errors[0] || 'Invalid configuration';
+      const field = firstError.includes(':') ? firstError.split(':')[0] : undefined;
+      throw new ValidationError(firstError, field);
     }
-
-    if (!config.projectName) {
-      throw new ValidationError(
-        'Config file is missing required "projectName" field',
-        'projectName'
-      );
-    }
-
-    if (!config.environment || !['test', 'live'].includes(config.environment)) {
-      throw new ValidationError(
-        'Config file has invalid "environment" field (must be "test" or "live")',
-        'environment'
-      );
-    }
-
-    // Check API keys structure
-    if (!config.apiKeys || typeof config.apiKeys !== 'object') {
-      throw new ValidationError('Config file is missing or has invalid "apiKeys" field', 'apiKeys');
-    }
-
-    const env = config.environment;
-    if (!config.apiKeys[env]) {
+    
+    // Additional runtime checks for current environment API keys
+    const cfg = config as PayMongoConfig;
+    const env = cfg.environment;
+    
+    if (!cfg.apiKeys[env]) {
       throw new ValidationError(
         `Config file is missing API keys for environment "${env}"`,
         `apiKeys.${env}`
       );
     }
 
-    if (!config.apiKeys[env].secret) {
+    if (!cfg.apiKeys[env]?.secret) {
       throw new ValidationError(
         `Config file is missing secret API key for environment "${env}"`,
         `apiKeys.${env}.secret`
       );
-    }
-
-    // Check dev configuration
-    if (!config.dev || typeof config.dev !== 'object') {
-      throw new ValidationError('Config file is missing or has invalid "dev" field', 'dev');
     }
   }
 

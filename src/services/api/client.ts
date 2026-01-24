@@ -1,18 +1,19 @@
 import axios, { AxiosInstance } from 'axios';
 const REQUEST_TIMEOUT = 30000;
 
-import { NetworkError, withRetry } from '../../utils/errors';
-import Cache from '../../utils/cache';
+import { NetworkError, ApiKeyError, PayMongoError, withRetry } from '../../utils/errors.js';
+import Cache from '../../utils/cache.js';
+import { PayMongoConfig, WebhookData, WebhookDataWithSecret, PaymentDataFull, PaymentIntentData } from '../../types/paymongo.js';
 
 export interface ApiClientOptions {
-  config: any; // Temporary
+  config: PayMongoConfig;
   timeout?: number;
   enableCache?: boolean;
 }
 
 export class ApiClient {
   private client: AxiosInstance;
-  private config: any;
+  private config: PayMongoConfig;
   private cache: Cache;
 
   constructor(options: ApiClientOptions) {
@@ -63,13 +64,21 @@ export class ApiClient {
           }
 
           if (status === 401) {
-            throw new Error('Invalid API key or unauthorized');
+            throw new ApiKeyError('Invalid API key or unauthorized', 'secret');
           }
 
-          throw new Error(error.message);
+          if (status === 404) {
+            throw new PayMongoError('Resource not found', 'RESOURCE_NOT_FOUND', status);
+          }
+
+          if (status && status >= 500) {
+            throw new PayMongoError(`Server error: ${error.message}`, `SERVER_${status}`, status);
+          }
+
+          throw new PayMongoError(error.message, `API_${status}`, status);
         }
 
-        throw new Error('Unknown network error');
+        throw new NetworkError('Unknown network error');
       }
     );
   }
@@ -84,7 +93,7 @@ export class ApiClient {
   }
 
   // Webhook methods
-  async createWebhook(url: string, events: string[]): Promise<any> {
+  async createWebhook(url: string, events: string[]): Promise<WebhookDataWithSecret> {
     const result = await withRetry(() =>
       this.client
         .post('/webhooks', {
@@ -104,11 +113,11 @@ export class ApiClient {
     return result;
   }
 
-  async listWebhooks(): Promise<any[]> {
+  async listWebhooks(): Promise<WebhookData[]> {
     const cacheKey = `webhooks_${this.config.environment}`;
 
     // Try cache first for list operations
-    const cached = await this.cache.get<any[]>(cacheKey);
+    const cached = await this.cache.get<WebhookData[]>(cacheKey);
     if (cached) {
       return cached;
     }
@@ -122,11 +131,11 @@ export class ApiClient {
     return result;
   }
 
-  async getWebhook(id: string): Promise<any> {
+  async getWebhook(id: string): Promise<WebhookData> {
     const cacheKey = `webhook_${id}`;
 
     // Try cache first
-    const cached = await this.cache.get<any>(cacheKey);
+    const cached = await this.cache.get<WebhookData>(cacheKey);
     if (cached) {
       return cached;
     }
@@ -143,7 +152,7 @@ export class ApiClient {
   async updateWebhook(
     id: string,
     updates: { url?: string; events?: string[]; status?: 'enabled' | 'disabled' }
-  ): Promise<any> {
+  ): Promise<WebhookData> {
     // Invalidate cache when updating
     await this.cache.invalidate(`webhook_${id}`);
     await this.cache.invalidate(`webhooks_${this.config.environment}`);
@@ -168,17 +177,20 @@ export class ApiClient {
   }
 
   // Payment methods (for validation and testing)
-  async getPayment(id: string): Promise<any> {
+  async getPayment(id: string): Promise<PaymentDataFull> {
     return withRetry(() =>
       this.client.get(`/payments/${id}`).then((response) => response.data.data)
     );
   }
 
-  async listPayments(limit: number = 10): Promise<any[]> {
+  async listPayments(limit: number = 10): Promise<PaymentDataFull[]> {
+    // Validate limit is within API constraints
+    const validLimit = Math.max(1, Math.min(100, limit));
+    
     const result = await withRetry(() =>
       this.client
         .get('/payments', {
-          params: { limit },
+          params: { limit: validLimit },
         })
         .then((response) => response.data.data)
     );
@@ -190,7 +202,7 @@ export class ApiClient {
     currency: string = 'PHP',
     description?: string,
     paymentMethods: string[] = ['card', 'gcash', 'paymaya']
-  ): Promise<any> {
+  ): Promise<PaymentIntentData> {
     return withRetry(() =>
       this.client
         .post('/payment_intents', {

@@ -2,17 +2,17 @@ import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
 import chalk from 'chalk';
-import ConfigManager from '../services/config/manager';
-import ApiClient from '../services/api/client';
-import { validateApiKey } from '../utils/validator';
-import Spinner from '../utils/spinner';
+import ConfigManager from '../services/config/manager.js';
+import ApiClient from '../services/api/client.js';
+import { validateApiKey } from '../utils/validator.js';
+import Spinner from '../utils/spinner.js';
 
 interface InitAnswers {
   projectName: string;
   environment: 'test' | 'live';
   publicKey: string;
   secretKey: string;
-  webhookUrl?: string;
+  webhookUrl?: string | undefined;
   events: string[];
   port: number;
 }
@@ -36,16 +36,12 @@ command
     try {
       // Check if config already exists
       if (await configManager.exists()) {
-        // Lazy load inquirer only when needed
-        const { default: inquirer } = await import('inquirer');
-        const { overwrite } = await inquirer.prompt([
-          {
-            type: 'confirm',
-            name: 'overwrite',
-            message: 'Configuration file already exists. Overwrite?',
-            default: false,
-          },
-        ]);
+        // Lazy load confirm only when needed
+        const { confirm } = await import('@inquirer/prompts');
+        const overwrite = await confirm({
+          message: 'Configuration file already exists. Overwrite?',
+          default: false,
+        });
 
         if (!overwrite) {
           console.log(chalk.yellow('Initialization cancelled.'));
@@ -67,74 +63,74 @@ command
           port: parseInt(options.port),
         };
       } else {
-        // Interactive mode - lazy load inquirer
-        const { default: inquirer } = await import('inquirer');
-        answers = await inquirer.prompt<InitAnswers>([
-          {
-            type: 'input',
-            name: 'projectName',
-            message: 'Project name:',
-            default: options.name || path.basename(process.cwd()),
-            validate: (input) => input.trim().length > 0 || 'Project name is required',
+        // Interactive mode - lazy load @inquirer/prompts
+        const { input, select, password, checkbox, number } = await import('@inquirer/prompts');
+
+        const projectName = await input({
+          message: 'Project name:',
+          default: options.name || path.basename(process.cwd()),
+          validate: (value) => value.trim().length > 0 || 'Project name is required',
+        });
+
+        const environment = await select({
+          message: 'Environment:',
+          choices: [
+            { name: 'Test (recommended for development)', value: 'test' as const },
+            { name: 'Live (for production)', value: 'live' as const },
+          ],
+          default: options.env || 'test',
+        });
+
+        const secretKey = await password({
+          message: 'Secret API key:',
+          validate: (value) => {
+            if (!value) {return 'Secret API key is required';}
+            if (!validateApiKey(value, 'secret')) {return 'Invalid secret API key format';}
+            return true;
           },
-          {
-            type: 'list',
-            name: 'environment',
-            message: 'Environment:',
-            choices: [
-              { name: 'Test (recommended for development)', value: 'test' },
-              { name: 'Live (for production)', value: 'live' },
-            ],
-            default: options.env || 'test',
+        });
+
+        const publicKey = await password({
+          message: 'Public API key (optional):',
+        });
+
+        const webhookUrl = await input({
+          message: 'Webhook URL (leave empty for local development):',
+          default: options.url,
+        });
+
+        const events = await checkbox({
+          message: 'Webhook events to listen for:',
+          choices: [
+            { name: 'payment.paid - Payment successful', value: 'payment.paid', checked: true },
+            { name: 'payment.failed - Payment failed', value: 'payment.failed', checked: true },
+            { name: 'payment.refunded - Payment refunded', value: 'payment.refunded' },
+            { name: 'source.chargeable - Source ready for charging', value: 'source.chargeable' },
+            { name: 'checkout_session.payment.paid - Checkout payment successful', value: 'checkout_session.payment.paid' },
+            { name: 'qrph.expired - QR Ph expired', value: 'qrph.expired' },
+          ],
+        });
+
+        const port = await number({
+          message: 'Development server port:',
+          default: parseInt(options.port) || 3000,
+          validate: (value) => {
+            if (value === undefined || value <= 0 || value >= 65536) {
+              return 'Port must be between 1 and 65535';
+            }
+            return true;
           },
-          {
-            type: 'password',
-            name: 'secretKey',
-            message: 'Secret API key:',
-            default: options.key,
-            validate: (input) => {
-              if (!input) {return 'Secret API key is required';}
-              if (!validateApiKey(input, 'secret')) {return 'Invalid secret API key format';}
-              return true;
-            },
-          },
-          {
-            type: 'password',
-            name: 'publicKey',
-            message: 'Public API key (optional):',
-            default: options.publicKey,
-          },
-          {
-            type: 'input',
-            name: 'webhookUrl',
-            message: 'Webhook URL (leave empty for local development):',
-            default: options.url,
-          },
-          {
-            type: 'checkbox',
-            name: 'events',
-            message: 'Webhook events to listen for:',
-            choices: [
-              { name: 'payment.paid - Payment successful', value: 'payment.paid', checked: true },
-              { name: 'payment.failed - Payment failed', value: 'payment.failed', checked: true },
-              { name: 'payment.refunded - Payment refunded', value: 'payment.refunded' },
-              { name: 'source.chargeable - Source ready for charging', value: 'source.chargeable' },
-              {
-                name: 'checkout_session.payment.paid - Checkout payment successful',
-                value: 'checkout_session.payment.paid',
-              },
-              { name: 'qrph.expired - QR Ph expired', value: 'qrph.expired' },
-            ],
-            default: (options.events || 'payment.paid,payment.failed').split(','),
-          },
-          {
-            type: 'number',
-            name: 'port',
-            message: 'Development server port:',
-            default: parseInt(options.port) || 3000,
-            validate: (input) => (input > 0 && input < 65536) || 'Port must be between 1 and 65535',
-          },
-        ]);
+        });
+
+        answers = {
+          projectName,
+          environment: environment as 'test' | 'live',
+          publicKey: publicKey || '',
+          secretKey,
+          webhookUrl: webhookUrl || undefined,
+          events: events.length > 0 ? events : ['payment.paid', 'payment.failed'],
+          port: port || 3000,
+        };
       }
 
       // Validate API keys

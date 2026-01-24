@@ -1,97 +1,69 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import ConfigManager from '../services/config/manager';
-import Spinner from '../utils/spinner';
+import * as fs from 'fs';
+import * as path from 'path';
+import ConfigManager from '../services/config/manager.js';
+import Spinner from '../utils/spinner.js';
+import { PayMongoConfig } from '../types/paymongo.js';
 
-// @ts-ignore - Used in export command
-function configToEnv(config: any): string {
-  const envVars: string[] = [];
-
-  // Basic config
-  envVars.push(`PAYMONGO_VERSION=${config.version}`);
-  envVars.push(`PAYMONGO_PROJECT_NAME=${config.projectName}`);
-  envVars.push(`PAYMONGO_ENVIRONMENT=${config.environment}`);
-
-  // API Keys
-  if (config.apiKeys.test) {
-    envVars.push(`PAYMONGO_API_PUBLIC_TEST=${config.apiKeys.test.public}`);
-    envVars.push(`PAYMONGO_API_SECRET_TEST=${config.apiKeys.test.secret}`);
+function validateImportedConfig(config: unknown): asserts config is PayMongoConfig {
+  if (typeof config !== 'object' || config === null) {
+    throw new Error('Configuration must be an object');
   }
 
-  if (config.apiKeys.live) {
-    envVars.push(`PAYMONGO_API_PUBLIC_LIVE=${config.apiKeys.live.public}`);
-    envVars.push(`PAYMONGO_API_SECRET_LIVE=${config.apiKeys.live.secret}`);
-  }
+  const cfg = config as Record<string, unknown>;
 
-  // Webhooks
-  envVars.push(`PAYMONGO_WEBHOOK_URL=${config.webhooks.url}`);
-  envVars.push(`PAYMONGO_WEBHOOK_EVENTS=${config.webhooks.events.join(',')}`);
-
-  // Webhook secrets (if any)
-  Object.entries(config.webhookSecrets || {}).forEach(([webhookId, secret]) => {
-    envVars.push(`PAYMONGO_WEBHOOK_SECRET_${webhookId.toUpperCase()}=${secret}`);
-  });
-
-  // Dev config
-  envVars.push(`PAYMONGO_DEV_PORT=${config.dev.port}`);
-  envVars.push(`PAYMONGO_DEV_AUTO_REGISTER_WEBHOOK=${config.dev.autoRegisterWebhook}`);
-  envVars.push(`PAYMONGO_DEV_VERIFY_WEBHOOK_SIGNATURES=${config.dev.verifyWebhookSignatures}`);
-
-  return envVars.join('\n');
-}
-
-// @ts-ignore - Used in import command
-function validateImportedConfig(config: any): void {
   // Required fields
   const requiredFields = ['version', 'projectName', 'environment', 'apiKeys', 'webhooks', 'dev'];
 
   for (const field of requiredFields) {
-    if (!(field in config)) {
+    if (!(field in cfg)) {
       throw new Error(`Missing required field: ${field}`);
     }
   }
 
   // Validate version
-  if (typeof config.version !== 'string') {
+  if (typeof cfg.version !== 'string') {
     throw new Error('Version must be a string');
   }
 
   // Validate projectName
-  if (typeof config.projectName !== 'string' || config.projectName.trim() === '') {
+  if (typeof cfg.projectName !== 'string' || cfg.projectName.trim() === '') {
     throw new Error('Project name must be a non-empty string');
   }
 
   // Validate environment
-  if (!['test', 'live'].includes(config.environment)) {
+  if (cfg.environment !== 'test' && cfg.environment !== 'live') {
     throw new Error('Environment must be either "test" or "live"');
   }
 
   // Validate API keys structure
-  if (typeof config.apiKeys !== 'object' || config.apiKeys === null) {
+  if (typeof cfg.apiKeys !== 'object' || cfg.apiKeys === null) {
     throw new Error('API keys must be an object');
   }
 
   // Validate webhooks structure
-  if (typeof config.webhooks !== 'object' || config.webhooks === null) {
+  if (typeof cfg.webhooks !== 'object' || cfg.webhooks === null) {
     throw new Error('Webhooks must be an object');
   }
 
-  if (!Array.isArray(config.webhooks.events)) {
+  const webhooks = cfg.webhooks as Record<string, unknown>;
+  if (!Array.isArray(webhooks.events)) {
     throw new Error('Webhook events must be an array');
   }
 
   // Validate dev config
-  if (typeof config.dev !== 'object' || config.dev === null) {
+  if (typeof cfg.dev !== 'object' || cfg.dev === null) {
     throw new Error('Dev config must be an object');
   }
 
-  if (typeof config.dev.port !== 'number' || config.dev.port < 1 || config.dev.port > 65535) {
+  const dev = cfg.dev as Record<string, unknown>;
+  if (typeof dev.port !== 'number' || dev.port < 1 || dev.port > 65535) {
     throw new Error('Dev port must be a valid port number (1-65535)');
   }
 }
 
-// @ts-ignore - Used in import command
-function checkConfigConflicts(existing: any, imported: any): string[] {
+function checkConfigConflicts(existing: PayMongoConfig, imported: PayMongoConfig): string[] {
   const conflicts: string[] = [];
 
   // Check for API key differences
@@ -257,14 +229,17 @@ command
           spinner.start('Updating configuration...');
 
           const keys = key.split('.');
-          let current: Record<string, any> = config;
+          let current: Record<string, unknown> = config as unknown as Record<string, unknown>;
 
           // Navigate to the parent object
           for (let i = 0; i < keys.length - 1; i++) {
-            if (!current[keys[i]!]) {
-              current[keys[i]!] = {};
+            const k = keys[i];
+            if (k && !current[k]) {
+              current[k] = {};
             }
-            current = current[keys[i]!] as Record<string, any>;
+            if (k) {
+              current = current[k] as Record<string, unknown>;
+            }
           }
 
           // Set the value with type coercion
@@ -300,8 +275,6 @@ command
       .action(async (options) => {
         const spinner = new Spinner();
         const configManager = new ConfigManager();
-        const fs = require('fs');
-        const path = require('path');
 
         try {
           spinner.start('Loading current configuration...');
@@ -402,7 +375,6 @@ command
       .action(async (filePath: string, options) => {
         const spinner = new Spinner();
         const configManager = new ConfigManager();
-        const fs = require('fs');
 
         try {
           spinner.start('Reading import file...');

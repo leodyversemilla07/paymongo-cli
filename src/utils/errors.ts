@@ -49,6 +49,7 @@ export interface RetryOptions {
   delayMs?: number;
   backoffMultiplier?: number;
   retryCondition?: (error: Error) => boolean;
+  silent?: boolean; // Suppress retry logs
 }
 
 export async function withRetry<T>(
@@ -59,6 +60,7 @@ export async function withRetry<T>(
     maxRetries = 3,
     delayMs = 1000,
     backoffMultiplier = 2,
+    silent = false,
     retryCondition = (error: Error) => {
       // Default: retry on network errors and 5xx status codes
       return error.name === 'NetworkError' ||
@@ -80,7 +82,9 @@ export async function withRetry<T>(
         throw lastError;
       }
 
-      console.log(`Attempt ${attempt + 1} failed, retrying in ${currentDelay}ms...`);
+      if (!silent) {
+        console.log(`Attempt ${attempt + 1} failed, retrying in ${currentDelay}ms...`);
+      }
       await new Promise(resolve => setTimeout(resolve, currentDelay));
       currentDelay *= backoffMultiplier;
     }

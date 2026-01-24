@@ -13,9 +13,18 @@ import * as os from 'os';
  * To run these tests, set environment variables:
  * - PAYMONGO_TEST_SECRET_KEY
  * - PAYMONGO_TEST_PUBLIC_KEY
- * - PAYMONGO_LIVE_SECRET_KEY
- * - PAYMONGO_LIVE_PUBLIC_KEY
+ * - PAYMONGO_LIVE_SECRET_KEY (optional)
+ * - PAYMONGO_LIVE_PUBLIC_KEY (optional)
+ *
+ * Example:
+ *   PAYMONGO_TEST_SECRET_KEY=sk_test_xxx PAYMONGO_TEST_PUBLIC_KEY=pk_test_xxx npm test
+ *
+ * NOTE: These tests are intentionally skipped when API keys are not provided.
+ * For unit tests that don't require real API keys, see tests/unit/login-command.test.ts
  */
+
+// Check if we're in CI environment
+const isCI = process.env.CI === 'true';
 
 describe('CLI Login E2E Test', () => {
   let tempDir: string;

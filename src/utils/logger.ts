@@ -6,6 +6,9 @@ export interface LoggerOptions {
   file?: string;
 }
 
+// Type for logger meta data - allows Error, objects, or primitives
+type LogMeta = Error | Record<string, unknown> | string | number | boolean | undefined;
+
 class Logger {
   private logger: winston.Logger;
 
@@ -41,19 +44,19 @@ class Logger {
     });
   }
 
-  error(message: string, ...meta: any[]): void {
+  error(message: string, ...meta: LogMeta[]): void {
     this.logger.error(message, ...meta);
   }
 
-  warn(message: string, ...meta: any[]): void {
+  warn(message: string, ...meta: LogMeta[]): void {
     this.logger.warn(message, ...meta);
   }
 
-  info(message: string, ...meta: any[]): void {
+  info(message: string, ...meta: LogMeta[]): void {
     this.logger.info(message, ...meta);
   }
 
-  debug(message: string, ...meta: any[]): void {
+  debug(message: string, ...meta: LogMeta[]): void {
     this.logger.debug(message, ...meta);
   }
 

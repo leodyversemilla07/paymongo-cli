@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import { ConfigManager } from '../services/config/manager';
-import { ApiClient } from '../services/api/client';
-import { WebServer } from '../services/web/server';
-import { AnalyticsService } from '../services/analytics/service';
-import Spinner from '../utils/spinner';
+import { ConfigManager } from '../services/config/manager.js';
+import { ApiClient } from '../services/api/client.js';
+import { WebServer } from '../services/web/server.js';
+import { AnalyticsService } from '../services/analytics/service.js';
+import Spinner from '../utils/spinner.js';
 import chalk from 'chalk';
 
 const command = new Command('gui')

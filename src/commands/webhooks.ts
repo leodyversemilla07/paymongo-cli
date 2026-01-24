@@ -1,10 +1,10 @@
 import { Command } from 'commander';
-import inquirer from 'inquirer';
+import { input, checkbox } from '@inquirer/prompts';
 import chalk from 'chalk';
-import ConfigManager from '../services/config/manager';
-import ApiClient from '../services/api/client';
-import Spinner from '../utils/spinner';
-import { validateWebhookUrl, validateEventTypes } from '../utils/validator';
+import ConfigManager from '../services/config/manager.js';
+import ApiClient from '../services/api/client.js';
+import Spinner from '../utils/spinner.js';
+import { validateWebhookUrl, validateEventTypes } from '../utils/validator.js';
 
 const command = new Command('webhooks');
 
@@ -43,42 +43,40 @@ command
             };
           } else {
             // Interactive mode
-            answers = await inquirer.prompt([
-              {
-                type: 'input',
-                name: 'url',
-                message: 'Webhook URL:',
-                default: options.url,
-                validate: (input) => {
-                  if (!input) {return 'Webhook URL is required';}
-                  if (!validateWebhookUrl(input)) {return 'Invalid webhook URL. Must be HTTPS or localhost';}
+            const url = await input({
+              message: 'Webhook URL:',
+              default: options.url,
+              validate: (value) => {
+                if (!value) {return 'Webhook URL is required';}
+                if (!validateWebhookUrl(value)) {return 'Invalid webhook URL. Must be HTTPS or localhost';}
+                return true;
+              },
+            });
+
+            const events = await checkbox({
+              message: 'Select events to listen for:',
+              choices: [
+                { name: 'payment.paid - Payment successful', value: 'payment.paid', checked: true },
+                { name: 'payment.failed - Payment failed', value: 'payment.failed', checked: true },
+                { name: 'payment.refunded - Payment refunded', value: 'payment.refunded' },
+                { name: 'source.chargeable - Source ready for charging', value: 'source.chargeable' },
+                { name: 'checkout_session.payment.paid - Checkout payment successful', value: 'checkout_session.payment.paid' },
+                { name: 'qrph.expired - QR Ph expired', value: 'qrph.expired' },
+              ],
+              validate: (value) => {
+                if (value.length === 0) {return 'At least one event must be selected';}
+                try {
+                  // Extract string values from checkbox choices
+                  const eventStrings = value.map(v => typeof v === 'string' ? v : String(v));
+                  validateEventTypes(eventStrings);
                   return true;
-                },
+                } catch {
+                  return 'Invalid event types selected';
+                }
               },
-              {
-                type: 'checkbox',
-                name: 'events',
-                message: 'Select events to listen for:',
-                choices: [
-                  { name: 'payment.paid - Payment successful', value: 'payment.paid', checked: true },
-                  { name: 'payment.failed - Payment failed', value: 'payment.failed', checked: true },
-                  { name: 'payment.refunded - Payment refunded', value: 'payment.refunded' },
-                  { name: 'source.chargeable - Source ready for charging', value: 'source.chargeable' },
-                  { name: 'checkout_session.payment.paid - Checkout payment successful', value: 'checkout_session.payment.paid' },
-                  { name: 'qrph.expired - QR Ph expired', value: 'qrph.expired' },
-                ],
-                default: options.events ? options.events.split(',') : ['payment.paid', 'payment.failed'],
-                validate: (input) => {
-                  if (input.length === 0) {return 'At least one event must be selected';}
-                  try {
-                    validateEventTypes(input);
-                    return true;
-                  } catch {
-                    return 'Invalid event types selected';
-                  }
-                },
-              },
-            ]);
+            });
+
+            answers = { url, events };
           }
 
           // Validate inputs
@@ -268,16 +266,13 @@ command
 
           // Confirm deletion
           if (!options.yes) {
-            const { confirm } = await inquirer.prompt([
-              {
-                type: 'confirm',
-                name: 'confirm',
-                message: `This will permanently delete webhook ${id}. Continue?`,
-                default: false,
-              },
-            ]);
+            const { confirm } = await import('@inquirer/prompts');
+            const shouldDelete = await confirm({
+              message: `This will permanently delete webhook ${id}. Continue?`,
+              default: false,
+            });
 
-            if (!confirm) {
+            if (!shouldDelete) {
               console.log(chalk.yellow('Webhook deletion cancelled.'));
               return;
             }

@@ -1,5 +1,5 @@
-import { ConfigManager } from '../config/manager';
-import { GitHubClient } from './client';
+import { ConfigManager } from '../config/manager.js';
+import { GitHubClient } from './client.js';
 
 export interface GitHubAuthOptions {
   config: ConfigManager;
@@ -63,24 +63,20 @@ export class GitHubAuthService {
   }
 
   async promptForToken(): Promise<string> {
-    const inquirer = await import('inquirer');
+    const { password } = await import('@inquirer/prompts');
 
-    const answers = await inquirer.default.prompt([
-      {
-        type: 'password',
-        name: 'token',
-        message: 'Enter your GitHub Personal Access Token:',
-        mask: '*',
-        validate: (input: string) => {
-          if (!input || input.length < 20) {
-            return 'Please enter a valid GitHub token (at least 20 characters)';
-          }
-          return true;
-        },
+    const token = await password({
+      message: 'Enter your GitHub Personal Access Token:',
+      mask: '*',
+      validate: (input: string) => {
+        if (!input || input.length < 20) {
+          return 'Please enter a valid GitHub token (at least 20 characters)';
+        }
+        return true;
       },
-    ]);
+    });
 
-    return answers.token;
+    return token;
   }
 
   async setupToken(): Promise<string> {
