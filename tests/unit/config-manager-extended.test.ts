@@ -54,7 +54,9 @@ describe('ConfigManager', () => {
     let attempts = 0;
     const maxAttempts = 5;
     while (attempts < maxAttempts) {
-      if (cleanup()) break;
+      if (cleanup()) {
+        break;
+      }
       attempts++;
       // Wait longer between attempts
       const delay = Math.min(100 * Math.pow(2, attempts), 1000);
