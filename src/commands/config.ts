@@ -153,6 +153,32 @@ command
           );
           console.log('');
 
+          // Rate Limiting section
+          if (config.rateLimiting) {
+            console.log(chalk.bold('Rate Limiting:'));
+            console.log(
+              chalk.bold('  Enabled:'),
+              config.rateLimiting.enabled ? chalk.green('Yes') : chalk.red('No')
+            );
+            if (config.rateLimiting.enabled) {
+              console.log(
+                `  Max Requests: ${config.rateLimiting.maxRequests} per ${(config.rateLimiting.windowMs || 60000) / 1000}s`
+              );
+              console.log(
+                `  Live Multiplier: ${config.rateLimiting.environmentMultiplier || 0.5}x`
+              );
+              if (
+                config.rateLimiting.endpoints &&
+                Object.keys(config.rateLimiting.endpoints).length > 0
+              ) {
+                console.log(
+                  `  Endpoint Overrides: ${Object.keys(config.rateLimiting.endpoints).length} configured`
+                );
+              }
+            }
+            console.log('');
+          }
+
           console.log(chalk.bold('API Keys:'));
 
           const env = config.environment;
@@ -451,6 +477,261 @@ command
           process.exit(1);
         }
       })
+  )
+
+  .addCommand(
+    new Command('rate-limit')
+      .description('Configure rate limiting settings')
+      .addCommand(
+        new Command('enable').description('Enable rate limiting').action(async () => {
+          const spinner = new Spinner();
+          const configManager = new ConfigManager();
+
+          try {
+            spinner.start('Loading configuration...');
+            const config = await configManager.load();
+            if (!config) {
+              spinner.fail('No configuration found');
+              console.log(chalk.yellow('No PayMongo configuration found.'));
+              console.log(chalk.gray("Run 'paymongo init' to set up your project first."));
+              return;
+            }
+
+            spinner.succeed('Configuration loaded');
+
+            if (!config.rateLimiting) {
+              config.rateLimiting = {
+                enabled: true,
+                maxRequests: 100,
+                windowMs: 60000, // 1 minute
+                environmentMultiplier: 0.5,
+              };
+            } else {
+              config.rateLimiting.enabled = true;
+            }
+
+            spinner.start('Enabling rate limiting...');
+            await configManager.save(config);
+            spinner.succeed('Rate limiting enabled');
+
+            console.log(chalk.green('✓ Rate limiting enabled'));
+            console.log(chalk.gray('Default limits: 100 requests/minute (live: 50)'));
+          } catch (error) {
+            spinner.stop();
+            const err = error as Error;
+            console.error(chalk.red('❌ Failed to enable rate limiting:'), err.message);
+            process.exit(1);
+          }
+        })
+      )
+      .addCommand(
+        new Command('disable').description('Disable rate limiting').action(async () => {
+          const spinner = new Spinner();
+          const configManager = new ConfigManager();
+
+          try {
+            spinner.start('Loading configuration...');
+            const config = await configManager.load();
+            if (!config) {
+              spinner.fail('No configuration found');
+              console.log(chalk.yellow('No PayMongo configuration found.'));
+              console.log(chalk.gray("Run 'paymongo init' to set up your project first."));
+              return;
+            }
+
+            spinner.succeed('Configuration loaded');
+
+            if (config.rateLimiting) {
+              config.rateLimiting.enabled = false;
+            }
+
+            spinner.start('Disabling rate limiting...');
+            await configManager.save(config);
+            spinner.succeed('Rate limiting disabled');
+
+            console.log(chalk.green('✓ Rate limiting disabled'));
+            console.log(chalk.gray('API calls will no longer be rate limited'));
+          } catch (error) {
+            spinner.stop();
+            const err = error as Error;
+            console.error(chalk.red('❌ Failed to disable rate limiting:'), err.message);
+            process.exit(1);
+          }
+        })
+      )
+      .addCommand(
+        new Command('set-max-requests')
+          .description('Set maximum requests per time window')
+          .arguments('<requests>')
+          .action(async (requestsStr: string) => {
+            const spinner = new Spinner();
+            const configManager = new ConfigManager();
+
+            try {
+              const requests = parseInt(requestsStr, 10);
+              if (isNaN(requests) || requests < 1) {
+                console.error(
+                  chalk.red('❌ Invalid number of requests. Must be a positive integer.')
+                );
+                process.exit(1);
+              }
+
+              spinner.start('Loading configuration...');
+              const config = await configManager.load();
+              if (!config) {
+                spinner.fail('No configuration found');
+                console.log(chalk.yellow('No PayMongo configuration found.'));
+                console.log(chalk.gray("Run 'paymongo init' to set up your project first."));
+                return;
+              }
+
+              spinner.succeed('Configuration loaded');
+
+              if (!config.rateLimiting) {
+                config.rateLimiting = {
+                  enabled: true,
+                  maxRequests: requests,
+                  windowMs: 60000,
+                  environmentMultiplier: 0.5,
+                };
+              } else {
+                config.rateLimiting.maxRequests = requests;
+              }
+
+              spinner.start('Updating rate limit...');
+              await configManager.save(config);
+              spinner.succeed('Rate limit updated');
+
+              console.log(chalk.green(`✓ Maximum requests set to ${requests} per minute`));
+            } catch (error) {
+              spinner.stop();
+              const err = error as Error;
+              console.error(chalk.red('❌ Failed to update rate limit:'), err.message);
+              process.exit(1);
+            }
+          })
+      )
+      .addCommand(
+        new Command('set-window')
+          .description('Set rate limit time window in seconds')
+          .arguments('<seconds>')
+          .action(async (secondsStr: string) => {
+            const spinner = new Spinner();
+            const configManager = new ConfigManager();
+
+            try {
+              const seconds = parseInt(secondsStr, 10);
+              if (isNaN(seconds) || seconds < 1) {
+                console.error(
+                  chalk.red('❌ Invalid time window. Must be a positive integer (seconds).')
+                );
+                process.exit(1);
+              }
+
+              spinner.start('Loading configuration...');
+              const config = await configManager.load();
+              if (!config) {
+                spinner.fail('No configuration found');
+                console.log(chalk.yellow('No PayMongo configuration found.'));
+                console.log(chalk.gray("Run 'paymongo init' to set up your project first."));
+                return;
+              }
+
+              spinner.succeed('Configuration loaded');
+
+              if (!config.rateLimiting) {
+                config.rateLimiting = {
+                  enabled: true,
+                  maxRequests: 100,
+                  windowMs: seconds * 1000,
+                  environmentMultiplier: 0.5,
+                };
+              } else {
+                config.rateLimiting.windowMs = seconds * 1000;
+              }
+
+              spinner.start('Updating rate limit window...');
+              await configManager.save(config);
+              spinner.succeed('Rate limit window updated');
+
+              console.log(chalk.green(`✓ Rate limit window set to ${seconds} seconds`));
+            } catch (error) {
+              spinner.stop();
+              const err = error as Error;
+              console.error(chalk.red('❌ Failed to update rate limit window:'), err.message);
+              process.exit(1);
+            }
+          })
+      )
+      .addCommand(
+        new Command('status').description('Show current rate limiting status').action(async () => {
+          const spinner = new Spinner();
+          const configManager = new ConfigManager();
+
+          try {
+            spinner.start('Loading configuration...');
+            const config = await configManager.load();
+
+            if (!config) {
+              spinner.fail('No configuration found');
+              console.log(chalk.yellow('No PayMongo configuration found.'));
+              console.log(chalk.gray("Run 'paymongo init' to set up your project first."));
+              return;
+            }
+
+            spinner.succeed('Configuration loaded');
+
+            console.log('\n' + chalk.bold('Rate Limiting Status'));
+            console.log('');
+
+            if (!config.rateLimiting || !config.rateLimiting.enabled) {
+              console.log(chalk.yellow('Status: Disabled'));
+              console.log(chalk.gray('Rate limiting is not currently active'));
+              console.log('');
+              console.log(chalk.gray("Run 'paymongo config rate-limit enable' to enable"));
+              return;
+            }
+
+            console.log(chalk.green('Status: Enabled'));
+            console.log('');
+            console.log(chalk.bold('Global Settings:'));
+            console.log(
+              `  Max Requests: ${config.rateLimiting.maxRequests} per ${(config.rateLimiting.windowMs || 60000) / 1000}s`
+            );
+            console.log(
+              `  Live Environment Multiplier: ${config.rateLimiting.environmentMultiplier || 0.5}x`
+            );
+
+            if (
+              config.rateLimiting.endpoints &&
+              Object.keys(config.rateLimiting.endpoints).length > 0
+            ) {
+              console.log('');
+              console.log(chalk.bold('Endpoint Overrides:'));
+              Object.entries(config.rateLimiting.endpoints).forEach(([endpoint, limits]) => {
+                console.log(`  ${endpoint}: ${limits.maxRequests} per ${limits.windowMs / 1000}s`);
+              });
+            }
+
+            console.log('');
+            console.log(chalk.gray('Commands:'));
+            console.log(
+              chalk.gray("• 'paymongo config rate-limit disable' - Disable rate limiting")
+            );
+            console.log(
+              chalk.gray("• 'paymongo config rate-limit set-max-requests <n>' - Set max requests")
+            );
+            console.log(
+              chalk.gray("• 'paymongo config rate-limit set-window <seconds>' - Set time window")
+            );
+          } catch (error) {
+            spinner.stop();
+            const err = error as Error;
+            console.error(chalk.red('❌ Failed to check rate limiting status:'), err.message);
+            process.exit(1);
+          }
+        })
+      )
   );
 
 export default command;

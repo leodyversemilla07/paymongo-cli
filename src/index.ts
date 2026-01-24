@@ -17,6 +17,7 @@ import triggerCommand from './commands/trigger.js';
 import guiCommand from './commands/gui.js';
 import teamCommand from './commands/team/index.js';
 import paymentsCommand from './commands/payments.js';
+import envCommand from './commands/env.js';
 
 const program = new Command();
 
@@ -24,6 +25,7 @@ program
   .name('paymongo')
   .description('CLI tool for PayMongo integration development')
   .version(version)
+  .option('--no-rate-limit', 'Disable rate limiting for this command')
   .showHelpAfterError('(add --help for additional information)');
 
 program.addCommand(initCommand);
@@ -35,6 +37,7 @@ program.addCommand(paymentsCommand);
 program.addCommand(triggerCommand);
 program.addCommand(guiCommand);
 program.addCommand(teamCommand);
+program.addCommand(envCommand);
 
 // Add global help
 program.addHelpText(
@@ -43,6 +46,7 @@ program.addHelpText(
 EXAMPLES
   $ paymongo init
   $ paymongo dev --port 4000
+  $ paymongo env switch live
   $ paymongo gui
   $ paymongo webhooks list
   $ paymongo payments list
