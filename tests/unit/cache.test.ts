@@ -179,7 +179,7 @@ describe('Cache', () => {
 
       // The cleanup should have removed older entries
       // At least one of the old keys should be gone
-      const result1 = await smallCache.get('old-key-1');
+      await smallCache.get('old-key-1');
       const resultNew = await smallCache.get('new-key');
 
       // New key should still exist (most recent)

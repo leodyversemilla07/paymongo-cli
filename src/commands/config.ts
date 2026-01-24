@@ -243,7 +243,10 @@ command
           }
 
           // Set the value with type coercion
-          const finalKey = keys[keys.length - 1]!;
+          const finalKey = keys[keys.length - 1];
+          if (!finalKey) {
+            throw new Error('Invalid key path');
+          }
           if (value === 'true') {
             current[finalKey] = true;
           } else if (value === 'false') {
@@ -391,7 +394,7 @@ command
 
           try {
             importedConfig = JSON.parse(fileContent);
-          } catch (parseError) {
+          } catch (_parseError) {
             spinner.fail('Invalid JSON');
             console.error(chalk.red('❌ Invalid JSON in import file'));
             process.exit(1);

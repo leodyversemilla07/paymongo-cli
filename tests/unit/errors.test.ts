@@ -9,8 +9,8 @@ import {
   withRetry,
 } from '../../src/utils/errors';
 
-// Type alias for async operation mock
-type AsyncOperationMock = jest.Mock<() => Promise<unknown>>;
+// Type alias for async operation mock (kept for potential future use)
+type _AsyncOperationMock = jest.Mock<() => Promise<unknown>>;
 
 describe('Custom Error Classes', () => {
   describe('PayMongoError', () => {

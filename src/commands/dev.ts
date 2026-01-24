@@ -174,7 +174,7 @@ class DevServer {
           isValid = true;
           break;
         }
-      } catch (error) {
+      } catch (_error) {
         // Continue trying other secrets
         continue;
       }

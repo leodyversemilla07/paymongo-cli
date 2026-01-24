@@ -6,13 +6,13 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    files: ['src/**/*.ts'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
       globals: {
         ...globals.node,
         ...globals.es2022,
-        ...globals.jest,
       },
       parserOptions: {
         project: './tsconfig.json',
@@ -20,7 +20,11 @@ export default tseslint.config(
     },
     rules: {
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['warn', { 
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_'
+      }],
       'no-console': 'off',
       'no-redeclare': 'off',
       '@typescript-eslint/no-redeclare': 'error',
@@ -35,6 +39,29 @@ export default tseslint.config(
       curly: ['error', 'all'],
       'no-var': 'error',
       'prefer-const': 'error',
+    },
+  },
+  {
+    files: ['tests/**/*.ts'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        ...globals.es2022,
+        ...globals.jest,
+      },
+    },
+    rules: {
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', { 
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_'
+      }],
+      '@typescript-eslint/no-explicit-any': 'off', // Allow any in tests for mocking
+      'no-console': 'off',
+      'no-undef': 'off',
     },
   },
   {

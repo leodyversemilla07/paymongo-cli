@@ -39,7 +39,7 @@ describe('Webhook Payload Generation', () => {
         link: 'plink_',
       };
 
-      Object.entries(prefixes).forEach(([type, prefix]) => {
+      Object.entries(prefixes).forEach(([_type, prefix]) => {
         expect(prefix).toMatch(/^[a-z]+_$/);
       });
     });

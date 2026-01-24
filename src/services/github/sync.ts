@@ -159,7 +159,7 @@ export class TeamSyncService {
 
     try {
       remoteConfig = JSON.parse(remoteConfigContent);
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Invalid JSON in remote configuration file.');
     }
 

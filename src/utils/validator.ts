@@ -45,11 +45,11 @@ export function validateConfig(config: Partial<PayMongoConfig>): void {
     throw new ValidationError('Config version is required', 'version');
   }
 
-  if (!['test', 'live'].includes(config.environment!)) {
+  if (!config.environment || !['test', 'live'].includes(config.environment)) {
     throw new ValidationError('Environment must be either "test" or "live"', 'environment');
   }
 
-  const env = config.environment!;
+  const env = config.environment;
   const apiKeys = config.apiKeys?.[env];
 
   if (!apiKeys?.secret) {

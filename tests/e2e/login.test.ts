@@ -24,7 +24,7 @@ import * as os from 'os';
  */
 
 // Check if we're in CI environment
-const isCI = process.env.CI === 'true';
+const _isCI = process.env.CI === 'true';
 
 describe('CLI Login E2E Test', () => {
   let tempDir: string;

@@ -87,7 +87,7 @@ export class ApiClient {
     try {
       await withRetry(() => this.client.get('/webhooks'));
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }

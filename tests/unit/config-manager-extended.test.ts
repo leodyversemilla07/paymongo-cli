@@ -48,7 +48,7 @@ describe('ConfigManager', () => {
           fs.rmSync(testDir, { recursive: true, force: true });
         }
         return true;
-      } catch (error) {
+      } catch (_error) {
         // Retry after a short delay for Windows file locking
         return false;
       }

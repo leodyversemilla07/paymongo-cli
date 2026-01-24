@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { AnalyticsService, WebhookEvent, AnalyticsData } from '../../src/services/analytics/service';
+import { AnalyticsService } from '../../src/services/analytics/service';
 
 describe('AnalyticsService', () => {
   let tempDir: string;

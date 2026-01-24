@@ -78,7 +78,7 @@ class CredentialManager {
       decrypted += decipher.final('utf8');
 
       return JSON.parse(decrypted);
-    } catch (error) {
+    } catch (_error) {
       // If decryption fails, credentials are corrupted
       return null;
     }
@@ -113,7 +113,7 @@ command
         // Also clear from current config if it exists
         try {
           await configManager.delete();
-        } catch (error) {
+        } catch (_error) {
           // Ignore errors during config deletion
         }
 
@@ -216,7 +216,7 @@ command
       let config;
       try {
         config = await configManager.load();
-      } catch (error) {
+      } catch (_error) {
         // If config exists but is invalid, create a new one
         console.log(chalk.yellow('⚠️  Creating new project configuration...'));
         config = configManager.getDefaultConfig();

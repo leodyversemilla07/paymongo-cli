@@ -35,7 +35,7 @@ describe('CLI Config Commands Integration', () => {
           fs.rmSync(tempDir, { recursive: true, force: true });
         }
         return true;
-      } catch (error) {
+      } catch (_error) {
         // Retry after a short delay for Windows file locking
         return false;
       }

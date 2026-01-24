@@ -69,7 +69,7 @@ export async function withRetry<T>(
     }
   } = options;
 
-  let lastError: Error;
+  let lastError: Error = new Error('Operation failed');
   let currentDelay = delayMs;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -90,5 +90,5 @@ export async function withRetry<T>(
     }
   }
 
-  throw lastError!;
+  throw lastError;
 }
