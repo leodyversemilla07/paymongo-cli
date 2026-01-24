@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Rate Limiting Protection** - Comprehensive API abuse prevention with configurable limits:
+  - Sliding window algorithm for accurate rate limiting
+  - Environment-aware limits (100 req/min test, 50 req/min live)
+  - Endpoint-specific limits for expensive operations (webhooks: 30/min, refunds: 20/min)
+  - CLI configuration commands (`paymongo config rate-limit enable/disable/status/set-max-requests/set-window`)
+  - Automatic exponential backoff for rate limit errors with user feedback
+  - Global `--no-rate-limit` override flag for emergency bypass
+
 ## [1.2.0] - 2026-01-24
 
 ### Added
@@ -126,11 +136,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
-| Version | Release Date | Highlights |
-|---------|--------------|------------|
+| Version | Release Date | Highlights                                                           |
+| ------- | ------------ | -------------------------------------------------------------------- |
 | [1.2.0] | 2026-01-24   | Dev server background mode, improved error handling, webhook cleanup |
-| [1.1.0] | 2026-01-24   | Type safety, Zod validation, rate limiting, dependency updates |
-| [1.0.0] | 2026-01-24   | Initial public release |
+| [1.1.0] | 2026-01-24   | Type safety, Zod validation, rate limiting, dependency updates       |
+| [1.0.0] | 2026-01-24   | Initial public release                                               |
 
 ---
 
@@ -145,6 +155,7 @@ npm install -g paymongo-cli@latest
 **Breaking Changes:** None. This is a backward-compatible release.
 
 **New Features:**
+
 - Run dev server in background with `--detach` flag
 - New subcommands: `dev status`, `dev stop`, `dev logs`
 - Automatic cleanup of stale webhooks
@@ -159,6 +170,7 @@ npm install -g paymongo-cli@latest
 **Breaking Changes:** None. This is a backward-compatible release.
 
 **New Features:**
+
 - Runtime config validation with helpful error messages
 - Rate limiting on GUI API endpoints
 
