@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ConfigManager from '../services/config/manager.js';
 import ApiClient from '../services/api/client.js';
-import { PaymentSimulator } from '../services/payments/simulator.js';
+import { PaymentSimulator, SimulationOptions } from '../services/payments/simulator.js';
 import { BulkOperations } from '../utils/bulk.js';
 import Spinner from '../utils/spinner.js';
 import { PaymentDataFull } from '../types/paymongo.js';
@@ -400,7 +400,7 @@ command
             }
 
             const delayMs = options.delay ? parseInt(options.delay) : undefined;
-            if (options.delay && (isNaN(delayMs!) || delayMs! <= 0)) {
+            if (options.delay && (delayMs === undefined || isNaN(delayMs) || delayMs <= 0)) {
               throw new Error('Simulation delay must be a positive number in milliseconds');
             }
 
@@ -415,14 +415,11 @@ command
             spinner.start(`Simulating ${options.method} payment...`);
 
             const simulator = new PaymentSimulator();
-            const simulationOptions: any = {
-              paymentMethod: options.method,
-              outcome: options.outcome,
+            const simulationOptions: SimulationOptions = {
+              paymentMethod: options.method as 'gcash' | 'maya' | 'grabpay',
+              outcome: options.outcome as 'success' | 'failure' | 'timeout',
+              ...(delayMs !== undefined && { delayMs }),
             };
-
-            if (delayMs) {
-              simulationOptions.delayMs = delayMs;
-            }
 
             const result = await simulator.simulatePaymentConfirmation(intentId, simulationOptions);
 
