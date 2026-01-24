@@ -3,14 +3,14 @@ import path from 'path';
 import { WebhookData, PaymentDataFull } from '../types/paymongo.js';
 import { PayMongoError } from './errors.js';
 
-export interface BulkExportData {
+export interface BulkExportData<T = unknown> {
   metadata: {
     exported_at: string;
     exported_by: string;
     version: string;
     environment: string;
   };
-  data: any[];
+  data: T[];
 }
 
 export interface BulkWebhookExport extends BulkExportData {
@@ -109,7 +109,8 @@ export class BulkOperations {
   /**
    * Validate imported data structure
    */
-  private static validateImportData(data: any, type: 'webhooks' | 'payments'): void {
+  private static validateImportData(data: unknown, type: 'webhooks' | 'payments'): void {
+    // Type guard to ensure data is an object with the expected structure
     if (!data || typeof data !== 'object') {
       throw new PayMongoError(
         'Invalid file format - not a valid JSON object',
@@ -118,7 +119,9 @@ export class BulkOperations {
       );
     }
 
-    if (!data.metadata || !data.data || !Array.isArray(data.data)) {
+    const obj = data as Record<string, unknown>;
+
+    if (!obj.metadata || !obj.data || !Array.isArray(obj.data)) {
       throw new PayMongoError(
         'Invalid file format - missing required metadata or data fields',
         'INVALID_FILE_FORMAT',
@@ -126,32 +129,51 @@ export class BulkOperations {
       );
     }
 
-    if (data.metadata.version !== this.EXPORT_VERSION) {
+    const metadata = obj.metadata as Record<string, unknown>;
+    if (typeof metadata.version !== 'string') {
       throw new PayMongoError(
-        `Unsupported export version: ${data.metadata.version}. Current version: ${this.EXPORT_VERSION}`,
+        'Invalid metadata - version must be a string',
+        'INVALID_FILE_FORMAT',
+        400
+      );
+    }
+
+    if (metadata.version !== this.EXPORT_VERSION) {
+      throw new PayMongoError(
+        `Unsupported export version: ${metadata.version}. Current version: ${this.EXPORT_VERSION}`,
         'UNSUPPORTED_VERSION',
         400
       );
     }
 
-    if (data.data.length === 0) {
+    if (obj.data.length === 0) {
       throw new PayMongoError('No data found in export file', 'EMPTY_FILE', 400);
     }
 
     // Type-specific validation
     if (type === 'webhooks') {
-      this.validateWebhookData(data.data);
+      this.validateWebhookData(obj.data);
     } else if (type === 'payments') {
-      this.validatePaymentData(data.data);
+      this.validatePaymentData(obj.data);
     }
   }
 
   /**
    * Validate webhook data structure
    */
-  private static validateWebhookData(webhooks: any[]): void {
+  private static validateWebhookData(webhooks: unknown[]): void {
     for (const webhook of webhooks) {
-      if (!webhook.id || !webhook.type || !webhook.attributes) {
+      if (!webhook || typeof webhook !== 'object') {
+        throw new PayMongoError(
+          'Invalid webhook data - not an object',
+          'INVALID_WEBHOOK_DATA',
+          400
+        );
+      }
+
+      const obj = webhook as Record<string, unknown>;
+
+      if (!obj.id || !obj.type || !obj.attributes) {
         throw new PayMongoError(
           'Invalid webhook data structure - missing required fields',
           'INVALID_WEBHOOK_DATA',
@@ -159,15 +181,11 @@ export class BulkOperations {
         );
       }
 
-      if (webhook.type !== 'webhook') {
-        throw new PayMongoError(
-          `Invalid webhook type: ${webhook.type}`,
-          'INVALID_WEBHOOK_TYPE',
-          400
-        );
+      if (obj.type !== 'webhook') {
+        throw new PayMongoError(`Invalid webhook type: ${obj.type}`, 'INVALID_WEBHOOK_TYPE', 400);
       }
 
-      const attrs = webhook.attributes;
+      const attrs = obj.attributes as Record<string, unknown>;
       if (!attrs.url || !attrs.events || !Array.isArray(attrs.events)) {
         throw new PayMongoError(
           'Invalid webhook attributes - missing url or events',
@@ -181,9 +199,19 @@ export class BulkOperations {
   /**
    * Validate payment data structure
    */
-  private static validatePaymentData(payments: any[]): void {
+  private static validatePaymentData(payments: unknown[]): void {
     for (const payment of payments) {
-      if (!payment.id || !payment.type || !payment.attributes) {
+      if (!payment || typeof payment !== 'object') {
+        throw new PayMongoError(
+          'Invalid payment data - not an object',
+          'INVALID_PAYMENT_DATA',
+          400
+        );
+      }
+
+      const obj = payment as Record<string, unknown>;
+
+      if (!obj.id || !obj.type || !obj.attributes) {
         throw new PayMongoError(
           'Invalid payment data structure - missing required fields',
           'INVALID_PAYMENT_DATA',
@@ -191,15 +219,11 @@ export class BulkOperations {
         );
       }
 
-      if (payment.type !== 'payment') {
-        throw new PayMongoError(
-          `Invalid payment type: ${payment.type}`,
-          'INVALID_PAYMENT_TYPE',
-          400
-        );
+      if (obj.type !== 'payment') {
+        throw new PayMongoError(`Invalid payment type: ${obj.type}`, 'INVALID_PAYMENT_TYPE', 400);
       }
 
-      const attrs = payment.attributes;
+      const attrs = obj.attributes as Record<string, unknown>;
       if (typeof attrs.amount !== 'number' || !attrs.currency) {
         throw new PayMongoError(
           'Invalid payment attributes - missing amount or currency',

@@ -10,7 +10,7 @@ export interface StoredWebhookEvent {
   payload: WebhookEventPayload;
   timestamp: number;
   status: 'delivered' | 'failed';
-  response?: any;
+  response?: Record<string, unknown>;
   error?: string;
 }
 
@@ -52,7 +52,7 @@ class WebhookEventStore {
       }
       const data = fs.readFileSync(this.storePath, 'utf-8');
       return JSON.parse(data);
-    } catch (error) {
+    } catch (_error) {
       return [];
     }
   }
