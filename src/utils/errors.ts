@@ -10,35 +10,50 @@ export class PayMongoError extends Error {
 }
 
 export class ConfigError extends Error {
-  constructor(message: string, public configPath?: string) {
+  constructor(
+    message: string,
+    public configPath?: string
+  ) {
     super(message);
     this.name = 'ConfigError';
   }
 }
 
 export class ApiKeyError extends Error {
-  constructor(message: string, public keyType?: 'public' | 'secret') {
+  constructor(
+    message: string,
+    public keyType?: 'public' | 'secret'
+  ) {
     super(message);
     this.name = 'ApiKeyError';
   }
 }
 
 export class NetworkError extends Error {
-  constructor(message: string, public originalError?: Error) {
+  constructor(
+    message: string,
+    public originalError?: Error
+  ) {
     super(message);
     this.name = 'NetworkError';
   }
 }
 
 export class ValidationError extends Error {
-  constructor(message: string, public field?: string) {
+  constructor(
+    message: string,
+    public field?: string
+  ) {
     super(message);
     this.name = 'ValidationError';
   }
 }
 
 export class WebhookError extends Error {
-  constructor(message: string, public webhookId?: string) {
+  constructor(
+    message: string,
+    public webhookId?: string
+  ) {
     super(message);
     this.name = 'WebhookError';
   }
@@ -62,11 +77,16 @@ export async function withRetry<T>(
     backoffMultiplier = 2,
     silent = false,
     retryCondition = (error: Error) => {
-      // Default: retry on network errors and 5xx status codes
-      return error.name === 'NetworkError' ||
-             (error.message.includes('Network error') && !error.message.includes('401')) ||
-             (error.message.includes('timeout') || error.message.includes('ECONNRESET'));
-    }
+      // Default: retry on network errors, 5xx status codes, and rate limit errors
+      return (
+        error.name === 'NetworkError' ||
+        (error.message.includes('Network error') && !error.message.includes('401')) ||
+        error.message.includes('timeout') ||
+        error.message.includes('ECONNRESET') ||
+        (error instanceof PayMongoError &&
+          (error.code === 'RATE_LIMIT_EXCEEDED' || error.statusCode === 429))
+      );
+    },
   } = options;
 
   let lastError: Error = new Error('Operation failed');
@@ -83,9 +103,13 @@ export async function withRetry<T>(
       }
 
       if (!silent) {
-        console.log(`Attempt ${attempt + 1} failed, retrying in ${currentDelay}ms...`);
+        if (error instanceof PayMongoError && error.code === 'RATE_LIMIT_EXCEEDED') {
+          console.log(`Rate limit reached, waiting ${currentDelay}ms before retry...`);
+        } else {
+          console.log(`Attempt ${attempt + 1} failed, retrying in ${currentDelay}ms...`);
+        }
       }
-      await new Promise(resolve => setTimeout(resolve, currentDelay));
+      await new Promise((resolve) => setTimeout(resolve, currentDelay));
       currentDelay *= backoffMultiplier;
     }
   }
