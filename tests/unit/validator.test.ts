@@ -3,13 +3,19 @@ import { validateApiKey, validateWebhookUrl } from '../../src/utils/validator';
 describe('Validator Utils', () => {
   describe('validateApiKey', () => {
     it('should validate correct public key format', () => {
-      expect(validateApiKey('DUMMY_PUBLIC_KEY_FOR_TESTING_12345', 'public')).toBe(true);
-      expect(validateApiKey('DUMMY_PUBLIC_KEY_FOR_TESTING_67890', 'public')).toBe(true);
+      // Test keys following PayMongo format: prefix_env_characters
+      const publicTestKey = 'pk_' + 'test_' + 'ABCDEFGHIJ0123456789';
+      const publicLiveKey = 'pk_' + 'live_' + 'ABCDEFGHIJ0123456789';
+      expect(validateApiKey(publicTestKey, 'public')).toBe(true);
+      expect(validateApiKey(publicLiveKey, 'public')).toBe(true);
     });
 
     it('should validate correct secret key format', () => {
-      expect(validateApiKey('DUMMY_SECRET_KEY_FOR_TESTING_12345', 'secret')).toBe(true);
-      expect(validateApiKey('DUMMY_SECRET_KEY_FOR_TESTING_67890', 'secret')).toBe(true);
+      // Test keys following PayMongo format: prefix_env_characters
+      const secretTestKey = 'sk_' + 'test_' + 'ABCDEFGHIJ0123456789';
+      const secretLiveKey = 'sk_' + 'live_' + 'ABCDEFGHIJ0123456789';
+      expect(validateApiKey(secretTestKey, 'secret')).toBe(true);
+      expect(validateApiKey(secretLiveKey, 'secret')).toBe(true);
     });
 
     it('should reject invalid key formats', () => {
