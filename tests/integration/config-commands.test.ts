@@ -6,6 +6,7 @@ import * as os from 'os';
 describe('CLI Config Commands Integration', () => {
   let tempDir: string;
   let cliPath: string;
+  let originalCwd: string;
 
   beforeAll(() => {
     // Build the CLI first
@@ -14,13 +15,47 @@ describe('CLI Config Commands Integration', () => {
   });
 
   beforeEach(() => {
+    // Store original working directory
+    originalCwd = process.cwd();
+
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'paymongo-cli-test-'));
     process.chdir(tempDir);
   });
 
   afterEach(() => {
-    if (fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
+    // Change back to original directory first
+    if (originalCwd && originalCwd !== process.cwd()) {
+      process.chdir(originalCwd);
+    }
+
+    // Clean up with retry mechanism for Windows file locking
+    const cleanup = () => {
+      try {
+        if (fs.existsSync(tempDir)) {
+          fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+        return true;
+      } catch (error) {
+        // Retry after a short delay for Windows file locking
+        return false;
+      }
+    };
+
+    // Retry cleanup up to 5 times with increasing delays
+    let attempts = 0;
+    const maxAttempts = 5;
+    while (attempts < maxAttempts) {
+      if (cleanup()) break;
+      attempts++;
+      // Wait longer between attempts
+      const delay = Math.min(100 * Math.pow(2, attempts), 1000);
+      if (attempts < maxAttempts) {
+        // Use synchronous delay for test cleanup
+        const start = Date.now();
+        while (Date.now() - start < delay) {
+          // Busy wait - acceptable for test cleanup
+        }
+      }
     }
   });
 

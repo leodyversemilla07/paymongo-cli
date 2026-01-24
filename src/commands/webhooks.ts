@@ -50,8 +50,8 @@ command
                 message: 'Webhook URL:',
                 default: options.url,
                 validate: (input) => {
-                  if (!input) return 'Webhook URL is required';
-                  if (!validateWebhookUrl(input)) return 'Invalid webhook URL. Must be HTTPS or localhost';
+                  if (!input) {return 'Webhook URL is required';}
+                  if (!validateWebhookUrl(input)) {return 'Invalid webhook URL. Must be HTTPS or localhost';}
                   return true;
                 },
               },
@@ -69,7 +69,7 @@ command
                 ],
                 default: options.events ? options.events.split(',') : ['payment.paid', 'payment.failed'],
                 validate: (input) => {
-                  if (input.length === 0) return 'At least one event must be selected';
+                  if (input.length === 0) {return 'At least one event must be selected';}
                   try {
                     validateEventTypes(input);
                     return true;

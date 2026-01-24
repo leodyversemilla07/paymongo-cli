@@ -6,19 +6,21 @@ import ConfigManager from '../services/config/manager';
 import ApiClient from '../services/api/client';
 import Spinner from '../utils/spinner';
 import { withRetry } from '../utils/errors';
+import { PayMongoConfig, WebhookEvent, TunnelInfo } from '../types/paymongo';
 
 interface DevOptions {
   port?: string;
   noRegister?: boolean;
   events?: string;
+  ngrokToken?: string;
 }
 
 class DevServer {
   private server: http.Server;
   private port: number;
-  private config: any;
+  private config: PayMongoConfig;
 
-  constructor(port: number, config: any) {
+  constructor(port: number, config: PayMongoConfig) {
     this.port = port;
     this.config = config;
 
@@ -88,18 +90,18 @@ class DevServer {
     });
   }
 
-  private logWebhookEvent(event: any): void {
+  private logWebhookEvent(event: WebhookEvent): void {
     const timestamp = new Date().toLocaleTimeString();
-    const eventType = event.data?.type || 'unknown';
-    const eventId = event.data?.id || 'unknown';
+    const eventType = (event as any).data?.type || 'unknown';
+    const eventId = (event as any).data?.id || 'unknown';
 
     console.log('');
     console.log(chalk.gray('────────────────────────────────────────────────────────────'));
     console.log(chalk.blue(`[${timestamp}]`), chalk.bold(eventType.toUpperCase()));
 
     if (eventType === 'payment') {
-      const amount = event.data.attributes.amount;
-      const status = event.data.attributes.status;
+      const amount = (event as any).data.attributes.amount;
+      const status = (event as any).data.attributes.status;
 
       console.log(chalk.gray('└─'), `Amount: ₱${(amount / 100).toFixed(2)}`);
       console.log(chalk.gray('└─'), `Status: ${status}`);
@@ -198,9 +200,11 @@ command
     'Comma-separated events to listen for',
     'payment.paid,payment.failed'
   )
+  .option('--ngrok-token <token>', 'ngrok authtoken (if not set in environment)')
   .action(async (options: DevOptions) => {
     const spinner = new Spinner();
     const configManager = new ConfigManager();
+    let tunnel: TunnelInfo | undefined;
 
     try {
       // Load configuration
@@ -221,21 +225,48 @@ command
       const port = parseInt(options.port || '3000');
 
       // Lazy load ngrok to reduce startup time
-      const { default: ngrok } = await import('ngrok');
+      const { default: ngrok } = await import('@ngrok/ngrok');
 
-      const tunnelUrl = await withRetry(() => ngrok.connect(port), {
-        maxRetries: 3,
-        delayMs: 2000,
-        retryCondition: (error: Error) => {
-          // Retry on network errors and common ngrok issues
-          return (
-            error.message.includes('connection') ||
-            error.message.includes('timeout') ||
-            error.message.includes('tunnel') ||
-            error.message.includes('ngrok')
-          );
+      const tunnelUrl = await withRetry(
+        async () => {
+          try {
+            // Try to get authtoken from command line option or environment
+            const authtoken = options.ngrokToken || process.env.NGROK_AUTHTOKEN;
+
+            if (!authtoken) {
+              throw new Error(
+                'ngrok authtoken not found. Please either:\n' +
+                  '  1. Set NGROK_AUTHTOKEN environment variable, or\n' +
+                  '  2. Use --ngrok-token option: paymongo dev --ngrok-token YOUR_TOKEN\n' +
+                  '  Get your token from: https://dashboard.ngrok.com/get-started/your-authtoken'
+              );
+            }
+
+            tunnel = await ngrok.forward({
+              addr: port,
+              authtoken: authtoken,
+            });
+            return tunnel.url();
+          } catch (error) {
+            console.log(chalk.yellow('Debug: ngrok error details:'), (error as Error).message);
+            throw error;
+          }
         },
-      });
+        {
+          maxRetries: 3,
+          delayMs: 2000,
+          retryCondition: (error: Error) => {
+            // Retry on network errors and common ngrok issues
+            return (
+              error.message.includes('connection') ||
+              error.message.includes('timeout') ||
+              error.message.includes('tunnel') ||
+              error.message.includes('ngrok') ||
+              error.message.includes('authtoken')
+            );
+          },
+        }
+      );
       spinner.succeed('Tunnel created');
 
       // Start webhook server
@@ -305,10 +336,10 @@ command
 
         try {
           // Disconnect ngrok
-          const { default: ngrok } = await import('ngrok');
-          await ngrok.disconnect();
-          await ngrok.kill();
-          console.log(chalk.yellow('✓'), 'Tunnel closed');
+          if (tunnel) {
+            await tunnel.close();
+            console.log(chalk.yellow('✓'), 'Tunnel closed');
+          }
 
           // Stop server
           await devServer.stop();
@@ -343,34 +374,24 @@ command
         console.log(chalk.yellow('💡 Troubleshooting suggestions:'));
         console.log(chalk.gray('• Check your internet connection'));
         console.log(chalk.gray('• Make sure ngrok is not blocked by firewall/antivirus'));
+        console.log(chalk.gray('• Set up ngrok authentication: export NGROK_AUTHTOKEN=your_token'));
+        console.log(
+          chalk.gray(
+            '• Get your authtoken from: https://dashboard.ngrok.com/get-started/your-authtoken'
+          )
+        );
         console.log(chalk.gray('• Try a different port: paymongo dev --port 3001'));
         console.log(chalk.gray('• Visit https://ngrok.com for status updates'));
-      } else if (err.message.includes('API key') || err.message.includes('unauthorized')) {
-        console.error(chalk.red('❌ Authentication failed:'), err.message);
-        console.log('');
-        console.log(chalk.yellow('💡 Solutions:'));
-        console.log(chalk.gray('• Run "paymongo login" to update your API keys'));
-        console.log(chalk.gray('• Check that your API keys are valid in the PayMongo dashboard'));
-        console.log(chalk.gray("• Verify you're using the correct environment (test/live)"));
-      } else if (err.message.includes('Network') || err.message.includes('connection')) {
-        console.error(chalk.red('❌ Network error:'), err.message);
-        console.log('');
-        console.log(chalk.yellow('💡 Try again:'));
-        console.log(chalk.gray('• Check your internet connection'));
-        console.log(chalk.gray('• PayMongo API might be temporarily unavailable'));
-        console.log(chalk.gray('• Wait a moment and try again'));
-      } else {
-        console.error(chalk.red('❌ Failed to start development server:'), err.message);
-        console.log('');
-        console.log(chalk.yellow('💡 For help, visit: https://developers.paymongo.com'));
       }
 
       // Cleanup on error
       try {
-        const { default: ngrok } = await import('ngrok');
-        await ngrok.disconnect();
-        await ngrok.kill();
-      } catch {}
+        if (tunnel) {
+          await tunnel.close();
+        }
+      } catch {
+        // Ignore cleanup errors during shutdown
+      }
 
       process.exit(1);
     }

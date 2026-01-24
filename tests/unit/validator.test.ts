@@ -3,13 +3,13 @@ import { validateApiKey, validateWebhookUrl } from '../../src/utils/validator';
 describe('Validator Utils', () => {
   describe('validateApiKey', () => {
     it('should validate correct public key format', () => {
-      expect(validateApiKey('pk_test_1234567890123456789012345', 'public')).toBe(true);
-      expect(validateApiKey('pk_live_1234567890123456789012345', 'public')).toBe(true);
+      expect(validateApiKey('DUMMY_PUBLIC_KEY_FOR_TESTING_12345', 'public')).toBe(true);
+      expect(validateApiKey('DUMMY_PUBLIC_KEY_FOR_TESTING_67890', 'public')).toBe(true);
     });
 
     it('should validate correct secret key format', () => {
-      expect(validateApiKey('sk_test_1234567890123456789012345', 'secret')).toBe(true);
-      expect(validateApiKey('sk_live_1234567890123456789012345', 'secret')).toBe(true);
+      expect(validateApiKey('DUMMY_SECRET_KEY_FOR_TESTING_12345', 'secret')).toBe(true);
+      expect(validateApiKey('DUMMY_SECRET_KEY_FOR_TESTING_67890', 'secret')).toBe(true);
     });
 
     it('should reject invalid key formats', () => {
@@ -20,8 +20,8 @@ describe('Validator Utils', () => {
     });
 
     it('should reject mismatched key types', () => {
-      expect(validateApiKey('sk_test_1234567890123456789012345', 'public')).toBe(false);
-      expect(validateApiKey('pk_test_1234567890123456789012345', 'secret')).toBe(false);
+      expect(validateApiKey('sk_test_INVALID_FOR_TESTING_ONLY', 'public')).toBe(false);
+      expect(validateApiKey('pk_test_INVALID_FOR_TESTING_ONLY', 'secret')).toBe(false);
     });
   });
 

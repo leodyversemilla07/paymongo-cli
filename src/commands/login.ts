@@ -151,8 +151,8 @@ command
             message: 'Secret API key:',
             default: options.key || storedCredentials?.secretKey,
             validate: (input) => {
-              if (!input) return 'Secret API key is required';
-              if (!validateApiKey(input, 'secret')) return 'Invalid secret API key format';
+              if (!input) {return 'Secret API key is required';}
+              if (!validateApiKey(input, 'secret')) {return 'Invalid secret API key format';}
               return true;
             },
           },
@@ -162,8 +162,8 @@ command
             message: 'Public API key (optional):',
             default: options.publicKey || storedCredentials?.publicKey,
             validate: (input) => {
-              if (!input) return true; // Optional
-              if (!validateApiKey(input, 'public')) return 'Invalid public API key format';
+              if (!input) {return true;} // Optional
+              if (!validateApiKey(input, 'public')) {return 'Invalid public API key format';}
               return true;
             },
           },

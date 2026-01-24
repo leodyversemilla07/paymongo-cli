@@ -93,8 +93,8 @@ command
             message: 'Secret API key:',
             default: options.key,
             validate: (input) => {
-              if (!input) return 'Secret API key is required';
-              if (!validateApiKey(input, 'secret')) return 'Invalid secret API key format';
+              if (!input) {return 'Secret API key is required';}
+              if (!validateApiKey(input, 'secret')) {return 'Invalid secret API key format';}
               return true;
             },
           },

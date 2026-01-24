@@ -153,8 +153,8 @@ export class GitHubClient {
     since?: string
   ): Promise<GitHubCommit[]> {
     const params: any = { per_page: 10 };
-    if (path) params.path = path;
-    if (since) params.since = since;
+    if (path) {params.path = path;}
+    if (since) {params.since = since;}
 
     const response = await withRetry(
       () => this.client.get(`/repos/${owner}/${repo}/commits`, { params }),

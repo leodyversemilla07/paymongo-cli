@@ -75,7 +75,7 @@ export class Cache {
       // Remove oldest files if cache is too large
       let currentSize = this.getCacheSize();
       for (const file of files) {
-        if (currentSize <= this.options.maxSize * 0.8) break; // Keep 80% of max size
+        if (currentSize <= this.options.maxSize * 0.8) {break;} // Keep 80% of max size
 
         fs.unlinkSync(file.path);
         currentSize -= file.stats.size / (1024 * 1024);

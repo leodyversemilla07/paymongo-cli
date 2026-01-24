@@ -1,226 +1,113 @@
-# PayMongo CLI
+# PayMongo CLI 🚀
 
-> A developer-first CLI tool that streamlines PayMongo integration development. Make PayMongo integration as simple as running `paymongo dev`.
+> **A developer-first CLI for PayMongo integration with local webhook forwarding.**
 
-PayMongo CLI provides everything you need for seamless payment integration development:
+PayMongo CLI is the official-feel command-line tool designed to streamline your development process with PayMongo. It solves the biggest pain point in payment integration: **testing webhooks locally**.
 
-- 🚀 **Zero-configuration setup** with `paymongo init`
-- 🔄 **Automatic webhook forwarding** during development
-- 📊 **Real-time webhook monitoring** and event logging
-- 💳 **Payment testing tools** for creating and monitoring transactions
-- 👥 **Team collaboration** with GitHub-based configuration sync
-- 🎛️ **Web dashboard** for monitoring and configuration
-- 🔒 **Secure credential management** with encrypted storage
-
-## Installation
-
-### Prerequisites
-
-- Node.js >= 16.0.0
-- npm or yarn
-
-### Install from npm
-
-```bash
-npm install -g paymongo-cli
-```
-
-### Build from source
-
-```bash
-git clone https://github.com/leodyversemilla07/paymongo-cli.git
-cd paymongo-cli
-npm install
-npm run build
-npm link
-```
-
-### Verify installation
-
-```bash
-paymongo --version
-paymongo --help
-```
-
-## Quick Start
-
-### 1. Install PayMongo CLI
-
-```bash
-npm install -g paymongo-cli
-```
-
-### 2. Initialize Your Project
-
-```bash
-# Create and enter project directory
-mkdir my-paymongo-app
-cd my-paymongo-app
-
-# Initialize PayMongo project
-paymongo init
-```
-
-### 3. Start Development Server
-
-```bash
-# Start development server with webhook forwarding
-paymongo dev
-```
-
-### 4. Test Integration
-
-```bash
-# Create a test payment intent
-paymongo payments create-intent --amount 10000 --description "Test Payment"
-
-# Check webhook events in the terminal
-# Visit the ngrok URL shown to trigger test webhooks
-```
-
-> 📖 **Need detailed instructions?** See the [complete User Guide](USER_GUIDE.md)
-
-## Commands
-
-The CLI provides comprehensive tools for PayMongo integration:
-
-### Core Commands
-
-- **`paymongo init`** - Initialize a new PayMongo project
-- **`paymongo login`** - Manage API credentials securely
-- **`paymongo dev`** - Start local development server with webhook forwarding
-
-### Management Commands
-
-- **`paymongo webhooks`** - Manage PayMongo webhooks (list, create, show, delete)
-- **`paymongo payments`** - Manage payments and payment intents (list, show, create-intent)
-- **`paymongo config`** - View and modify configuration
-
-### Development Tools
-
-- **`paymongo trigger`** - Simulate webhook events locally
-- **`paymongo gui`** - Start web-based monitoring dashboard
-- **`paymongo team`** - Team collaboration features
-
-> 📖 **Complete command reference:** See the [User Guide](USER_GUIDE.md#command-reference)
-
-## Performance Optimizations
-
-The CLI includes several performance optimizations to ensure fast startup and efficient operation:
-
-### Lazy Loading
-
-- **ngrok**: Loaded on-demand when starting the dev server
-- **inquirer**: Loaded only during interactive prompts
-- **Result**: ~30% faster CLI startup, reduced memory footprint
-
-### Caching System
-
-- **API Responses**: Filesystem-based cache with 2-minute TTL for webhook operations
-- **Configuration**: In-memory caching with automatic invalidation on file changes
-- **Result**: Faster repeated operations, reduced API calls
-
-### Build Optimizations
-
-- **Incremental Compilation**: TypeScript builds only changed files during development
-- **Result**: Significantly faster rebuild times during active development
-
-## Development
-
-### Prerequisites
-
-- Node.js >= 16.0.0
-- npm or yarn
-
-### Setup
-
-```bash
-git clone https://github.com/leodyversemilla07/paymongo-cli.git
-cd paymongo-cli
-npm install
-npm run build
-npm link
-```
-
-### Testing
-
-```bash
-npm test
-```
-
-### Project Structure
-
-```
-paymongo-cli/
-├── bin/
-│   └── paymongo.js              # CLI entry point
-├── src/
-│   ├── commands/                # CLI commands
-│   ├── services/                # Business logic services
-│   │   ├── api/                # PayMongo API client
-│   │   ├── config/             # Configuration management
-│   │   └── tunnel/             # ngrok tunnel management
-│   ├── utils/                  # Utility functions
-│   └── types/                  # TypeScript type definitions
-├── tests/                      # Test files
-└── docs/                      # Documentation
-```
-
-## Configuration
-
-The CLI uses a `.paymongo` configuration file in your project root:
-
-```json
-{
-  "version": "1.0",
-  "projectName": "My Store",
-  "environment": "test",
-  "apiKeys": {
-    "test": {
-      "public": "pk_test_xxx",
-      "secret": "sk_test_xxx"
-    }
-  },
-  "webhooks": {
-    "url": "http://localhost:3000/webhook",
-    "events": ["payment.paid", "payment.failed"]
-  },
-  "webhookSecrets": {
-    "whook_xxx": "whsec_xxx"
-  },
-  "dev": {
-    "port": 3000,
-    "autoRegisterWebhook": true,
-    "verifyWebhookSignatures": false
-  }
-}
-```
-
-## Security
-
-- API keys are validated before storage
-- Secret keys are stored securely using OS keychain when available
-- Webhook signatures are verified in development mode
-- Sensitive files (`.env`, `.paymongo`) are added to `.gitignore`
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## License
-
-MIT
-
-## Documentation
-
-- **[User Guide](USER_GUIDE.md)** - Comprehensive setup and usage documentation
-- **[Command Reference](docs/commands.md)** - Detailed command documentation
-- **[API Documentation](https://developers.paymongo.com)** - PayMongo API reference
+[![npm version](https://img.shields.io/npm/v/paymongo-cli.svg)](https://www.npmjs.com/package/paymongo-cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 
 ---
 
-**Made with ❤️ for Filipino developers**
+## ✨ Key Features
+
+- 🔄 **Local Webhook Forwarding**: Seamlessly receive PayMongo webhooks on your localhost using integrated `ngrok` tunneling.
+- 🚀 **Zero-Config Setup**: Get started in seconds with `paymongo init`.
+- 💳 **Payment Testing**: Create and monitor payment intents and payments directly from your terminal.
+- 📊 **Real-time Monitoring**: Watch webhook events as they happen with formatted logs or a web-based GUI.
+- 👥 **Team Collaboration**: Sync configurations across your team using GitHub integration.
+- 🎛️ **Web Dashboard**: Use `paymongo gui` for a premium visual monitoring experience.
+- 🔒 **Secure Management**: Encrypted storage for your API keys.
+
+---
+
+## 📦 Installation
+
+### Prerequisites
+
+- **Node.js**: v18.0.0 or higher
+- **ngrok account**: Required for webhook forwarding (free tier works great!)
+
+### Install via npm (Recommended)
+
+```bash
+npm install -g paymongo-cli
+```
+
+### Setup ngrok Authtoken
+
+To use the `dev` server with webhook forwarding, you need an ngrok authtoken:
+
+1. Sign up at [ngrok.com](https://ngrok.com)
+2. Copy your authtoken from the [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken)
+3. Configure it in the CLI:
+
+```bash
+paymongo config set ngrok.authtoken YOUR_AUTHTOKEN
+```
+
+---
+
+## 🚀 Quick Start
+
+### 1. Initialize Project
+
+```bash
+mkdir my-paymongo-app
+cd my-paymongo-app
+paymongo init
+```
+
+### 2. Start Development Server
+
+This command sets up a tunnel and starts forwarding webhooks to your local app.
+
+```bash
+paymongo dev --port 3000
+```
+
+### 3. Trigger a Test Webhook
+
+In another terminal, simulate a successful payment:
+
+```bash
+paymongo trigger --event payment.paid
+```
+
+---
+
+## 🛠 Commands Reference
+
+| Command             | Description                                             |
+| :------------------ | :------------------------------------------------------ |
+| `paymongo init`     | Initialize a new project and set up credentials.        |
+| `paymongo dev`      | Start local development server with webhook forwarding. |
+| `paymongo payments` | Manage payments and payment intents.                    |
+| `paymongo webhooks` | List, create, and manage PayMongo webhooks.             |
+| `paymongo config`   | View and modify CLI configuration.                      |
+| `paymongo team`     | Sync configurations with your team via GitHub.          |
+| `paymongo gui`      | Launch the web-based monitoring dashboard.              |
+| `paymongo trigger`  | Simulate webhook events locally for testing.            |
+
+> 💡 Use `paymongo <command> --help` for detailed information on any command.
+
+---
+
+## 📖 Documentation
+
+- **[Installation Guide](INSTALLATION.md)** - Platform-specific setup instructions.
+- **[User Guide](USER_GUIDE.md)** - Detailed step-by-step instructions.
+- **[API Reference](API_REFERENCE.md)** - Complete command and option reference.
+- **[Troubleshooting](TROUBLESHOOTING.md)** - Solutions to common issues.
+- **[Contributing](CONTRIBUTING.md)** - Help improve the PayMongo CLI.
+
+---
+
+## 🇵🇭 Built for Filipino Developers
+
+PayMongo CLI is crafted with ❤️ to empower Filipino developers building the next generation of fintech solutions.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

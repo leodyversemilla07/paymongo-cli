@@ -67,6 +67,35 @@ export interface ApiResponse<T> {
   };
 }
 
+// Webhook Event Types
+export interface WebhookEvent {
+  id: string;
+  type: string;
+  attributes: Record<string, unknown>;
+  relationships?: Record<string, unknown>;
+}
+
+export interface PaymentEvent extends WebhookEvent {
+  type: 'payment';
+  attributes: {
+    amount: number;
+    currency: string;
+    status: 'paid' | 'failed' | 'pending' | 'expired';
+    created_at: number;
+    updated_at: number;
+    fees: number;
+    net_amount: number;
+  };
+  relationships: {
+    payment_intent?: {
+      data: {
+        id: string;
+        type: 'payment_intent';
+      };
+    };
+  };
+}
+
 // Command Types
 export interface CommandOptions {
   help?: boolean;
@@ -88,4 +117,22 @@ export interface LoggerOptions {
 export interface SpinnerOptions {
   text?: string;
   color?: string;
+}
+
+// API Client Types
+export interface ApiClientConfig {
+  config: PayMongoConfig;
+}
+
+// Error Types
+export interface PayMongoError {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+// Tunnel Types (for ngrok)
+export interface TunnelInfo {
+  url(): string | null;
+  close(): Promise<void>;
 }
