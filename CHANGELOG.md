@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **ESLint Warnings** - Resolved all 19 ESLint warnings:
+  - Prefixed unused catch variables with underscore (`_error`, `_parseError`)
+  - Replaced non-null assertions with proper null checks
+  - Removed unused imports in test files
+  - Updated ESLint config with `varsIgnorePattern` and `caughtErrorsIgnorePattern`
+
 ## [1.1.0] - 2026-01-24
 
 ### Added
