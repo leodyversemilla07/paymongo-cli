@@ -1,6 +1,16 @@
 # PayMongo CLI
 
-A developer-first CLI tool that streamlines PayMongo integration development. Make PayMongo integration as simple as running `paymongo dev`.
+> A developer-first CLI tool that streamlines PayMongo integration development. Make PayMongo integration as simple as running `paymongo dev`.
+
+PayMongo CLI provides everything you need for seamless payment integration development:
+
+- 🚀 **Zero-configuration setup** with `paymongo init`
+- 🔄 **Automatic webhook forwarding** during development
+- 📊 **Real-time webhook monitoring** and event logging
+- 💳 **Payment testing tools** for creating and monitoring transactions
+- 👥 **Team collaboration** with GitHub-based configuration sync
+- 🎛️ **Web dashboard** for monitoring and configuration
+- 🔒 **Secure credential management** with encrypted storage
 
 ## Installation
 
@@ -34,182 +44,65 @@ paymongo --help
 
 ## Quick Start
 
-1. **Initialize your project:**
+### 1. Install PayMongo CLI
 
-   ```bash
-   paymongo init
-   ```
+```bash
+npm install -g paymongo-cli
+```
 
-2. **Start development server:**
+### 2. Initialize Your Project
 
-   ```bash
-   paymongo dev
-   ```
+```bash
+# Create and enter project directory
+mkdir my-paymongo-app
+cd my-paymongo-app
 
-3. **Test with a webhook:**
-   - Visit PayMongo Dashboard → Webhooks
-   - Copy the ngrok URL shown in terminal
-   - Create a test webhook in dashboard
-   - Make a test payment to see events in terminal
+# Initialize PayMongo project
+paymongo init
+```
+
+### 3. Start Development Server
+
+```bash
+# Start development server with webhook forwarding
+paymongo dev
+```
+
+### 4. Test Integration
+
+```bash
+# Create a test payment intent
+paymongo payments create-intent --amount 10000 --description "Test Payment"
+
+# Check webhook events in the terminal
+# Visit the ngrok URL shown to trigger test webhooks
+```
+
+> 📖 **Need detailed instructions?** See the [complete User Guide](USER_GUIDE.md)
 
 ## Commands
 
-### `paymongo init`
+The CLI provides comprehensive tools for PayMongo integration:
 
-Initialize a new PayMongo project with interactive setup.
+### Core Commands
 
-```bash
-# Interactive setup (recommended)
-paymongo init
+- **`paymongo init`** - Initialize a new PayMongo project
+- **`paymongo login`** - Manage API credentials securely
+- **`paymongo dev`** - Start local development server with webhook forwarding
 
-# Non-interactive with options
-paymongo init --name "My Store" --env test --key sk_test_xxx --public-key pk_test_xxx --port 4000
-```
+### Management Commands
 
-**Options:**
+- **`paymongo webhooks`** - Manage PayMongo webhooks (list, create, show, delete)
+- **`paymongo payments`** - Manage payments and payment intents (list, show, create-intent)
+- **`paymongo config`** - View and modify configuration
 
-- `-n, --name <name>` - Project name
-- `-e, --env <environment>` - Environment (test or live)
-- `-k, --key <key>` - Secret API key
-- `--public-key <key>` - Public API key
-- `-p, --port <port>` - Development port
-- `--events <events>` - Comma-separated webhook events
-- `--non-interactive` - Skip interactive prompts
+### Development Tools
 
-### `paymongo dev`
+- **`paymongo trigger`** - Simulate webhook events locally
+- **`paymongo gui`** - Start web-based monitoring dashboard
+- **`paymongo team`** - Team collaboration features
 
-Start local development server with automatic webhook forwarding.
-
-```bash
-# Start development server (default port 3000)
-paymongo dev
-
-# Custom port and events
-paymongo dev --port 4000 --events payment.paid,payment.failed,source.chargeable
-
-# Skip webhook registration
-paymongo dev --no-register
-```
-
-**Features:**
-
-- Automatic ngrok tunnel creation
-- Webhook registration with PayMongo
-- Real-time webhook event logging
-- **Webhook signature verification** - Full HMAC-SHA256 cryptographic validation (configurable)
-- Automatic cleanup on exit (Ctrl+C)
-
-### `paymongo login`
-
-Manage API credentials securely.
-
-```bash
-# Interactive login
-paymongo login
-
-# Non-interactive login
-paymongo login --key sk_test_xxx --env test
-
-# Logout and clear credentials
-paymongo login --logout
-```
-
-### `paymongo webhooks`
-
-Manage PayMongo webhooks.
-
-```bash
-# List all webhooks
-paymongo webhooks list
-
-# List with JSON output
-paymongo webhooks list --json
-
-# Filter by status
-paymongo webhooks list --status enabled
-
-# Create webhook interactively
-paymongo webhooks create
-
-# Create webhook non-interactively
-paymongo webhooks create --url https://myapp.com/webhook --events payment.paid,payment.failed
-
-# Show webhook details
-paymongo webhooks show whook_abc123
-
-# Delete webhook (with confirmation)
-paymongo webhooks delete whook_abc123
-
-# Delete webhook without confirmation
-paymongo webhooks delete whook_abc123 --yes
-```
-
-### `paymongo config`
-
-View and modify CLI configuration.
-
-```bash
-# Show current configuration
-paymongo config show
-
-# Show configuration as JSON
-paymongo config show --json
-
-# Set configuration values
-paymongo config set dev.port 4000
-paymongo config set dev.autoRegisterWebhook false
-paymongo config set webhooks.url https://myapp.com/webhook
-paymongo config set environment live
-
-# Reset to defaults
-paymongo config reset
-```
-
-### `paymongo gui`
-
-Start the web-based GUI dashboard for real-time monitoring and configuration.
-
-```bash
-# Start GUI dashboard on default port 8080
-paymongo gui
-
-# Custom port and host
-paymongo gui --port 3000 --host 0.0.0.0
-```
-
-**Features:**
-
-- Real-time webhook event monitoring
-- Configuration management interface
-- Webhook status overview
-- **Advanced analytics dashboard** - Success rates, event counts, response times, error tracking
-- Live event log with Socket.io
-
-**Options:**
-
-- `-p, --port <port>` - Port to run the GUI server on (default: 8080)
-- `-h, --host <host>` - Host to bind the GUI server to (default: localhost)
-
-### `paymongo team`
-
-Team collaboration features for shared configurations and permissions.
-
-```bash
-# Sync configuration with team repository
-paymongo team sync --repo myorg/paymongo-configs
-
-# Invite team member
-paymongo team invite user@example.com --role developer
-
-# List team members
-paymongo team members
-```
-
-**Features:**
-
-- Configuration sync via GitHub repositories
-- Team member invitations and role management
-- Shared webhook templates and environments
+> 📖 **Complete command reference:** See the [User Guide](USER_GUIDE.md#command-reference)
 
 ## Performance Optimizations
 
@@ -322,11 +215,11 @@ The CLI uses a `.paymongo` configuration file in your project root:
 
 MIT
 
-## Support
+## Documentation
 
-- [GitHub Issues](https://github.com/leodyver/paymongo-cli/issues)
-- [PayMongo Documentation](https://developers.paymongo.com)
-- [Community Discord](https://discord.gg/paymongo)
+- **[User Guide](USER_GUIDE.md)** - Comprehensive setup and usage documentation
+- **[Command Reference](docs/commands.md)** - Detailed command documentation
+- **[API Documentation](https://developers.paymongo.com)** - PayMongo API reference
 
 ---
 

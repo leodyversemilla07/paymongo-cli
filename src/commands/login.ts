@@ -33,13 +33,21 @@ class CredentialManager {
 
     // Use a machine-specific key for encryption
     const machineId = os.hostname() + os.userInfo().username;
-    this.encryptionKey = crypto.createHash('sha256').update(machineId).digest('hex').substring(0, 32);
+    this.encryptionKey = crypto
+      .createHash('sha256')
+      .update(machineId)
+      .digest('hex')
+      .substring(0, 32);
   }
 
-  async saveCredentials(credentials: { environment: string; secretKey: string; publicKey?: string }): Promise<void> {
+  async saveCredentials(credentials: {
+    environment: string;
+    secretKey: string;
+    publicKey?: string;
+  }): Promise<void> {
     const data = JSON.stringify(credentials);
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipher('aes-256-cbc', this.encryptionKey);
+    const cipher = crypto.createCipheriv('aes-256-cbc', this.encryptionKey, iv);
 
     let encrypted = cipher.update(data, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -52,14 +60,19 @@ class CredentialManager {
     fs.writeFileSync(this.credentialsPath, JSON.stringify(payload), { mode: 0o600 });
   }
 
-  async loadCredentials(): Promise<{ environment: string; secretKey: string; publicKey?: string } | null> {
+  async loadCredentials(): Promise<{
+    environment: string;
+    secretKey: string;
+    publicKey?: string;
+  } | null> {
     try {
       if (!fs.existsSync(this.credentialsPath)) {
         return null;
       }
 
       const payload = JSON.parse(fs.readFileSync(this.credentialsPath, 'utf8'));
-      const decipher = crypto.createDecipher('aes-256-cbc', this.encryptionKey);
+      const iv = Buffer.from(payload.iv, 'hex');
+      const decipher = crypto.createDecipheriv('aes-256-cbc', this.encryptionKey, iv);
 
       let decrypted = decipher.update(payload.data, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
@@ -98,10 +111,10 @@ command
         spinner.succeed('Credentials cleared');
 
         // Also clear from current config if it exists
-        const config = await configManager.load();
-        if (config) {
-          config.apiKeys = {};
-          await configManager.save(config);
+        try {
+          await configManager.delete();
+        } catch (error) {
+          // Ignore errors during config deletion
         }
 
         console.log(chalk.green('✓ Successfully logged out'));
@@ -180,7 +193,9 @@ command
       if (!isValid) {
         spinner.fail('API key validation failed');
         console.error(chalk.red('❌ Invalid API key. Please check your key and try again.'));
-        console.log(chalk.gray('Get your API keys from: https://dashboard.paymongo.com/developers'));
+        console.log(
+          chalk.gray('Get your API keys from: https://dashboard.paymongo.com/developers')
+        );
         process.exit(1);
       }
 
@@ -199,9 +214,21 @@ command
       spinner.succeed('Credentials stored securely');
 
       // Update current project config if it exists
-      const config = await configManager.load();
+      let config;
+      try {
+        config = await configManager.load();
+      } catch (error) {
+        // If config exists but is invalid, create a new one
+        console.log(chalk.yellow('⚠️  Creating new project configuration...'));
+        config = configManager.getDefaultConfig();
+      }
+
       if (config) {
         config.environment = answers.environment;
+        // Ensure apiKeys object exists
+        if (!config.apiKeys) {
+          config.apiKeys = {};
+        }
         config.apiKeys[answers.environment] = {
           public: answers.publicKey || '',
           secret: answers.secretKey,
@@ -218,9 +245,8 @@ command
         console.log(`  Public Key: ${'*'.repeat(20)}...${answers.publicKey.slice(-4)}`);
       }
 
-      console.log('\n' + chalk.gray('Use \'paymongo config show\' to view settings'));
-      console.log(chalk.gray('Use \'paymongo login --logout\' to clear credentials'));
-
+      console.log('\n' + chalk.gray("Use 'paymongo config show' to view settings"));
+      console.log(chalk.gray("Use 'paymongo login --logout' to clear credentials"));
     } catch (error) {
       spinner.stop();
       const err = error as Error;
@@ -230,9 +256,13 @@ command
         console.error(chalk.red('❌ API key validation failed:'), err.message);
         console.log('');
         console.log(chalk.yellow('💡 Solutions:'));
-        console.log(chalk.gray('• Double-check your API keys from https://dashboard.paymongo.com/developers'));
-        console.log(chalk.gray('• Make sure you\'re using the correct environment (test/live)'));
-        console.log(chalk.gray('• Test API keys are prefixed with "sk_test_", live keys with "sk_live_"'));
+        console.log(
+          chalk.gray('• Double-check your API keys from https://dashboard.paymongo.com/developers')
+        );
+        console.log(chalk.gray("• Make sure you're using the correct environment (test/live)"));
+        console.log(
+          chalk.gray('• Test API keys are prefixed with "sk_test_", live keys with "sk_live_"')
+        );
       } else if (err.message.includes('Network') || err.message.includes('connection')) {
         console.error(chalk.red('❌ Network error during validation:'), err.message);
         console.log('');

@@ -120,7 +120,7 @@ export class ConfigManager {
   getDefaultConfig(): PayMongoConfig {
     return {
       version: '1.0',
-      projectName: '',
+      projectName: 'PayMongo Project',
       environment: 'test',
       apiKeys: {},
       webhooks: {

@@ -173,6 +173,39 @@ export class ApiClient {
       this.client.get(`/payments/${id}`).then((response) => response.data.data)
     );
   }
+
+  async listPayments(limit: number = 10): Promise<any[]> {
+    const result = await withRetry(() =>
+      this.client
+        .get('/payments', {
+          params: { limit },
+        })
+        .then((response) => response.data.data)
+    );
+    return result;
+  }
+
+  async createPaymentIntent(
+    amount: number,
+    currency: string = 'PHP',
+    description?: string,
+    paymentMethods: string[] = ['card', 'gcash', 'paymaya']
+  ): Promise<any> {
+    return withRetry(() =>
+      this.client
+        .post('/payment_intents', {
+          data: {
+            attributes: {
+              amount,
+              payment_method_allowed: paymentMethods,
+              currency,
+              description,
+            },
+          },
+        })
+        .then((response) => response.data.data)
+    );
+  }
 }
 
 export default ApiClient;

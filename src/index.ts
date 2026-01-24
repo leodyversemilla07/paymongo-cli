@@ -13,6 +13,7 @@ import webhooksCommand from './commands/webhooks';
 import triggerCommand from './commands/trigger';
 import guiCommand from './commands/gui';
 import teamCommand from './commands/team';
+import paymentsCommand from './commands/payments';
 
 const program = new Command();
 
@@ -27,6 +28,7 @@ program.addCommand(devCommand);
 program.addCommand(loginCommand);
 program.addCommand(configCommand);
 program.addCommand(webhooksCommand);
+program.addCommand(paymentsCommand);
 program.addCommand(triggerCommand);
 program.addCommand(guiCommand);
 program.addCommand(teamCommand);
@@ -40,8 +42,8 @@ EXAMPLES
   $ paymongo dev --port 4000
   $ paymongo gui
   $ paymongo webhooks list
+  $ paymongo payments list
   $ paymongo team sync
-  $ paymongo trigger payment.paid
 
 For more information, visit: https://github.com/leodyver/paymongo-cli
 `

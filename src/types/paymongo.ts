@@ -23,6 +23,11 @@ export interface PayMongoConfig {
     autoRegisterWebhook: boolean;
     verifyWebhookSignatures: boolean;
   };
+  team?: {
+    githubToken?: string;
+    repo?: string;
+    branch?: string;
+  };
 }
 
 export interface WebhookData {
