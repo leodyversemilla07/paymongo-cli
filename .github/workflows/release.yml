@@ -41,7 +41,10 @@ jobs:
         scope: '@leodyversemilla07'
 
     - name: Publish to GitHub Packages
-      run: npm publish
+      run: |
+        # Change package name to scoped version for GitHub Packages
+        npm pkg set name='@leodyversemilla07/paymongo-cli'
+        npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
