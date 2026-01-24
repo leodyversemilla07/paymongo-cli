@@ -215,6 +215,15 @@ command
 
           console.log('└──────────────┴─────────────────────────┴───────────┴──────────────────────┘');
           console.log('');
+          
+          // Check if any webhooks are ngrok tunnels and add helpful note
+          const hasNgrokUrls = filteredWebhooks.some(w => w.attributes.url.includes('ngrok'));
+          if (hasNgrokUrls) {
+            console.log(chalk.yellow('ℹ️  Note: URLs containing "ngrok" are tunnels that forward to your localhost'));
+            console.log(chalk.gray('   These are created by "paymongo dev" and cleaned up when the server stops.'));
+            console.log('');
+          }
+          
           console.log(chalk.gray('Use \'paymongo webhooks show <id>\' for details'));
 
         } catch (error) {
@@ -283,8 +292,6 @@ command
           const apiClient = new ApiClient({ config });
           await apiClient.deleteWebhook(id);
           spinner.succeed('Webhook deleted successfully');
-
-          console.log(chalk.green('✓ Webhook deleted successfully'));
 
         } catch (error) {
           spinner.stop();

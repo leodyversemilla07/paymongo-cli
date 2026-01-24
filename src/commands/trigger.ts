@@ -112,23 +112,112 @@ command
             'Content-Type': 'application/json',
             'User-Agent': 'PayMongo-CLI/1.0.0'
           },
-          timeout: 10000
+          timeout: 10000,
+          validateStatus: () => true // Don't throw on any status code
         });
 
-        spinner.succeed(`Webhook sent successfully (${response.status})`);
-
-        if (response.data) {
-          console.log(chalk.gray('\nResponse:'));
-          console.log(chalk.gray('─'.repeat(30)));
-          console.log(JSON.stringify(response.data, null, 2));
+        // Validate HTTP response status
+        if (response.status >= 200 && response.status < 300) {
+          spinner.succeed(`Webhook delivered successfully (HTTP ${response.status})`);
+          
+          if (response.data) {
+            console.log(chalk.gray('\nResponse:'));
+            console.log(chalk.gray('─'.repeat(30)));
+            console.log(JSON.stringify(response.data, null, 2));
+          }
+        } else if (response.status === 404) {
+          spinner.fail(`Webhook endpoint not found (HTTP 404)`);
+          console.log('');
+          console.log(chalk.red('❌ The webhook URL returned 404 Not Found'));
+          console.log('');
+          console.log(chalk.yellow('💡 Possible causes:'));
+          console.log(chalk.gray('  • The webhook endpoint path is incorrect'));
+          console.log(chalk.gray('  • Your server is not running'));
+          console.log(chalk.gray('  • The route is not registered in your application'));
+          console.log('');
+          console.log(chalk.yellow('💡 To fix:'));
+          console.log(chalk.gray(`  • Verify your server has a POST handler at: ${webhookUrl}`));
+          console.log(chalk.gray('  • Check that your server is running and accessible'));
+          process.exit(1);
+        } else if (response.status >= 400 && response.status < 500) {
+          spinner.fail(`Webhook rejected by server (HTTP ${response.status})`);
+          console.log('');
+          console.log(chalk.red(`❌ Server returned client error: ${response.status} ${response.statusText || ''}`));
+          if (response.data) {
+            console.log(chalk.gray('\nServer response:'));
+            console.log(JSON.stringify(response.data, null, 2));
+          }
+          console.log('');
+          console.log(chalk.yellow('💡 Common causes:'));
+          console.log(chalk.gray('  • Invalid request format or headers'));
+          console.log(chalk.gray('  • Authentication/authorization failure'));
+          console.log(chalk.gray('  • Webhook signature verification failed'));
+          process.exit(1);
+        } else if (response.status >= 500) {
+          spinner.fail(`Webhook endpoint error (HTTP ${response.status})`);
+          console.log('');
+          console.log(chalk.red(`❌ Server returned error: ${response.status} ${response.statusText || ''}`));
+          if (response.data) {
+            console.log(chalk.gray('\nServer response:'));
+            console.log(JSON.stringify(response.data, null, 2));
+          }
+          console.log('');
+          console.log(chalk.yellow('💡 This is a server-side error. Check:'));
+          console.log(chalk.gray('  • Server logs for the specific error'));
+          console.log(chalk.gray('  • Webhook handler code for exceptions'));
+          process.exit(1);
         }
 
       } catch (error) {
-        const err = error as Error & { code?: string };
-        if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-          spinner.warn('Webhook URL not reachable - payload generated for testing');
+        const err = error as Error & { code?: string; response?: { status: number; data?: unknown } };
+        
+        if (err.code === 'ECONNREFUSED') {
+          spinner.fail('Connection refused');
+          console.log('');
+          console.log(chalk.red('❌ Could not connect to webhook URL'));
+          console.log('');
+          console.log(chalk.yellow('💡 Possible causes:'));
+          console.log(chalk.gray('  • Server is not running'));
+          console.log(chalk.gray('  • Wrong port number'));
+          console.log(chalk.gray('  • Firewall blocking the connection'));
+          console.log('');
+          console.log(chalk.yellow('💡 To fix:'));
+          console.log(chalk.gray('  • Start your local server'));
+          console.log(chalk.gray(`  • Verify the server is listening on the correct port`));
+          process.exit(1);
+        } else if (err.code === 'ENOTFOUND') {
+          spinner.fail('Host not found');
+          console.log('');
+          console.log(chalk.red('❌ Could not resolve webhook URL hostname'));
+          console.log('');
+          console.log(chalk.yellow('💡 Check:'));
+          console.log(chalk.gray('  • The URL is spelled correctly'));
+          console.log(chalk.gray('  • Your internet connection is working'));
+          console.log(chalk.gray('  • DNS is resolving correctly'));
+          process.exit(1);
+        } else if (err.code === 'ETIMEDOUT' || err.message.includes('timeout')) {
+          spinner.fail('Request timed out');
+          console.log('');
+          console.log(chalk.red('❌ Webhook request timed out after 10 seconds'));
+          console.log('');
+          console.log(chalk.yellow('💡 Possible causes:'));
+          console.log(chalk.gray('  • Server is taking too long to respond'));
+          console.log(chalk.gray('  • Network latency issues'));
+          console.log(chalk.gray('  • Server is stuck or deadlocked'));
+          console.log('');
+          console.log(chalk.yellow('💡 To fix:'));
+          console.log(chalk.gray('  • Check your webhook handler for slow operations'));
+          console.log(chalk.gray('  • Ensure async operations are handled properly'));
+          process.exit(1);
         } else {
-          spinner.fail(`Webhook failed: ${err.message}`);
+          spinner.fail(`Webhook delivery failed: ${err.message}`);
+          console.log('');
+          console.log(chalk.red('❌ Unexpected error occurred'));
+          console.log(chalk.gray(`   Error: ${err.message}`));
+          if (err.code) {
+            console.log(chalk.gray(`   Code: ${err.code}`));
+          }
+          process.exit(1);
         }
       }
 

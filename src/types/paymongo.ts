@@ -18,6 +18,12 @@ export interface PayMongoConfig {
     events: string[];
   };
   webhookSecrets: Record<string, string>; // webhook_id -> secret
+  // Track webhooks registered by this project for cleanup
+  registeredWebhooks?: {
+    id: string;
+    url: string;
+    createdAt: number;
+  }[];
   dev: {
     port: number;
     autoRegisterWebhook: boolean;

@@ -7,13 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-01-24
+
+### Added
+
+- **Dev Server Background Mode** - Run dev server in detached mode with `paymongo dev --detach`:
+  - `paymongo dev status` - Check if dev server is running in background
+  - `paymongo dev stop` - Stop the background dev server
+  - `paymongo dev logs` - View dev server logs with `-f` follow option
+  - Process state management via DevProcessManager service
+- **Project-Specific Webhook Paths** - Webhooks now use project slug in URL (`/webhook/{project-slug}`)
+- **Automatic Webhook Cleanup** - Stale webhooks from previous sessions are cleaned up on dev start
+- **Registered Webhook Tracking** - Track webhooks created by the CLI for proper cleanup
+
+### Improved
+
+- **Webhook Trigger Error Handling** - Enhanced error messages for webhook delivery failures:
+  - Specific handling for HTTP 404, 4xx, and 5xx errors
+  - Connection refused (ECONNREFUSED) guidance
+  - Host not found (ENOTFOUND) troubleshooting
+  - Timeout error handling with actionable suggestions
+- **Dev Server Output** - Clearer display of external and local webhook URLs with forwarding info
+- **Webhooks List** - Added helpful note for ngrok tunnel URLs
+
 ### Fixed
 
-- **ESLint Warnings** - Resolved all 19 ESLint warnings:
-  - Prefixed unused catch variables with underscore (`_error`, `_parseError`)
-  - Replaced non-null assertions with proper null checks
-  - Removed unused imports in test files
-  - Updated ESLint config with `varsIgnorePattern` and `caughtErrorsIgnorePattern`
+- **ES Module Compatibility** - Added `__dirname` compatibility for ES modules in web server
+- **ESLint Warnings** - Resolved all 19 ESLint warnings
 
 ## [1.1.0] - 2026-01-24
 
@@ -108,12 +128,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Highlights |
 |---------|--------------|------------|
+| [1.2.0] | 2026-01-24   | Dev server background mode, improved error handling, webhook cleanup |
 | [1.1.0] | 2026-01-24   | Type safety, Zod validation, rate limiting, dependency updates |
 | [1.0.0] | 2026-01-24   | Initial public release |
 
 ---
 
 ## Upgrade Guide
+
+### Upgrading to 1.2.0
+
+```bash
+npm install -g paymongo-cli@latest
+```
+
+**Breaking Changes:** None. This is a backward-compatible release.
+
+**New Features:**
+- Run dev server in background with `--detach` flag
+- New subcommands: `dev status`, `dev stop`, `dev logs`
+- Automatic cleanup of stale webhooks
+- Improved error messages for webhook triggers
 
 ### Upgrading to 1.1.0
 
@@ -144,6 +179,7 @@ npm install -g paymongo-cli
 - [Issue Tracker](https://github.com/leodyversemilla07/paymongo-cli/issues)
 - [PayMongo API Documentation](https://developers.paymongo.com/)
 
-[Unreleased]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/leodyversemilla07/paymongo-cli/releases/tag/v1.0.0

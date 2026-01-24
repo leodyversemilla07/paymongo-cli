@@ -2,12 +2,17 @@ import express from 'express';
 import { Server as HttpServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import rateLimit from 'express-rate-limit';
 import { ConfigManager } from '../config/manager.js';
 import { ApiClient } from '../api/client.js';
 import { AnalyticsService } from '../analytics/service.js';
 import Logger from '../../utils/logger.js';
 import { WebhookEventPayload } from '../../types/paymongo.js';
+
+// ES module compatibility - __dirname is not available in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface WebServerOptions {
   port: number;
