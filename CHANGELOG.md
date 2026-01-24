@@ -150,6 +150,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Highlights                                                           |
 | ------- | ------------ | -------------------------------------------------------------------- |
+| [1.3.0] | 2026-01-25   | Rate limiting protection, bulk operations, team collaboration        |
 | [1.2.0] | 2026-01-24   | Dev server background mode, improved error handling, webhook cleanup |
 | [1.1.0] | 2026-01-24   | Type safety, Zod validation, rate limiting, dependency updates       |
 | [1.0.0] | 2026-01-24   | Initial public release                                               |
@@ -203,7 +204,8 @@ npm install -g paymongo-cli
 - [Issue Tracker](https://github.com/leodyversemilla07/paymongo-cli/issues)
 - [PayMongo API Documentation](https://developers.paymongo.com/)
 
-[Unreleased]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/leodyversemilla07/paymongo-cli/releases/tag/v1.0.0
