@@ -72,7 +72,7 @@ command
               console.log(chalk.yellow('⚠️  Clipboard copy not available on this system'));
             }
           }
-        } catch (error) {
+        } catch (_error) {
           console.log(chalk.yellow('⚠️  Clipboard copy not available on this system'));
         }
       }
@@ -98,12 +98,12 @@ command
       // Get bundle from user input
       const bundleJson = await input({
         message: 'Paste the key bundle JSON:',
-        validate: (input: string) => {
-          if (!input.trim()) {
+        validate: (bundleInput: string) => {
+          if (!bundleInput.trim()) {
             return 'Please paste the key bundle JSON';
           }
           try {
-            JSON.parse(input);
+            JSON.parse(bundleInput);
             return true;
           } catch {
             return 'Invalid JSON format';
@@ -114,8 +114,8 @@ command
       // Get member name
       const memberName = await input({
         message: 'Enter the name of the team member who shared these keys:',
-        validate: (input: string) => {
-          if (!input.trim()) {
+        validate: (nameInput: string) => {
+          if (!nameInput.trim()) {
             return 'Please enter a member name';
           }
           return true;

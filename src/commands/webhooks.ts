@@ -157,11 +157,10 @@ command
           const apiClient = new ApiClient({ config });
           const results = [];
 
-          for (let i = 0; i < webhooks.length; i++) {
-            const webhook = webhooks[i]!;
+          for (const [index, webhook] of webhooks.entries()) {
             try {
               spinner.start(
-                `Creating webhook ${i + 1}/${webhooks.length}: ${webhook.attributes.url}`
+                `Creating webhook ${index + 1}/${webhooks.length}: ${webhook.attributes.url}`
               );
               const createdWebhook = await apiClient.createWebhook(
                 webhook.attributes.url,
@@ -202,8 +201,8 @@ command
             results
               .filter((r) => !r.success)
               .forEach((r, index) => {
-                if (!r.success && r.original) {
-                  console.log(`  ${index + 1}. ${r.original.attributes.url} - ${r.error!.message}`);
+                if (!r.success && r.original && r.error) {
+                  console.log(`  ${index + 1}. ${r.original.attributes.url} - ${r.error.message}`);
                 }
               });
           }

@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import ConfigManager from '../services/config/manager.js';
 import Spinner from '../utils/spinner.js';
 import Logger from '../utils/logger.js';
-import WebhookEventStore from '../utils/webhook-store.js';
+import WebhookEventStore, { StoredWebhookEvent } from '../utils/webhook-store.js';
 
 interface WebhookPayload {
   data: {
@@ -495,7 +495,7 @@ async function replayWebhookEvent(
       console.log(chalk.gray('ID'.padEnd(20) + 'Event'.padEnd(25) + 'Timestamp'));
       console.log(chalk.gray('─'.repeat(60)));
 
-      events.slice(0, 10).forEach((event: any) => {
+      events.slice(0, 10).forEach((event: StoredWebhookEvent) => {
         const id = event.id.substring(0, 18) + '...';
         const eventType = event.event;
         const timestamp = new Date(event.timestamp * 1000).toLocaleString();
@@ -519,7 +519,7 @@ async function replayWebhookEvent(
     // Replay by event type - show matching events
     if (options.event && !eventId) {
       const events = await store.loadEvents();
-      const matchingEvents = events.filter((e: any) => e.event === options.event);
+      const matchingEvents = events.filter((e: StoredWebhookEvent) => e.event === options.event);
 
       if (matchingEvents.length === 0) {
         console.log(chalk.yellow(`No events found for type: ${options.event}`));
@@ -533,7 +533,7 @@ async function replayWebhookEvent(
 
       console.log(chalk.bold.blue(`\n📋 Recent "${options.event}" Events`));
       console.log(chalk.gray('─'.repeat(60)));
-      matchingEvents.slice(0, 5).forEach((event: any, index: number) => {
+      matchingEvents.slice(0, 5).forEach((event: StoredWebhookEvent, index: number) => {
         const id = event.id;
         const timestamp = new Date(event.timestamp * 1000).toLocaleString();
         console.log(
