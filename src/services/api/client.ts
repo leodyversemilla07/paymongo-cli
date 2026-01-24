@@ -3,18 +3,29 @@ const REQUEST_TIMEOUT = 30000;
 
 import { NetworkError, ApiKeyError, PayMongoError, withRetry } from '../../utils/errors.js';
 import Cache from '../../utils/cache.js';
-import { PayMongoConfig, WebhookData, WebhookDataWithSecret, PaymentDataFull, PaymentIntentData } from '../../types/paymongo.js';
+import RateLimiter, { RateLimitConfig } from './rate-limiter.js';
+import {
+  PayMongoConfig,
+  WebhookData,
+  WebhookDataWithSecret,
+  PaymentDataFull,
+  PaymentIntentData,
+  RefundData,
+} from '../../types/paymongo.js';
 
 export interface ApiClientOptions {
   config: PayMongoConfig;
   timeout?: number;
   enableCache?: boolean;
+  enableRateLimiting?: boolean;
+  rateLimitConfig?: RateLimitConfig;
 }
 
 export class ApiClient {
   private client: AxiosInstance;
   private config: PayMongoConfig;
   private cache: Cache;
+  private rateLimiter?: RateLimiter;
 
   constructor(options: ApiClientOptions) {
     this.config = options.config;
@@ -31,12 +42,78 @@ export class ApiClient {
 
     this.cache = new Cache({ ttl: 2 * 60 * 1000 }); // 2 minute cache for API responses
 
+    // Initialize rate limiter if enabled
+    const rateLimitEnabled =
+      options.enableRateLimiting !== false && this.config.rateLimiting?.enabled !== false;
+    if (rateLimitEnabled) {
+      const rateLimitConfig = options.rateLimitConfig || this.getDefaultRateLimitConfig();
+      // Override with config file settings if they exist
+      if (this.config.rateLimiting) {
+        rateLimitConfig.default.maxRequests = this.config.rateLimiting.maxRequests;
+        rateLimitConfig.default.windowMs = this.config.rateLimiting.windowMs;
+        if (this.config.rateLimiting.environmentMultiplier !== undefined) {
+          rateLimitConfig.default.environmentMultiplier =
+            this.config.rateLimiting.environmentMultiplier;
+        }
+        if (this.config.rateLimiting.endpoints) {
+          rateLimitConfig.endpoints = {
+            ...rateLimitConfig.endpoints,
+            ...this.config.rateLimiting.endpoints,
+          };
+        }
+      }
+      this.rateLimiter = new RateLimiter(this.config, rateLimitConfig);
+    }
+
     this.setupInterceptors();
   }
 
+  private getDefaultRateLimitConfig(): RateLimitConfig {
+    // Default rate limits: generous for development, stricter for production
+    // Window: 1 minute (60,000 ms)
+    // Test environment: 100 requests/minute
+    // Live environment: 50 requests/minute (50% of test)
+    return {
+      default: {
+        maxRequests: 100,
+        windowMs: 60 * 1000, // 1 minute
+        environmentMultiplier: 0.5, // Live gets 50% of test limits
+      },
+      endpoints: {
+        // Webhook operations (more expensive)
+        '/webhooks': {
+          maxRequests: 30, // Stricter limits for webhook creation
+          windowMs: 60 * 1000,
+        },
+        // Payment operations (critical)
+        '/payments': {
+          maxRequests: 60,
+          windowMs: 60 * 1000,
+        },
+        '/payment_intents': {
+          maxRequests: 60,
+          windowMs: 60 * 1000,
+        },
+        '/refunds': {
+          maxRequests: 20, // Very strict for refunds
+          windowMs: 60 * 1000,
+        },
+      },
+      environments: {
+        test: {
+          // Test environment gets full default limits
+        },
+        live: {
+          // Live gets reduced limits via environmentMultiplier
+        },
+      },
+    };
+  }
+
   private setupInterceptors(): void {
-    // Request interceptor to add authentication
-    this.client.interceptors.request.use((config) => {
+    // Request interceptor to add authentication and rate limiting
+    this.client.interceptors.request.use(async (config) => {
+      // Add authentication
       const env = this.config.environment;
       const secretKey = this.config.apiKeys[env]?.secret;
 
@@ -49,12 +126,36 @@ export class ApiClient {
         password: '', // PayMongo uses username-only auth
       };
 
+      // Check rate limits if enabled
+      if (this.rateLimiter) {
+        const endpoint = config.url?.replace('/v1', '') || '/unknown';
+        const limitCheck = this.rateLimiter.checkLimit(endpoint);
+
+        if (!limitCheck.allowed) {
+          const waitTime = Math.ceil(limitCheck.backoffMs! / 1000);
+          throw new PayMongoError(
+            `Rate limit exceeded. Next request available in ${waitTime} seconds. ` +
+              `Consider using --rate-limit-max-requests to increase limits or wait before retrying.`,
+            'RATE_LIMIT_EXCEEDED',
+            429
+          );
+        }
+      }
+
       return config;
     });
 
-    // Response interceptor for error handling
+    // Response interceptor for error handling and rate limit recording
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        // Record successful API call for rate limiting
+        if (this.rateLimiter && response.config.url) {
+          const endpoint = response.config.url.replace('/v1', '');
+          this.rateLimiter.recordCall(endpoint);
+        }
+
+        return response;
+      },
       async (error) => {
         if (axios.isAxiosError(error)) {
           const status = error.response?.status;
@@ -186,7 +287,7 @@ export class ApiClient {
   async listPayments(limit: number = 10): Promise<PaymentDataFull[]> {
     // Validate limit is within API constraints
     const validLimit = Math.max(1, Math.min(100, limit));
-    
+
     const result = await withRetry(() =>
       this.client
         .get('/payments', {
@@ -212,6 +313,58 @@ export class ApiClient {
               payment_method_allowed: paymentMethods,
               currency,
               description,
+            },
+          },
+        })
+        .then((response) => response.data.data)
+    );
+  }
+
+  async confirmPaymentIntent(
+    id: string,
+    paymentMethodId: string,
+    returnUrl?: string
+  ): Promise<PaymentIntentData> {
+    return withRetry(() =>
+      this.client
+        .post(`/payment_intents/${id}/confirm`, {
+          data: {
+            attributes: {
+              payment_method: paymentMethodId,
+              return_url: returnUrl,
+            },
+          },
+        })
+        .then((response) => response.data.data)
+    );
+  }
+
+  async capturePaymentIntent(id: string): Promise<PaymentIntentData> {
+    return withRetry(() =>
+      this.client.post(`/payment_intents/${id}/capture`).then((response) => response.data.data)
+    );
+  }
+
+  async createRefund(
+    paymentId: string,
+    amount?: number,
+    reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer'
+  ): Promise<RefundData> {
+    const attributes: any = {};
+    if (amount !== undefined) {
+      attributes.amount = amount;
+    }
+    if (reason) {
+      attributes.reason = reason;
+    }
+
+    return withRetry(() =>
+      this.client
+        .post('/refunds', {
+          data: {
+            attributes: {
+              payment_id: paymentId,
+              ...attributes,
             },
           },
         })

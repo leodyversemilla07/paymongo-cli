@@ -29,10 +29,27 @@ export interface PayMongoConfig {
     autoRegisterWebhook: boolean;
     verifyWebhookSignatures: boolean;
   };
+  rateLimiting?: {
+    enabled: boolean;
+    maxRequests: number;
+    windowMs: number;
+    environmentMultiplier?: number;
+    endpoints?: Record<string, { maxRequests: number; windowMs: number }>;
+  };
   team?: {
-    githubToken?: string;
-    repo?: string;
-    branch?: string;
+    name?: string;
+    members?: {
+      name: string;
+      email?: string;
+      addedAt: number;
+      sharedKeys?: string[]; // Environment keys that were shared
+    }[];
+    sharedKeyBundles?: {
+      id: string;
+      createdAt: number;
+      environments: ('test' | 'live')[];
+      sharedWith: string[]; // Member names who received this bundle
+    }[];
   };
 }
 
@@ -177,6 +194,21 @@ export interface PaymentIntentData {
     status: 'awaiting_payment_method' | 'awaiting_next_action' | 'processing' | 'succeeded';
     description?: string;
     payment_method_allowed: string[];
+    created_at: number;
+    updated_at: number;
+  };
+}
+
+// Refund Data
+export interface RefundData {
+  id: string;
+  type: 'refund';
+  attributes: {
+    amount: number;
+    currency: string;
+    reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer';
+    status: 'pending' | 'processed' | 'failed';
+    payment_id: string;
     created_at: number;
     updated_at: number;
   };
