@@ -146,8 +146,12 @@ command
         const secretKey = await password({
           message: 'Secret API key:',
           validate: (input) => {
-            if (!input) {return 'Secret API key is required';}
-            if (!validateApiKey(input, 'secret')) {return 'Invalid secret API key format';}
+            if (!input) {
+              return 'Secret API key is required';
+            }
+            if (!validateApiKey(input, 'secret')) {
+              return 'Invalid secret API key format';
+            }
             return true;
           },
         });
@@ -155,8 +159,12 @@ command
         const publicKey = await password({
           message: 'Public API key (optional):',
           validate: (input) => {
-            if (!input) {return true;} // Optional
-            if (!validateApiKey(input, 'public')) {return 'Invalid public API key format';}
+            if (!input) {
+              return true;
+            } // Optional
+            if (!validateApiKey(input, 'public')) {
+              return 'Invalid public API key format';
+            }
             return true;
           },
         });
@@ -285,4 +293,4 @@ command
     }
   });
 
-export default command;
+export { command, CredentialManager };

@@ -1,5 +1,4 @@
 import { Command } from 'commander';
-import { select, input } from '@inquirer/prompts';
 import chalk from 'chalk';
 import ConfigManager from '../services/config/manager.js';
 import Spinner from '../utils/spinner.js';
@@ -100,6 +99,9 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
     if (!selectedEvent) {
       spinner.stop();
 
+      // Lazy load @inquirer/prompts
+      const { select, input } = await import('@inquirer/prompts');
+
       const eventChoice = await select({
         message: 'Select webhook event to trigger:',
         choices: availableEvents.map((event) => ({
@@ -111,7 +113,7 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
       const urlInput = await input({
         message: 'Webhook URL:',
         default: webhookUrl || '',
-        validate: (value) => {
+        validate: (value: string) => {
           try {
             new URL(value);
             return true;
@@ -129,6 +131,11 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
       console.error(
         chalk.red('❌ No webhook URL provided. Use --url option or configure in .paymongo file')
       );
+      process.exit(1);
+    }
+
+    if (!selectedEvent) {
+      console.error(chalk.red('❌ No event selected'));
       process.exit(1);
     }
 

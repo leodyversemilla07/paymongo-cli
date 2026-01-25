@@ -2,31 +2,44 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // Create mock cache
 const mockCache = {
-  get: jest.fn<() => Promise<any>>().mockResolvedValue(null),
-  set: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-  invalidate: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-  clear: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  get: jest.fn<(key: string) => Promise<any>>(),
+  set: jest.fn<(key: string, value: any) => Promise<void>>(),
+  invalidate: jest.fn<(key: string) => Promise<void>>(),
+  clear: jest.fn<() => Promise<void>>(),
 };
 
 // Create mock Cache class
-const MockCache = jest.fn(() => mockCache);
+const MockCache = jest.fn((_options?: any) => mockCache);
 
 // Create mock axios instance
 const mockAxiosInstance = {
-  get: jest.fn<() => Promise<unknown>>(),
-  post: jest.fn<() => Promise<unknown>>(),
-  put: jest.fn<() => Promise<unknown>>(),
-  delete: jest.fn<() => Promise<unknown>>(),
+  get: jest.fn<(url: string, config?: any) => Promise<any>>(),
+  post: jest.fn<(url: string, data?: any, config?: any) => Promise<any>>(),
+  put: jest.fn<(url: string, data?: any, config?: any) => Promise<any>>(),
+  delete: jest.fn<(url: string, config?: any) => Promise<any>>(),
   interceptors: {
-    request: { use: jest.fn() },
-    response: { use: jest.fn() },
+    request: { use: jest.fn<(fn: any) => void>() },
+    response: { use: jest.fn<(success: any, error: any) => void>() },
   },
 };
 
 // Create mock axios
 const mockAxios = {
-  create: jest.fn(() => mockAxiosInstance),
+  create: jest.fn<(config: any) => typeof mockAxiosInstance>(),
+  isAxiosError: jest.fn<(error: any) => boolean>(),
 };
+
+// Create mock rate limiter
+const mockRateLimiter = {
+  checkLimit:
+    jest.fn<
+      (endpoint: string) => { allowed: boolean; backoffMs?: number; remainingRequests?: number }
+    >(),
+  recordCall: jest.fn<(endpoint: string) => void>(),
+};
+
+// Create mock RateLimiter class
+const MockRateLimiter = jest.fn((_config, _rateLimitConfig) => mockRateLimiter);
 
 // Mock modules before importing ApiClient
 jest.unstable_mockModule('axios', () => ({
@@ -35,6 +48,10 @@ jest.unstable_mockModule('axios', () => ({
 
 jest.unstable_mockModule('../../src/utils/cache.js', () => ({
   default: MockCache,
+}));
+
+jest.unstable_mockModule('../../src/services/api/rate-limiter.js', () => ({
+  default: MockRateLimiter,
 }));
 
 // Import after mocking
@@ -72,11 +89,15 @@ describe('ApiClient', () => {
     mockCache.set.mockResolvedValue(undefined);
     mockCache.invalidate.mockResolvedValue(undefined);
     mockCache.clear.mockResolvedValue(undefined);
+    mockRateLimiter.checkLimit.mockImplementation(() => ({ allowed: true }));
+    mockRateLimiter.recordCall.mockImplementation(() => {});
     mockAxiosInstance.get.mockReset();
     mockAxiosInstance.post.mockReset();
     mockAxiosInstance.put.mockReset();
     mockAxiosInstance.delete.mockReset();
     mockAxios.create.mockReturnValue(mockAxiosInstance as any);
+    mockAxios.isAxiosError.mockImplementation((error: any) => error?.isAxiosError === true);
+    MockRateLimiter.mockClear();
 
     apiClient = new ApiClient({ config: validConfig });
   });
@@ -368,20 +389,251 @@ describe('ApiClient', () => {
     });
   });
 
-  describe('error handling', () => {
-    it('should handle network errors and return false for validateApiKey', async () => {
-      // Use a non-retryable error to avoid retry delays
-      const authError = new Error('401 Unauthorized');
-      mockAxiosInstance.get.mockRejectedValue(authError);
+  describe('rate limiting', () => {
+    const configWithRateLimiting = {
+      ...validConfig,
+      rateLimiting: {
+        enabled: true,
+        maxRequests: 50,
+        windowMs: 60000,
+      },
+    };
 
-      await expect(apiClient.validateApiKey()).resolves.toBe(false);
+    it('should initialize rate limiter when enabled', () => {
+      jest.clearAllMocks();
+      new ApiClient({ config: configWithRateLimiting });
+
+      expect(MockRateLimiter).toHaveBeenCalledWith(configWithRateLimiting, expect.any(Object));
     });
 
-    it('should handle generic errors', async () => {
-      const genericError = new Error('Something went wrong');
-      mockAxiosInstance.get.mockRejectedValue(genericError);
+    it('should not initialize rate limiter when disabled', () => {
+      jest.clearAllMocks();
+      new ApiClient({ config: validConfig, enableRateLimiting: false });
 
-      await expect(apiClient.validateApiKey()).resolves.toBe(false);
+      expect(MockRateLimiter).not.toHaveBeenCalled();
+    });
+
+    it('should check rate limits in request interceptor', async () => {
+      new ApiClient({ config: configWithRateLimiting });
+
+      // Mock the interceptors to actually call the rate limiter
+      const requestInterceptor = mockAxiosInstance.interceptors.request.use.mock.calls[0][0];
+      const mockConfig = { url: '/webhooks' };
+
+      await requestInterceptor(mockConfig);
+
+      expect(mockRateLimiter.checkLimit).toHaveBeenCalledWith('/webhooks');
+    });
+
+    it('should throw error when rate limit exceeded', async () => {
+      mockRateLimiter.checkLimit.mockReturnValue({ allowed: false, backoffMs: 5000 });
+      new ApiClient({ config: configWithRateLimiting });
+
+      const requestInterceptor = mockAxiosInstance.interceptors.request.use.mock.calls[0][0];
+      const mockConfig = { url: '/webhooks' };
+
+      await expect(requestInterceptor(mockConfig)).rejects.toThrow('Rate limit exceeded');
+    });
+
+    it('should record successful calls in response interceptor', async () => {
+      new ApiClient({ config: configWithRateLimiting });
+
+      const responseInterceptor = mockAxiosInstance.interceptors.response.use.mock.calls[0][0];
+      const mockResponse = { config: { url: '/webhooks' }, data: {} };
+
+      const result = await responseInterceptor(mockResponse);
+
+      expect(mockRateLimiter.recordCall).toHaveBeenCalledWith('/webhooks');
+      expect(result).toBe(mockResponse);
+    });
+  });
+
+  describe('detailed error handling', () => {
+    let errorInterceptor: any;
+
+    beforeEach(() => {
+      new ApiClient({ config: validConfig });
+      errorInterceptor = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
+    });
+
+    it('should handle 401 unauthorized errors', async () => {
+      const axiosError = {
+        isAxiosError: true,
+        response: { status: 401 },
+        message: 'Unauthorized',
+      };
+
+      await expect(errorInterceptor(axiosError)).rejects.toThrow('Invalid API key or unauthorized');
+    });
+
+    it('should handle 404 not found errors', async () => {
+      const axiosError = {
+        isAxiosError: true,
+        response: { status: 404 },
+        message: 'Not Found',
+      };
+
+      await expect(errorInterceptor(axiosError)).rejects.toThrow('Resource not found');
+    });
+
+    it('should handle 5xx server errors', async () => {
+      const axiosError = {
+        isAxiosError: true,
+        response: { status: 500 },
+        message: 'Internal Server Error',
+      };
+
+      await expect(errorInterceptor(axiosError)).rejects.toThrow(
+        'Server error: Internal Server Error'
+      );
+    });
+
+    it('should handle network errors without response', async () => {
+      const axiosError = {
+        isAxiosError: true,
+        response: undefined,
+        message: 'Network Error',
+      };
+
+      await expect(errorInterceptor(axiosError)).rejects.toThrow(
+        'Network error - no response received: Network Error'
+      );
+    });
+
+    it('should handle generic API errors', async () => {
+      const axiosError = {
+        isAxiosError: true,
+        response: { status: 422 },
+        message: 'Unprocessable Entity',
+      };
+
+      await expect(errorInterceptor(axiosError)).rejects.toThrow('Unprocessable Entity');
+    });
+  });
+
+  describe('confirmPaymentIntent', () => {
+    const paymentIntentId = 'pi_123';
+    const paymentMethodId = 'pm_456';
+    const returnUrl = 'https://example.com/return';
+    const mockConfirmedIntent = { id: paymentIntentId, attributes: { status: 'succeeded' } };
+
+    it('should confirm payment intent with payment method only', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: { data: mockConfirmedIntent } });
+
+      const result = await apiClient.confirmPaymentIntent(paymentIntentId, paymentMethodId);
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        `/payment_intents/${paymentIntentId}/confirm`,
+        {
+          data: {
+            attributes: {
+              payment_method: paymentMethodId,
+              return_url: undefined,
+            },
+          },
+        }
+      );
+      expect(result).toEqual(mockConfirmedIntent);
+    });
+
+    it('should confirm payment intent with return URL', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: { data: mockConfirmedIntent } });
+
+      await apiClient.confirmPaymentIntent(paymentIntentId, paymentMethodId, returnUrl);
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        `/payment_intents/${paymentIntentId}/confirm`,
+        {
+          data: {
+            attributes: {
+              payment_method: paymentMethodId,
+              return_url: returnUrl,
+            },
+          },
+        }
+      );
+    });
+  });
+
+  describe('capturePaymentIntent', () => {
+    const paymentIntentId = 'pi_123';
+    const mockCapturedIntent = { id: paymentIntentId, attributes: { status: 'succeeded' } };
+
+    it('should capture payment intent', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: { data: mockCapturedIntent } });
+
+      const result = await apiClient.capturePaymentIntent(paymentIntentId);
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        `/payment_intents/${paymentIntentId}/capture`
+      );
+      expect(result).toEqual(mockCapturedIntent);
+    });
+  });
+
+  describe('createRefund', () => {
+    const paymentId = 'pay_123';
+    const mockRefund = { id: 'ref_456', attributes: { amount: 5000 } };
+
+    it('should create refund with payment ID only', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: { data: mockRefund } });
+
+      const result = await apiClient.createRefund(paymentId);
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/refunds', {
+        data: {
+          attributes: {
+            payment_id: paymentId,
+          },
+        },
+      });
+      expect(result).toEqual(mockRefund);
+    });
+
+    it('should create refund with amount', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: { data: mockRefund } });
+
+      await apiClient.createRefund(paymentId, 5000);
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/refunds', {
+        data: {
+          attributes: {
+            payment_id: paymentId,
+            amount: 5000,
+          },
+        },
+      });
+    });
+
+    it('should create refund with reason', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: { data: mockRefund } });
+
+      await apiClient.createRefund(paymentId, undefined, 'fraudulent');
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/refunds', {
+        data: {
+          attributes: {
+            payment_id: paymentId,
+            reason: 'fraudulent',
+          },
+        },
+      });
+    });
+
+    it('should create refund with amount and reason', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: { data: mockRefund } });
+
+      await apiClient.createRefund(paymentId, 7500, 'requested_by_customer');
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/refunds', {
+        data: {
+          attributes: {
+            payment_id: paymentId,
+            amount: 7500,
+            reason: 'requested_by_customer',
+          },
+        },
+      });
     });
   });
 });

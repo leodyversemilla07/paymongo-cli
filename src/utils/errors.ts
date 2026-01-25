@@ -1,3 +1,15 @@
+import type Logger from './logger.js';
+
+let retryLogger: Logger | undefined;
+
+async function getRetryLogger(): Promise<Logger> {
+  if (!retryLogger) {
+    const module = await import('./logger.js');
+    retryLogger = new module.default({ level: 'info' });
+  }
+  return retryLogger;
+}
+
 export class PayMongoError extends Error {
   constructor(
     message: string,
@@ -103,10 +115,11 @@ export async function withRetry<T>(
       }
 
       if (!silent) {
+        const logger = await getRetryLogger();
         if (error instanceof PayMongoError && error.code === 'RATE_LIMIT_EXCEEDED') {
-          console.log(`Rate limit reached, waiting ${currentDelay}ms before retry...`);
+          logger.info(`Rate limit reached, waiting ${currentDelay}ms before retry...`);
         } else {
-          console.log(`Attempt ${attempt + 1} failed, retrying in ${currentDelay}ms...`);
+          logger.info(`Attempt ${attempt + 1} failed, retrying in ${currentDelay}ms...`);
         }
       }
       await new Promise((resolve) => setTimeout(resolve, currentDelay));

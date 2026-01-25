@@ -21,6 +21,11 @@ build/
 .paymongo/
 *.paymongo.json
 
+# Test output files (webhook exports, etc.)
+custom.json
+webhooks_*.json
+payments_*.json
+
 # IDE and editors
 .vscode/
 .idea/

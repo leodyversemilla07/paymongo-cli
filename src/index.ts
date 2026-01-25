@@ -9,8 +9,8 @@ const { version } = require('../package.json');
 
 // Import commands
 import initCommand from './commands/init.js';
-import devCommand from './commands/dev.js';
-import loginCommand from './commands/login.js';
+import { command as devCommand } from './commands/dev.js';
+import { command as loginCommand } from './commands/login.js';
 import configCommand from './commands/config.js';
 import webhooksCommand from './commands/webhooks.js';
 import triggerCommand from './commands/trigger.js';

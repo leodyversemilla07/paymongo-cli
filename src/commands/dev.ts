@@ -149,10 +149,27 @@ class DevServer {
       return false;
     }
 
-    // For now, look for any webhook secret in config
-    // TODO: In production, this should be more sophisticated - match webhook URL or ID
+    const webhookId = signatureParts.find((part) => part.startsWith('li='))?.split('=')[1];
+
     const webhookSecrets = this.config.webhookSecrets || {};
-    const secretKeys = Object.values(webhookSecrets) as string[];
+    const configuredSecret = webhookId ? webhookSecrets[webhookId] : undefined;
+    let secretKeys: string[] = [];
+
+    if (configuredSecret) {
+      secretKeys = [configuredSecret];
+    } else {
+      secretKeys = Object.values(webhookSecrets).filter(
+        (secret) => typeof secret === 'string' && secret.length > 0
+      ) as string[];
+
+      if (webhookId && secretKeys.length > 0) {
+        console.log(
+          chalk.yellow('⚠️'),
+          `No webhook secret found for id ${webhookId}. Update your configuration.`
+        );
+        return false;
+      }
+    }
 
     if (secretKeys.length === 0) {
       console.log(
@@ -225,7 +242,10 @@ command
         console.log(chalk.gray('  PID:'), existingState.pid);
         console.log(chalk.gray('  Port:'), existingState.port);
         console.log(chalk.gray('  Tunnel:'), existingState.tunnelUrl);
-        console.log(chalk.gray('  Uptime:'), DevProcessManager.formatUptime(existingState.startedAt));
+        console.log(
+          chalk.gray('  Uptime:'),
+          DevProcessManager.formatUptime(existingState.startedAt)
+        );
         console.log('');
         console.log(chalk.gray('Use "paymongo dev stop" to stop the server first.'));
         return;
@@ -265,7 +285,7 @@ command
       console.log(chalk.gray('Use "paymongo dev logs" to view server logs'));
 
       // Give the server a moment to start, then exit
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       return;
     }
 
@@ -376,7 +396,7 @@ command
             config.webhookSecrets = config.webhookSecrets || {};
             config.webhookSecrets[webhook.id] = webhook.attributes.secret;
           }
-          
+
           // Track this webhook for project-specific cleanup
           config.registeredWebhooks = config.registeredWebhooks || [];
           config.registeredWebhooks.push({
@@ -385,7 +405,7 @@ command
             createdAt: Date.now(),
           });
           await configManager.save(config);
-          
+
           if (webhook.attributes?.secret) {
             spinner.succeed(`Webhook registered: ${webhookId} (with signature verification)`);
           } else {
@@ -414,7 +434,7 @@ command
       const projectSlug = config.projectName.toLowerCase().replace(/[^a-z0-9]/g, '-');
       const localWebhookUrl = `http://localhost:${port}/webhook/${projectSlug}`;
       const externalWebhookUrl = `${tunnelUrl}/webhook/${projectSlug}`;
-      
+
       console.log('\n' + chalk.green('🚀 PayMongo Development Server'));
       console.log('');
       console.log(chalk.bold('URLs:'));
@@ -425,7 +445,10 @@ command
       console.log(chalk.gray('     '), chalk.green(localWebhookUrl));
       console.log('');
       console.log(chalk.bold('Forwarding:'));
-      console.log(chalk.gray('  '), `${chalk.yellow(tunnelUrl)} ${chalk.gray('→')} ${chalk.green(`http://localhost:${port}`)}`);
+      console.log(
+        chalk.gray('  '),
+        `${chalk.yellow(tunnelUrl)} ${chalk.gray('→')} ${chalk.green(`http://localhost:${port}`)}`
+      );
       console.log('');
       if (webhookId) {
         console.log(chalk.bold('Webhook ID:'), chalk.gray(webhookId));
@@ -435,7 +458,11 @@ command
         (options.events || 'payment.paid,payment.failed').split(',').join(', ')
       );
       console.log('');
-      console.log(chalk.gray('💡 Tip: Use the External URL in PayMongo dashboard, requests will forward to your local server'));
+      console.log(
+        chalk.gray(
+          '💡 Tip: Use the External URL in PayMongo dashboard, requests will forward to your local server'
+        )
+      );
       console.log(chalk.gray('Press Ctrl+C to stop'));
 
       // Save state for background process management
@@ -472,10 +499,12 @@ command
           if (webhookId) {
             spinner.start('Cleaning up webhook...');
             await new ApiClient({ config }).deleteWebhook(webhookId);
-            
+
             // Remove from tracked webhooks
             if (config.registeredWebhooks) {
-              config.registeredWebhooks = config.registeredWebhooks.filter(w => w.id !== webhookId);
+              config.registeredWebhooks = config.registeredWebhooks.filter(
+                (w) => w.id !== webhookId
+              );
               delete config.webhookSecrets[webhookId];
               await configManager.save(config);
             }
@@ -601,14 +630,18 @@ command
 
     if (killed) {
       // Wait a moment for cleanup
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       DevProcessManager.clearState();
       spinner.succeed('Dev server stopped');
 
       // Note: The webhook might still be registered if the process didn't clean up properly
       // The next dev start will clean it up
       console.log('');
-      console.log(chalk.gray('Note: If the webhook was not cleaned up, it will be removed on next "paymongo dev" start.'));
+      console.log(
+        chalk.gray(
+          'Note: If the webhook was not cleaned up, it will be removed on next "paymongo dev" start.'
+        )
+      );
     } else {
       spinner.fail('Failed to stop dev server');
       console.log(chalk.yellow('Try manually killing the process:'));
@@ -648,12 +681,12 @@ command
     console.log(chalk.gray(`(Last ${lines.length} lines from ${logFile})`));
     console.log(chalk.gray('─'.repeat(60)));
     console.log('');
-    lines.forEach(line => console.log(line));
+    lines.forEach((line) => console.log(line));
 
     if (options.follow) {
       console.log('');
       console.log(chalk.gray('Following logs... Press Ctrl+C to stop'));
-      
+
       let lastSize = fs.statSync(logFile).size;
 
       fs.watchFile(logFile, { interval: 500 }, () => {
@@ -673,4 +706,4 @@ command
     }
   });
 
-export default command;
+export { command, DevServer };
