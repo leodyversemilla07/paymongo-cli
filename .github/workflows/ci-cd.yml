@@ -39,7 +39,7 @@ jobs:
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v3
-        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '18'
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20'
         with:
           file: ./coverage/lcov.info
 
@@ -55,7 +55,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
