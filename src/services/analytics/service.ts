@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import Logger from '../../utils/logger.js';
+import { PayMongoConfig } from '../../types/paymongo.js';
 
 export interface WebhookEventData {
   type?: string;
@@ -32,9 +33,11 @@ export class AnalyticsService {
   private events: WebhookEvent[] = [];
   private dataFile: string;
   private logger: Logger;
+  private config: PayMongoConfig;
 
-  constructor() {
+  constructor(config: PayMongoConfig) {
     this.logger = new Logger();
+    this.config = config;
     this.dataFile = path.join(process.cwd(), '.paymongo', 'analytics.json');
     this.loadEvents();
   }
@@ -68,6 +71,11 @@ export class AnalyticsService {
   }
 
   public recordEvent(event: Omit<WebhookEvent, 'id' | 'timestamp'>): void {
+    // Check if analytics is enabled
+    if (!this.config.analytics?.enabled) {
+      return; // Silently skip recording if analytics is disabled
+    }
+
     const webhookEvent: WebhookEvent = {
       ...event,
       id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

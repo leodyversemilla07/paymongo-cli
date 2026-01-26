@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-01-26
+
 ### Added
 
 - **Comprehensive Test Coverage** - Added 380 unit tests across 23 test suites:
@@ -24,6 +26,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Documentation Updates** - Updated TESTING.md with current test coverage status and completed work sections
 - **Git Configuration** - Updated .gitignore to exclude test output and coverage files
+
+## [1.4.0] - 2026-01-26
+
+### Added
+
+- **Code Generation Command** - New `paymongo generate` command with comprehensive boilerplate generation:
+  - `webhook-handler` subcommand: Generate webhook handlers for specific events (payment.paid, payment.failed, etc.)
+  - `payment-intent` subcommand: Generate payment intent creation code with multiple payment methods
+  - `checkout-page` subcommand: Generate checkout pages in HTML, React, or Vue with PayMongo integration
+  - Support for multiple languages (JavaScript, TypeScript) and frameworks (Express, Fastify, Hapi)
+  - Interactive prompts for configuration and file naming
+  - Comprehensive help text and examples for all subcommands
+
+- **Analytics Configuration** - Added analytics opt-in configuration to PayMongo config schema:
+  - `analytics.enabled` boolean flag for webhook event tracking
+  - Enhanced analytics service with proper configuration validation
+  - Analytics tests with enabled/disabled state handling
+
+### Changed
+
+- **HTTP Client Migration** - Complete migration from Axios to Undici for improved performance:
+  - New `UndiciClient` class using Node.js built-in `undici` library
+  - Better error handling with custom error classes (NetworkError, ApiKeyError, PayMongoError)
+  - Maintained caching and rate limiting functionality
+  - Improved timeout and retry logic with exponential backoff
+
+- **Logger Simplification** - Replaced Winston with custom console-based logger:
+  - Removed heavy Winston dependency for faster CLI startup (<100ms target)
+  - Custom logger with chalk colors and structured output
+  - Maintained all logging levels (error, warn, info, debug) and meta data support
+  - Convenience methods for success/failure/warning messages
+
+- **TypeScript Configuration Optimization** - CLI-specific performance optimizations:
+  - Disabled source maps and declarations for faster builds
+  - Added `removeComments` and `importHelpers: false` for smaller bundles
+  - Maintained strict type checking while optimizing for CLI usage
+
+### Removed
+
+- **Web Dashboard (GUI)** - Complete removal of web-based interface:
+  - Deleted `web/index.html` dashboard file
+  - Removed GUI command and related tests
+  - CLI now focuses exclusively on terminal-based operations
+  - Simplified architecture by removing Express/Socket.io dependencies
+
+### Fixed
+
+- **Type Safety Improvements** - Enhanced literal type assertions throughout codebase:
+  - Added `'webhook' as const` and `'enabled' as const` type assertions
+  - Improved webhook command test type safety
+  - Better TypeScript compliance with strict mode settings
+
+### Performance
+
+- **Startup Time Optimization** - Reduced CLI startup time through dependency reduction:
+  - Removed Winston logger dependency
+  - Eliminated web dashboard assets and dependencies
+  - Optimized TypeScript compilation settings
+  - Maintained <100ms startup time target
+
+- **HTTP Performance** - Undici client provides better performance than Axios:
+  - Native Node.js HTTP/2 support
+  - Improved connection pooling and keep-alive handling
+  - Better memory usage for concurrent requests
 
 ## [1.3.0] - 2026-01-25
 
@@ -168,6 +234,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Highlights                                                           |
 | ------- | ------------ | -------------------------------------------------------------------- |
+| [1.4.1] | 2026-01-26   | Test coverage completion, ESLint compliance, documentation updates   |
+| [1.4.0] | 2026-01-26   | Code generation, HTTP client migration, GUI removal, performance optimization |
 | [1.3.0] | 2026-01-25   | Rate limiting protection, bulk operations, team collaboration        |
 | [1.2.0] | 2026-01-24   | Dev server background mode, improved error handling, webhook cleanup |
 | [1.1.0] | 2026-01-24   | Type safety, Zod validation, rate limiting, dependency updates       |
@@ -176,7 +244,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## Upgrade Guide
+### Upgrading to 1.4.1
 
+```bash
+npm install -g paymongo-cli@latest
+```
+
+**Breaking Changes:** None. This is a backward-compatible patch release.
+
+**New Features:**
+- Comprehensive test coverage (380 unit tests across 23 test suites)
+- Full ESLint compliance (resolved all 44 warnings)
+- Enhanced documentation and testing guides
+
+### Upgrading to 1.4.0
+
+```bash
+npm install -g paymongo-cli@latest
+```
+
+**Breaking Changes:**
+- Web dashboard (GUI) has been completely removed. Use terminal commands instead.
+- Winston logger dependency removed. Internal logging API may have changed.
+
+**New Features:**
+- Code generation with `paymongo generate` command
+- Improved HTTP performance with Undici client
+- Faster CLI startup time
+- Analytics configuration support
+
+**Migration Notes:**
+- If you were using the web GUI, migrate to using terminal commands
+- No action needed for existing webhook or payment operations
+- All existing CLI commands remain functional
 ### Upgrading to 1.2.0
 
 ```bash
@@ -222,7 +322,9 @@ npm install -g paymongo-cli
 - [Issue Tracker](https://github.com/leodyversemilla07/paymongo-cli/issues)
 - [PayMongo API Documentation](https://developers.paymongo.com/)
 
-[Unreleased]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.0.0...v1.1.0

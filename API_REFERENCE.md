@@ -14,7 +14,6 @@ This document provides a comprehensive technical reference for the PayMongo CLI.
 | [`paymongo webhooks`](#paymongo-webhooks) | List, create, and manage PayMongo webhooks.               |
 | [`paymongo config`](#paymongo-config)     | View and modify project configuration.                    |
 | [`paymongo team`](#paymongo-team)         | Sync configurations with your team via GitHub.            |
-| [`paymongo gui`](#paymongo-gui)           | Launch the web-based monitoring dashboard.                |
 | [`paymongo trigger`](#paymongo-trigger)   | Simulate webhook events locally for testing.              |
 | [`paymongo login`](#paymongo-login)       | Securely manage your PayMongo API credentials.            |
 
@@ -162,23 +161,6 @@ Collaborate with your team by syncing configurations via GitHub.
 - `-r, --repo <repo>`: GitHub repository (e.g., `org/repo`).
 - `-b, --branch <branch>`: Target branch.
 - `-d, --direction <dir>`: Sync direction (`push`, `pull`, or `both`).
-
----
-
-### paymongo gui
-
-Launch a premium web-based dashboard for real-time monitoring of webhooks and configuration management.
-
-**Syntax:**
-
-```bash
-paymongo gui [options]
-```
-
-**Options:**
-
-- `-p, --port <port>`: GUI server port (default: `8080`).
-- `-h, --host <host>`: Host to bind to (default: `localhost`).
 
 ---
 

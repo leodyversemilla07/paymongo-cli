@@ -1,3 +1,4 @@
+import Table from 'cli-table3';
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ConfigManager from '../services/config/manager.js';
@@ -141,20 +142,41 @@ export async function listAction(options: { limit?: string; json?: boolean }) {
       return;
     }
 
-    console.log('\n' + chalk.bold('Recent Payments'));
-    console.log(chalk.gray('─'.repeat(80)));
-
-    payments.forEach((payment: PaymentDataFull) => {
-      const amount = (payment.attributes.amount / 100).toFixed(2);
-      const currency = payment.attributes.currency;
-      const status = payment.attributes.status;
-      const created = new Date(payment.attributes.created_at * 1000).toLocaleDateString();
-
-      console.log(
-        `${chalk.bold(payment.id)} ${chalk.cyan(`₱${amount}`)} ${chalk.gray(currency)} ${getStatusColor(status)(status)} ${chalk.gray(created)}`
-      );
+    // Create table with cli-table3
+    const table = new Table({
+      head: [
+        chalk.bold('ID'),
+        chalk.bold('Amount'),
+        chalk.bold('Status'),
+        chalk.bold('Created'),
+        chalk.bold('Description'),
+      ],
+      colWidths: [25, 12, 12, 12, 30],
+      style: {
+        head: [],
+        border: [],
+      },
     });
 
+    payments.forEach((payment: PaymentDataFull) => {
+      const amount = `₱${(payment.attributes.amount / 100).toFixed(2)}`;
+      const status = payment.attributes.status;
+      const created = new Date(payment.attributes.created_at * 1000).toLocaleDateString();
+      const description = payment.attributes.description || 'N/A';
+
+      table.push([
+        chalk.cyan(payment.id.substring(0, 20) + (payment.id.length > 20 ? '...' : '')),
+        chalk.yellow(amount),
+        getStatusColor(status)(status),
+        chalk.gray(created),
+        chalk.white(description.length > 25 ? description.substring(0, 22) + '...' : description),
+      ]);
+    });
+
+    console.log('\n' + chalk.bold('Recent Payments'));
+    console.log(chalk.gray('─'.repeat(95)));
+    console.log(table.toString());
+    console.log(chalk.gray(`Total: ${payments.length} payments`));
     console.log('');
   } catch (error) {
     spinner.stop();

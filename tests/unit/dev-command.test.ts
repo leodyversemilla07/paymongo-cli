@@ -8,7 +8,8 @@ type RequestHandler = (req: unknown, res: unknown) => void;
 const mockSelect = jest.fn();
 const mockPassword = jest.fn();
 const mockApiClientValidate = jest.fn<() => Promise<boolean>>();
-const mockApiClientCreateWebhook = jest.fn<() => Promise<{ id: string; attributes: { secret: string } }>>();
+const mockApiClientCreateWebhook =
+  jest.fn<() => Promise<{ id: string; attributes: { secret: string } }>>();
 const mockApiClientDeleteWebhook = jest.fn<() => Promise<void>>();
 
 const mockFsExistsSync = jest.fn<() => boolean>();
@@ -55,6 +56,16 @@ const mockSpinnerSucceed = jest.fn();
 const mockSpinnerFail = jest.fn();
 const mockSpinnerWarn = jest.fn();
 const mockSpinnerStop = jest.fn();
+
+// Mock AnalyticsService
+const mockAnalyticsRecordEvent = jest.fn();
+
+// Mock modules before importing dev command
+jest.unstable_mockModule('../../src/services/analytics/service.js', () => ({
+  AnalyticsService: jest.fn().mockImplementation(() => ({
+    recordEvent: mockAnalyticsRecordEvent,
+  })),
+}));
 
 // Mock @inquirer/prompts
 jest.unstable_mockModule('@inquirer/prompts', () => ({
@@ -201,6 +212,8 @@ describe('Dev Command', () => {
     mockSpinnerFail.mockImplementation(() => {});
     mockSpinnerWarn.mockImplementation(() => {});
     mockSpinnerStop.mockImplementation(() => {});
+
+    mockAnalyticsRecordEvent.mockImplementation(() => {});
 
     // Mock ngrok
     mockNgrokForward.mockResolvedValue({
@@ -479,6 +492,74 @@ describe('Dev Command', () => {
 
       expect(mockRes.writeHead).toHaveBeenCalledWith(401, { 'Content-Type': 'application/json' });
       expect(mockRes.end).toHaveBeenCalledWith(JSON.stringify({ error: 'Invalid signature' }));
+    });
+
+    it('should record analytics events for successful webhooks', async () => {
+      const config = {
+        version: '1.0',
+        projectName: 'test-project',
+        environment: 'test' as const,
+        apiKeys: { test: { secret: 'sk_test_key', public: 'pk_test_key' } },
+        webhooks: { url: '', events: [] },
+        webhookSecrets: {},
+        dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
+        analytics: { enabled: true },
+      };
+
+      const devServer = new DevServer(3000, config);
+
+      const mockReq = {
+        method: 'POST',
+        url: '/webhook/test-project',
+        headers: {} as Record<string, string>,
+        on: jest.fn<(event: string, callback: (data?: string) => void) => void>(),
+      };
+      const mockRes = {
+        writeHead: jest.fn(),
+        end: jest.fn(),
+      };
+
+      mockReq.on.mockImplementation((event: string, callback: (data?: string) => void) => {
+        if (event === 'data') {
+          callback(
+            JSON.stringify({
+              data: {
+                type: 'payment',
+                id: 'pay_123',
+                attributes: {
+                  amount: 10000,
+                  status: 'paid',
+                },
+              },
+            })
+          );
+        } else if (event === 'end') {
+          callback();
+        }
+      });
+
+      const mockServer: MockServer = {
+        listen: jest.fn((port: number, callback?: () => void) => {
+          if (callback) callback();
+        }),
+        on: jest.fn(),
+        close: jest.fn(),
+      };
+      mockHttpCreateServer.mockReturnValue(mockServer);
+
+      await devServer.start();
+
+      const requestHandler = mockHttpCreateServer.mock.calls[0]?.[0] as unknown as RequestHandler;
+      requestHandler(mockReq, mockRes);
+
+      expect(mockAnalyticsRecordEvent).toHaveBeenCalledWith({
+        type: 'payment',
+        success: true,
+        data: {
+          amount: 10000,
+          status: 'paid',
+        },
+      });
     });
   });
 });

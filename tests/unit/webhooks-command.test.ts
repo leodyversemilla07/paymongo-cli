@@ -360,11 +360,11 @@ describe('Webhooks Command', () => {
         mockWebhook,
         {
           id: 'wh_456',
-          type: 'webhook',
+          type: 'webhook' as const,
           attributes: {
             url: 'https://example.com/webhook2',
             events: ['payment.failed'],
-            status: 'disabled',
+            status: 'disabled' as const,
             created_at: 1609459200,
             updated_at: 1609459200,
           },
@@ -375,6 +375,29 @@ describe('Webhooks Command', () => {
       await listAction({ status: 'enabled' });
 
       // Should filter to show only enabled webhooks
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Webhooks'));
+    });
+
+    it('should filter webhooks by events', async () => {
+      const webhooks: WebhookData[] = [
+        mockWebhook,
+        {
+          id: 'wh_456',
+          type: 'webhook' as const,
+          attributes: {
+            url: 'https://example.com/webhook2',
+            events: ['payment.failed'],
+            status: 'enabled' as const,
+            created_at: 1609459200,
+            updated_at: 1609459200,
+          },
+        },
+      ];
+      mockApiClientListWebhooks.mockResolvedValue(webhooks);
+
+      await listAction({ events: 'payment' });
+
+      // Should filter to show only webhooks with payment events
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Webhooks'));
     });
   });

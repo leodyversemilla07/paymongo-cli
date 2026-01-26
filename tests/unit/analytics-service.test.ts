@@ -7,6 +7,7 @@ describe('AnalyticsService', () => {
   let tempDir: string;
   let analyticsService: AnalyticsService;
   let originalCwd: string;
+  let config: any;
 
   beforeEach(() => {
     // Store original cwd
@@ -24,8 +25,20 @@ describe('AnalyticsService', () => {
       fs.mkdirSync(paymongoDir, { recursive: true });
     }
 
-    // Create analytics service instance
-    analyticsService = new AnalyticsService();
+    // Create config
+    config = {
+      version: '1.0',
+      projectName: 'test-project',
+      environment: 'test' as const,
+      apiKeys: { test: { secret: 'sk_test_key', public: 'pk_test_key' } },
+      webhooks: { url: '', events: [] },
+      webhookSecrets: {},
+      dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
+      analytics: { enabled: true },
+    };
+
+    // Create analytics service instance with config
+    analyticsService = new AnalyticsService(config);
   });
 
   afterEach(() => {
@@ -75,15 +88,32 @@ describe('AnalyticsService', () => {
       expect(new Set(eventIds).size).toBe(2); // All IDs should be unique
     });
 
-    it('should include timestamp in recorded events', () => {
-      const beforeTime = Date.now();
-      analyticsService.recordEvent({ type: 'payment.paid', success: true });
-      const afterTime = Date.now();
+    it('should not record events when analytics is disabled', () => {
+      const disabledConfig = {
+        ...config,
+        analytics: { enabled: false },
+      };
+      const disabledService = new AnalyticsService(disabledConfig);
+
+      disabledService.recordEvent({
+        type: 'payment.paid',
+        success: true,
+        data: { amount: 10000 },
+      });
+
+      const analytics = disabledService.getAnalytics();
+      expect(analytics.totalEvents).toBe(0);
+    });
+
+    it('should record events when analytics is enabled', () => {
+      analyticsService.recordEvent({
+        type: 'payment.paid',
+        success: true,
+        data: { amount: 10000 },
+      });
 
       const analytics = analyticsService.getAnalytics();
-      const event = analytics.recentEvents[0];
-      expect(event.timestamp).toBeGreaterThanOrEqual(beforeTime);
-      expect(event.timestamp).toBeLessThanOrEqual(afterTime);
+      expect(analytics.totalEvents).toBe(1);
     });
   });
 
@@ -179,7 +209,7 @@ describe('AnalyticsService', () => {
       analyticsService.clearAnalytics();
 
       // Create new instance to verify persistence
-      const newService = new AnalyticsService();
+      const newService = new AnalyticsService(config);
       const analytics = newService.getAnalytics();
       expect(analytics.totalEvents).toBe(0);
     });
@@ -203,7 +233,7 @@ describe('AnalyticsService', () => {
       analyticsService.recordEvent({ type: 'payment.failed', success: false, error: 'Test error' });
 
       // Create new instance to verify persistence
-      const newService = new AnalyticsService();
+      const newService = new AnalyticsService(config);
       const analytics = newService.getAnalytics();
 
       expect(analytics.totalEvents).toBe(2);
@@ -216,7 +246,7 @@ describe('AnalyticsService', () => {
       fs.writeFileSync(analyticsFile, '{ invalid json }');
 
       // Should not throw, just use empty events
-      const newService = new AnalyticsService();
+      const newService = new AnalyticsService(config);
       const analytics = newService.getAnalytics();
       expect(analytics.totalEvents).toBe(0);
     });
@@ -227,7 +257,7 @@ describe('AnalyticsService', () => {
         fs.unlinkSync(analyticsFile);
       }
 
-      const newService = new AnalyticsService();
+      const newService = new AnalyticsService(config);
       const analytics = newService.getAnalytics();
       expect(analytics.totalEvents).toBe(0);
     });

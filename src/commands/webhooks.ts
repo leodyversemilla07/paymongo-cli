@@ -1,3 +1,4 @@
+import Table from 'cli-table3';
 import { Command } from 'commander';
 import { input, checkbox } from '@inquirer/prompts';
 import chalk from 'chalk';
@@ -346,7 +347,7 @@ export async function createAction(options: { url?: string; events?: string }) {
   }
 }
 
-export async function listAction(options: { json?: boolean; status?: string }) {
+export async function listAction(options: { json?: boolean; status?: string; events?: string }) {
   const spinner = new Spinner();
   const configManager = new ConfigManager();
 
@@ -376,10 +377,16 @@ export async function listAction(options: { json?: boolean; status?: string }) {
       return;
     }
 
-    // Filter by status if specified
+    // Filter by status and events if specified
     let filteredWebhooks = webhooks;
     if (options.status) {
       filteredWebhooks = webhooks.filter((w) => w.attributes.status === options.status);
+    }
+    if (options.events) {
+      const eventFilter = options.events.toLowerCase();
+      filteredWebhooks = filteredWebhooks.filter((w) =>
+        w.attributes.events.some((event) => event.toLowerCase().includes(eventFilter))
+      );
     }
 
     if (options.json) {
@@ -388,17 +395,22 @@ export async function listAction(options: { json?: boolean; status?: string }) {
     }
 
     // Display table
-    console.log('\nWebhooks (' + filteredWebhooks.length + ' total)');
-    console.log('');
-    console.log('┌──────────────┬─────────────────────────┬───────────┬──────────────────────┐');
-    console.log('│ ID           │ URL                     │ Status    │ Events               │');
-    console.log('├──────────────┼─────────────────────────┼───────────┼──────────────────────┤');
+    console.log('\n' + chalk.bold('Webhooks'));
+    console.log(chalk.gray('─'.repeat(95)));
+    const table = new Table({
+      head: [chalk.bold('ID'), chalk.bold('URL'), chalk.bold('Status'), chalk.bold('Events')],
+      colWidths: [15, 35, 12, 25],
+      style: {
+        head: [],
+        border: [],
+      },
+    });
 
     filteredWebhooks.forEach((webhook) => {
-      const id = webhook.id.substring(0, 12) + '...';
+      const id = webhook.id.substring(0, 12) + (webhook.id.length > 12 ? '...' : '');
       const url =
-        webhook.attributes.url.length > 23
-          ? webhook.attributes.url.substring(0, 20) + '...'
+        webhook.attributes.url.length > 30
+          ? webhook.attributes.url.substring(0, 27) + '...'
           : webhook.attributes.url;
       const status = webhook.attributes.status;
       const events =
@@ -406,13 +418,16 @@ export async function listAction(options: { json?: boolean; status?: string }) {
           ? `${webhook.attributes.events[0]} +${webhook.attributes.events.length - 1} more`
           : webhook.attributes.events[0] || 'None';
 
-      console.log(
-        `│ ${id.padEnd(12)} │ ${url.padEnd(23)} │ ${status.padEnd(9)} │ ${events.padEnd(20)} │`
-      );
+      table.push([
+        chalk.cyan(id),
+        chalk.yellow(url),
+        getStatusColor(status)(status),
+        chalk.white(events),
+      ]);
     });
 
-    console.log('└──────────────┴─────────────────────────┴───────────┴──────────────────────┘');
-    console.log('');
+    console.log(table.toString());
+    console.log(chalk.gray(`Total: ${filteredWebhooks.length} webhooks`));
 
     // Check if any webhooks are ngrok tunnels and add helpful note
     const hasNgrokUrls = filteredWebhooks.some((w) => w.attributes.url.includes('ngrok'));
@@ -607,6 +622,7 @@ const command = new Command('webhooks')
       .description('List all webhooks')
       .option('-j, --json', 'Output as JSON')
       .option('-s, --status <status>', 'Filter by status (enabled/disabled)')
+      .option('-e, --events <events>', 'Filter by event type (e.g., payment, source)')
       .action(async (options) => listAction(options))
   )
   .addCommand(
@@ -624,3 +640,14 @@ const command = new Command('webhooks')
   );
 
 export default command;
+
+function getStatusColor(status: string) {
+  switch (status) {
+    case 'enabled':
+      return chalk.green;
+    case 'disabled':
+      return chalk.red;
+    default:
+      return chalk.white;
+  }
+}

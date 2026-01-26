@@ -103,11 +103,10 @@ paymongo-cli/
 ├── bin/                # CLI Entry points
 ├── src/
 │   ├── commands/       # Commander.js command implementations
-│   ├── services/       # Core business logic (API, Config, GitHub, Web)
+│   ├── services/       # Core business logic (API, Config, GitHub)
 │   ├── utils/          # Shared utilities (Errors, Logging, Validators)
 │   ├── types/          # TypeScript definitions
 │   └── index.ts        # CLI Application initialization
-├── web/                # Frontend code for the 'paymongo gui'
 └── tests/              # Test suites (Unit, Integration, E2E)
 ```
 
@@ -117,9 +116,8 @@ paymongo-cli/
 - **Services**:
   - `ApiClient`: Wrapper for PayMongo V1 API with built-in retries and caching.
   - `ConfigManager`: Handles `.paymongo` project configuration using `cosmiconfig`.
-  - `WebServer`: Express + Socket.io server for the real-time GUI dashboard.
 - **Utilities**:
-  - `Logger`: Formatted terminal output using `chalk` and `winston`.
+  - `Logger`: Lightweight console-based logging with `chalk` formatting.
   - `withRetry`: Exponential backoff utility for resilient networking.
 
 ### 3. API Integration

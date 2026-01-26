@@ -1,4 +1,3 @@
-import winston from 'winston';
 import chalk from 'chalk';
 
 export interface LoggerOptions {
@@ -10,54 +9,61 @@ export interface LoggerOptions {
 type LogMeta = Error | Record<string, unknown> | string | number | boolean | undefined;
 
 class Logger {
-  private logger: winston.Logger;
+  private level: 'error' | 'warn' | 'info' | 'debug' = 'info';
 
   constructor(options: LoggerOptions = {}) {
-    const { level = 'info', file } = options;
+    this.level = options.level ?? 'info';
+  }
 
-    const transports: winston.transport[] = [
-      new winston.transports.Console({
-        level,
-        format: winston.format.combine(
-          winston.format.colorize(),
-          winston.format.simple()
-        ),
-      }),
-    ];
+  private shouldLog(requestedLevel: 'error' | 'warn' | 'info' | 'debug'): boolean {
+    const levels = { error: 0, warn: 1, info: 2, debug: 3 };
+    return levels[requestedLevel] <= levels[this.level];
+  }
 
-    if (file) {
-      transports.push(
-        new winston.transports.File({
-          filename: file,
-          level,
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.json()
-          ),
-        })
-      );
+  private formatMessage(message: string, meta?: LogMeta[]): string {
+    let output = message;
+
+    if (meta && meta.length > 0) {
+      meta.forEach((item) => {
+        if (item instanceof Error) {
+          output += ` ${item.message}`;
+        } else if (typeof item === 'object') {
+          output += ` ${JSON.stringify(item)}`;
+        } else if (item !== undefined) {
+          output += ` ${String(item)}`;
+        }
+      });
     }
 
-    this.logger = winston.createLogger({
-      level,
-      transports,
-    });
+    return output;
   }
 
   error(message: string, ...meta: LogMeta[]): void {
-    this.logger.error(message, ...meta);
+    if (this.shouldLog('error')) {
+      const formatted = this.formatMessage(message, meta);
+      console.error(chalk.red('ERROR:'), formatted);
+    }
   }
 
   warn(message: string, ...meta: LogMeta[]): void {
-    this.logger.warn(message, ...meta);
+    if (this.shouldLog('warn')) {
+      const formatted = this.formatMessage(message, meta);
+      console.warn(chalk.yellow('WARN:'), formatted);
+    }
   }
 
   info(message: string, ...meta: LogMeta[]): void {
-    this.logger.info(message, ...meta);
+    if (this.shouldLog('info')) {
+      const formatted = this.formatMessage(message, meta);
+      console.info(chalk.blue('INFO:'), formatted);
+    }
   }
 
   debug(message: string, ...meta: LogMeta[]): void {
-    this.logger.debug(message, ...meta);
+    if (this.shouldLog('debug')) {
+      const formatted = this.formatMessage(message, meta);
+      console.debug(chalk.gray('DEBUG:'), formatted);
+    }
   }
 
   // Convenience methods with chalk colors

@@ -142,16 +142,16 @@ This will send a mock `payment.paid` payload to your local webhook endpoint.
 
 **Parameters**:
 
-| Option | Description |
-|:-------|:------------|
-| `-n, --name <name>` | Project name |
+| Option                    | Description                            |
+| :------------------------ | :------------------------------------- |
+| `-n, --name <name>`       | Project name                           |
 | `-e, --env <environment>` | Environment (test/live), default: test |
-| `-k, --key <key>` | Secret API key |
-| `--public-key <key>` | Public API key |
-| `-u, --url <url>` | Webhook URL |
-| `-p, --port <port>` | Development port, default: 3000 |
-| `--events <events>` | Comma-separated webhook events |
-| `--non-interactive` | Skip interactive prompts |
+| `-k, --key <key>`         | Secret API key                         |
+| `--public-key <key>`      | Public API key                         |
+| `-u, --url <url>`         | Webhook URL                            |
+| `-p, --port <port>`       | Development port, default: 3000        |
+| `--events <events>`       | Comma-separated webhook events         |
+| `--non-interactive`       | Skip interactive prompts               |
 
 #### `paymongo login`
 
@@ -184,13 +184,14 @@ paymongo login --logout
 
 **Parameters**:
 
-| Option | Description |
-|:-------|:------------|
-| `-p, --port <port>` | Port for webhook server, default: 3000 |
-| `--no-register` | Skip automatic webhook registration |
-| `-e, --events <events>` | Events to listen for |
+| Option                  | Description                            |
+| :---------------------- | :------------------------------------- |
+| `-p, --port <port>`     | Port for webhook server, default: 3000 |
+| `--no-register`         | Skip automatic webhook registration    |
+| `-e, --events <events>` | Events to listen for                   |
 
 **Features**:
+
 - Automatic ngrok tunnel creation
 - Webhook registration with PayMongo
 - Signature verification
@@ -204,13 +205,14 @@ paymongo login --logout
 
 **Parameters**:
 
-| Option | Description |
-|:-------|:------------|
+| Option                | Description                    |
+| :-------------------- | :----------------------------- |
 | `-e, --event <event>` | Specific event type to trigger |
-| `-u, --url <url>` | Webhook URL to send to |
-| `-j, --json` | Output event data as JSON |
+| `-u, --url <url>`     | Webhook URL to send to         |
+| `-j, --json`          | Output event data as JSON      |
 
 **Supported Events**:
+
 - `payment.paid`
 - `payment.failed`
 - `payment.refunded`
@@ -262,17 +264,17 @@ paymongo config reset
 
 Create a timestamped backup of current configuration.
 
-| Option | Description |
-|:-------|:------------|
-| `-d, --directory <dir>` | Backup directory |
-| `-n, --name <name>` | Custom filename prefix |
+| Option                  | Description            |
+| :---------------------- | :--------------------- |
+| `-d, --directory <dir>` | Backup directory       |
+| `-n, --name <name>`     | Custom filename prefix |
 
 ##### `config import <file>`
 
 Import configuration from a JSON file.
 
-| Option | Description |
-|:-------|:------------|
+| Option        | Description               |
+| :------------ | :------------------------ |
 | `-f, --force` | Overwrite existing config |
 
 ---
@@ -291,18 +293,18 @@ Import configuration from a JSON file.
 
 List all webhooks.
 
-| Option | Description |
-|:-------|:------------|
-| `-j, --json` | JSON output |
+| Option                  | Description                         |
+| :---------------------- | :---------------------------------- |
+| `-j, --json`            | JSON output                         |
 | `-s, --status <status>` | Filter by status (enabled/disabled) |
 
 ##### `webhooks create`
 
 Create a new webhook interactively or with options.
 
-| Option | Description |
-|:-------|:------------|
-| `-u, --url <url>` | Webhook URL |
+| Option                  | Description            |
+| :---------------------- | :--------------------- |
+| `-u, --url <url>`       | Webhook URL            |
 | `-e, --events <events>` | Comma-separated events |
 
 ##### `webhooks show <id>`
@@ -313,8 +315,8 @@ Show detailed webhook information.
 
 Delete a webhook (with confirmation).
 
-| Option | Description |
-|:-------|:------------|
+| Option      | Description       |
+| :---------- | :---------------- |
 | `-y, --yes` | Skip confirmation |
 
 ---
@@ -333,52 +335,31 @@ Delete a webhook (with confirmation).
 
 List recent payments (default limit: 10).
 
-| Option | Description |
-|:-------|:------------|
+| Option                 | Description                |
+| :--------------------- | :------------------------- |
 | `-l, --limit <number>` | Number of payments to show |
-| `-j, --json` | JSON output |
+| `-j, --json`           | JSON output                |
 
 ##### `payments show <id>`
 
 Show detailed payment information.
 
-| Option | Description |
-|:-------|:------------|
+| Option       | Description |
+| :----------- | :---------- |
 | `-j, --json` | JSON output |
 
 ##### `payments create-intent`
 
 Create a new payment intent.
 
-| Option | Description |
-|:-------|:------------|
-| `-a, --amount <amount>` | Amount in centavos (e.g., 10000 for ₱100.00) |
-| `-c, --currency <currency>` | Currency code (default: PHP) |
-| `-d, --description <description>` | Payment description |
-| `-j, --json` | JSON output |
+| Option                            | Description                                  |
+| :-------------------------------- | :------------------------------------------- |
+| `-a, --amount <amount>`           | Amount in centavos (e.g., 10000 for ₱100.00) |
+| `-c, --currency <currency>`       | Currency code (default: PHP)                 |
+| `-d, --description <description>` | Payment description                          |
+| `-j, --json`                      | JSON output                                  |
 
 ---
-
-### GUI Dashboard
-
-#### `paymongo gui`
-
-**Purpose**: Start web-based GUI dashboard for monitoring.
-
-**Authentication**: Required (for API operations).
-
-**Parameters**:
-
-| Option | Description |
-|:-------|:------------|
-| `-p, --port <port>` | Port for GUI server, default: 8080 |
-| `-h, --host <host>` | Host to bind to, default: localhost |
-
-**Features**:
-- Real-time webhook monitoring
-- Configuration management
-- Webhook status overview
-- Analytics dashboard
 
 ---
 
@@ -396,27 +377,27 @@ Create a new payment intent.
 
 Sync configuration with team repository.
 
-| Option | Description |
-|:-------|:------------|
-| `-r, --repo <repo>` | GitHub repository (owner/repo) |
-| `-b, --branch <branch>` | Branch, default: main |
-| `-f, --force` | Force overwrite |
-| `-d, --direction <direction>` | sync/push/pull, default: sync |
+| Option                        | Description                    |
+| :---------------------------- | :----------------------------- |
+| `-r, --repo <repo>`           | GitHub repository (owner/repo) |
+| `-b, --branch <branch>`       | Branch, default: main          |
+| `-f, --force`                 | Force overwrite                |
+| `-d, --direction <direction>` | sync/push/pull, default: sync  |
 
 ##### `team auth`
 
 Set up GitHub authentication.
 
-| Option | Description |
-|:-------|:------------|
+| Option                | Description                  |
+| :-------------------- | :--------------------------- |
 | `-t, --token <token>` | GitHub Personal Access Token |
 
 ##### `team invite <email>`
 
 Invite team member.
 
-| Option | Description |
-|:-------|:------------|
+| Option              | Description                         |
+| :------------------ | :---------------------------------- |
 | `-r, --role <role>` | Role assignment, default: developer |
 
 ##### `team members`
@@ -427,23 +408,22 @@ List team members (shows repository info).
 
 ### Authentication Requirements Summary
 
-| Command | Requires API Auth | Notes |
-|:--------|:------------------|:------|
-| `init` | No | Sets up authentication |
-| `login` | No | Manages authentication |
-| `dev` | Yes | Registers webhooks via API |
-| `trigger` | No | Local event simulation |
-| `config` | No | Local configuration only |
-| `webhooks` | Yes | All webhook operations |
-| `payments` | Yes | All payment operations |
-| `gui` | Yes | API operations for data |
-| `team` | GitHub token for sync | Team features require GitHub auth |
+| Command    | Requires API Auth     | Notes                             |
+| :--------- | :-------------------- | :-------------------------------- |
+| `init`     | No                    | Sets up authentication            |
+| `login`    | No                    | Manages authentication            |
+| `dev`      | Yes                   | Registers webhooks via API        |
+| `trigger`  | No                    | Local event simulation            |
+| `config`   | No                    | Local configuration only          |
+| `webhooks` | Yes                   | All webhook operations            |
+| `payments` | Yes                   | All payment operations            |
+| `team`     | GitHub token for sync | Team features require GitHub auth |
 
 ### Command Dependencies
 
 - **Config-dependent**: All commands except `init` require `.paymongo` config file
 - **API-dependent**: Commands marked as requiring auth need valid PayMongo API keys
-- **Network-dependent**: `dev`, `webhooks`, `gui` require internet for API calls
+- **Network-dependent**: `dev`, `webhooks` require internet for API calls
 - **Interactive**: Most commands support both interactive and non-interactive modes
 
 ---

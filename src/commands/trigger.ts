@@ -1,3 +1,4 @@
+import Table from 'cli-table3';
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ConfigManager from '../services/config/manager.js';
@@ -178,26 +179,29 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
     spinner.start('Sending webhook...');
 
     try {
-      const axios = (await import('axios')).default;
-      const response = await axios.post(webhookUrl, webhookPayload, {
+      const { request } = await import('undici');
+      const response = await request(webhookUrl, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'PayMongo-CLI/1.0.0',
         },
-        timeout: 10000,
-        validateStatus: () => true, // Don't throw on any status code
+        body: JSON.stringify(webhookPayload),
+        signal: AbortSignal.timeout(10000),
       });
 
       // Validate HTTP response status
-      if (response.status >= 200 && response.status < 300) {
-        spinner.succeed(`Webhook delivered successfully (HTTP ${response.status})`);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        spinner.succeed(`Webhook delivered successfully (HTTP ${response.statusCode})`);
 
-        if (response.data) {
+        const contentType = response.headers['content-type'];
+        if (contentType && contentType.includes('application/json')) {
+          const responseData = await response.body.json();
           console.log(chalk.gray('\nResponse:'));
           console.log(chalk.gray('─'.repeat(30)));
-          console.log(JSON.stringify(response.data, null, 2));
+          console.log(JSON.stringify(responseData, null, 2));
         }
-      } else if (response.status === 404) {
+      } else if (response.statusCode === 404) {
         spinner.fail(`Webhook endpoint not found (HTTP 404)`);
         console.log('');
         console.log(chalk.red('❌ The webhook URL returned 404 Not Found'));
@@ -211,17 +215,15 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
         console.log(chalk.gray(`  • Verify your server has a POST handler at: ${webhookUrl}`));
         console.log(chalk.gray('  • Check that your server is running and accessible'));
         process.exit(1);
-      } else if (response.status >= 400 && response.status < 500) {
-        spinner.fail(`Webhook rejected by server (HTTP ${response.status})`);
+      } else if (response.statusCode >= 400 && response.statusCode < 500) {
+        spinner.fail(`Webhook rejected by server (HTTP ${response.statusCode})`);
         console.log('');
-        console.log(
-          chalk.red(
-            `❌ Server returned client error: ${response.status} ${response.statusText || ''}`
-          )
-        );
-        if (response.data) {
+        console.log(chalk.red(`❌ Server returned client error: ${response.statusCode}`));
+        const contentType = response.headers['content-type'];
+        if (contentType && contentType.includes('application/json')) {
+          const responseData = await response.body.json();
           console.log(chalk.gray('\nServer response:'));
-          console.log(JSON.stringify(response.data, null, 2));
+          console.log(JSON.stringify(responseData, null, 2));
         }
         console.log('');
         console.log(chalk.yellow('💡 Common causes:'));
@@ -229,15 +231,15 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
         console.log(chalk.gray('  • Authentication/authorization failure'));
         console.log(chalk.gray('  • Webhook signature verification failed'));
         process.exit(1);
-      } else if (response.status >= 500) {
-        spinner.fail(`Webhook endpoint error (HTTP ${response.status})`);
+      } else if (response.statusCode >= 500) {
+        spinner.fail(`Webhook endpoint error (HTTP ${response.statusCode})`);
         console.log('');
-        console.log(
-          chalk.red(`❌ Server returned error: ${response.status} ${response.statusText || ''}`)
-        );
-        if (response.data) {
+        console.log(chalk.red(`❌ Server returned error: ${response.statusCode}`));
+        const contentType = response.headers['content-type'];
+        if (contentType && contentType.includes('application/json')) {
+          const responseData = await response.body.json();
           console.log(chalk.gray('\nServer response:'));
-          console.log(JSON.stringify(response.data, null, 2));
+          console.log(JSON.stringify(responseData, null, 2));
         }
         console.log('');
         console.log(chalk.yellow('💡 This is a server-side error. Check:'));
@@ -498,18 +500,25 @@ async function replayWebhookEvent(
       }
 
       console.log(chalk.bold.blue('\n📋 Stored Webhook Events'));
-      console.log(chalk.gray('─'.repeat(60)));
-      console.log(chalk.gray('ID'.padEnd(20) + 'Event'.padEnd(25) + 'Timestamp'));
-      console.log(chalk.gray('─'.repeat(60)));
+      console.log(chalk.gray('─'.repeat(95)));
+      const table = new Table({
+        head: [chalk.bold('ID'), chalk.bold('Event'), chalk.bold('Timestamp')],
+        colWidths: [25, 30, 25],
+        style: {
+          head: [],
+          border: [],
+        },
+      });
 
       events.slice(0, 10).forEach((event: StoredWebhookEvent) => {
-        const id = event.id.substring(0, 18) + '...';
+        const id = event.id.substring(0, 22) + (event.id.length > 22 ? '...' : '');
         const eventType = event.event;
         const timestamp = new Date(event.timestamp * 1000).toLocaleString();
-        console.log(
-          `${chalk.cyan(id)} ${chalk.yellow(eventType.padEnd(25))} ${chalk.gray(timestamp)}`
-        );
+
+        table.push([chalk.cyan(id), chalk.yellow(eventType), chalk.gray(timestamp)]);
       });
+
+      console.log(table.toString());
 
       if (events.length > 10) {
         console.log(
@@ -580,29 +589,32 @@ async function replayWebhookEvent(
       spinner.start('Sending webhook...');
 
       try {
-        const axios = (await import('axios')).default;
-        const response = await axios.post(webhookUrl, event.payload, {
+        const { request } = await import('undici');
+        const response = await request(webhookUrl, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'User-Agent': 'PayMongo-CLI/1.0.0',
           },
-          timeout: 10000,
-          validateStatus: () => true,
+          body: JSON.stringify(event.payload),
+          signal: AbortSignal.timeout(10000),
         });
 
-        if (response.status >= 200 && response.status < 300) {
-          spinner.succeed(`Webhook replayed successfully (HTTP ${response.status})`);
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          spinner.succeed(`Webhook replayed successfully (HTTP ${response.statusCode})`);
 
-          if (response.data && !options.json) {
-            console.log(chalk.gray('\nResponse:'));
-            console.log(chalk.gray('─'.repeat(30)));
-            console.log(JSON.stringify(response.data, null, 2));
+          const contentType = response.headers['content-type'];
+          if (contentType && contentType.includes('application/json')) {
+            const responseData = await response.body.json();
+            if (!options.json) {
+              console.log(chalk.gray('\nResponse:'));
+              console.log(chalk.gray('─'.repeat(30)));
+              console.log(JSON.stringify(responseData, null, 2));
+            }
           }
         } else {
-          spinner.fail(`Webhook replay failed (HTTP ${response.status})`);
-          console.log(
-            chalk.red(`Server responded with: ${response.status} ${response.statusText || ''}`)
-          );
+          spinner.fail(`Webhook replay failed (HTTP ${response.statusCode})`);
+          console.log(chalk.red(`Server responded with: ${response.statusCode}`));
           process.exit(1);
         }
       } catch (error) {

@@ -51,6 +51,9 @@ export interface PayMongoConfig {
       sharedWith: string[]; // Member names who received this bundle
     }[];
   };
+  analytics?: {
+    enabled: boolean; // Opt-in analytics for webhook event tracking
+  };
 }
 
 export interface WebhookData {

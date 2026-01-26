@@ -15,9 +15,9 @@ PayMongo CLI is the official-feel command-line tool designed to streamline your 
 - **Local Webhook Forwarding**: Seamlessly receive PayMongo webhooks on your localhost using integrated `ngrok` tunneling.
 - **Zero-Config Setup**: Get started in seconds with `paymongo init`.
 - **Payment Testing**: Create and monitor payment intents and payments directly from your terminal.
-- **Real-time Monitoring**: Watch webhook events as they happen with formatted logs or a web-based GUI.
+- **Real-time Monitoring**: Watch webhook events as they happen with formatted terminal logs.
+- **Privacy-First Analytics**: Optional local webhook event tracking to improve your development workflow (opt-in only).
 - **Team Collaboration**: Sync configurations across your team using GitHub integration.
-- **Web Dashboard**: Use `paymongo gui` for a premium visual monitoring experience.
 - **Bulk Operations**: Import/export payments and webhooks for easy migration between environments.
 - **Rate Limiting Protection**: Built-in API abuse prevention with configurable limits and automatic backoff.
 - **Secure Management**: Encrypted storage for your API keys.
@@ -111,9 +111,49 @@ paymongo config rate-limit disable
 
 Use `--no-rate-limit` with any command to temporarily disable rate limiting:
 
-```bash
+````bash
 paymongo payments list --no-rate-limit
-```
+---
+
+## Analytics (Optional)
+
+PayMongo CLI can optionally track webhook events to provide insights into your development workflow. All analytics data is stored locally and never transmitted to external servers.
+
+### Privacy-First Design
+
+- **Opt-in Only**: Analytics is disabled by default and must be explicitly enabled
+- **Local Storage**: All data remains on your machine
+- **No External Transmission**: Data is never sent to PayMongo or third parties
+- **Full Control**: Disable anytime and clear all stored data
+
+### Enabling Analytics
+
+```bash
+# Enable webhook event tracking
+paymongo config analytics enable
+
+# View current analytics status
+paymongo config analytics status
+
+# Disable analytics (default)
+paymongo config analytics disable
+````
+
+### Analytics Features
+
+When enabled, the CLI tracks:
+
+- **Webhook Events**: Successful and failed webhook deliveries
+- **Event Types**: Payment events, source events, and more
+- **Response Times**: Processing performance metrics
+- **Error Analysis**: Failed webhook reasons and patterns
+
+Analytics data helps you:
+
+- Monitor webhook reliability during development
+- Identify integration issues early
+- Optimize your webhook handling code
+- Track testing patterns and event frequencies
 
 ---
 
@@ -124,11 +164,11 @@ paymongo payments list --no-rate-limit
 | `paymongo init`              | Initialize a new project and set up credentials.        |
 | `paymongo dev`               | Start local development server with webhook forwarding. |
 | `paymongo payments`          | Manage payments and payment intents.                    |
-| `paymongo webhooks`          | List, create, and manage PayMongo webhooks.             |
+| `paymongo webhooks`          | List, create, and manage PayMongo webhooks with filtering by status and event type.             |
 | `paymongo config`            | View and modify CLI configuration.                      |
+| `paymongo config analytics`  | Configure webhook analytics settings.                   |
 | `paymongo config rate-limit` | Configure rate limiting settings.                       |
 | `paymongo team`              | Sync configurations with your team via GitHub.          |
-| `paymongo gui`               | Launch the web-based monitoring dashboard.              |
 | `paymongo trigger`           | Simulate webhook events locally for testing.            |
 
 > Use `paymongo <command> --help` for detailed information on any command.

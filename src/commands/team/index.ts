@@ -1,3 +1,4 @@
+import Table from 'cli-table3';
 import { Command } from 'commander';
 import Spinner from '../../utils/spinner.js';
 import chalk from 'chalk';
@@ -182,18 +183,36 @@ command
       }
 
       console.log(chalk.bold('Team Members:'));
-      console.log('─'.repeat(70));
-
-      members.forEach((member) => {
-        const name = member.name.padEnd(20);
-        const email = (member.email || '').padEnd(30);
-        const sharedKeys = (member.sharedKeys?.join(', ') || 'none').padEnd(15);
-        const addedAt = new Date(member.addedAt).toLocaleDateString();
-
-        console.log(`${name}${email}${sharedKeys}${addedAt}`);
+      console.log(chalk.gray('─'.repeat(95)));
+      const table = new Table({
+        head: [
+          chalk.bold('Name'),
+          chalk.bold('Email'),
+          chalk.bold('Shared Keys'),
+          chalk.bold('Added'),
+        ],
+        colWidths: [20, 30, 20, 15],
+        style: {
+          head: [],
+          border: [],
+        },
       });
 
-      console.log('');
+      members.forEach((member) => {
+        const name = member.name;
+        const email = member.email || 'N/A';
+        const sharedKeys = member.sharedKeys?.join(', ') || 'none';
+        const addedAt = new Date(member.addedAt).toLocaleDateString();
+
+        table.push([
+          chalk.cyan(name),
+          chalk.yellow(email),
+          chalk.white(sharedKeys),
+          chalk.gray(addedAt),
+        ]);
+      });
+
+      console.log(table.toString());
       console.log(chalk.gray(`Total members: ${members.length}`));
     } catch (error) {
       spinner.stop();

@@ -10,6 +10,7 @@ import Spinner from '../utils/spinner.js';
 import { withRetry } from '../utils/errors.js';
 import { PayMongoConfig, TunnelInfo, WebhookEventPayload } from '../types/paymongo.js';
 import { DevProcessManager } from '../services/dev/process-manager.js';
+import { AnalyticsService } from '../services/analytics/service.js';
 
 interface DevOptions {
   port?: string;
@@ -23,10 +24,12 @@ class DevServer {
   private server: http.Server;
   private port: number;
   private config: PayMongoConfig;
+  private analytics: AnalyticsService;
 
   constructor(port: number, config: PayMongoConfig) {
     this.port = port;
     this.config = config;
+    this.analytics = new AnalyticsService(config);
 
     this.server = http.createServer((req, res) => {
       this.handleWebhookRequest(req, res);
@@ -80,6 +83,14 @@ class DevServer {
           console.log(chalk.red('⚠️'), 'Webhook signature verification failed');
           res.writeHead(401, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Invalid signature' }));
+
+          // Record failed analytics event
+          this.analytics.recordEvent({
+            type: event.data?.type || 'unknown',
+            success: false,
+            error: 'Invalid signature',
+            data: event.data?.attributes,
+          });
           return;
         }
 
@@ -92,6 +103,13 @@ class DevServer {
         console.error(chalk.red('✗'), 'Failed to process webhook:', (error as Error).message);
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid JSON' }));
+
+        // Record failed analytics event for JSON parsing errors
+        this.analytics.recordEvent({
+          type: 'unknown',
+          success: false,
+          error: 'Invalid JSON',
+        });
       }
     });
   }
@@ -100,6 +118,13 @@ class DevServer {
     const timestamp = new Date().toLocaleTimeString();
     const eventType = event.data?.type || 'unknown';
     const eventId = event.data?.id || 'unknown';
+
+    // Record analytics event
+    this.analytics.recordEvent({
+      type: eventType,
+      success: true,
+      data: event.data?.attributes,
+    });
 
     console.log('');
     console.log(chalk.gray('────────────────────────────────────────────────────────────'));
