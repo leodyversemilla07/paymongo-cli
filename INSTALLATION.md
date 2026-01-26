@@ -4,7 +4,7 @@ This guide provides step-by-step instructions for installing the PayMongo CLI on
 
 ## System Requirements
 
-- **Node.js**: v18.0.0 or higher
+- **Node.js**: v20.0.0 or higher
 - **npm**: v9.0.0 or higher
 - **Operating System**:
   - Windows 10/11
@@ -68,7 +68,7 @@ paymongo --version
 
 1. **Install Node.js**: Use your package manager (e.g., `apt` for Ubuntu):
    ```bash
-   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
    sudo apt-get install -y nodejs
    ```
 2. **Permissions**: If you get `EACCES` errors during global installation, use a version manager like `nvm` or fix npm permissions:
@@ -148,7 +148,7 @@ To ensure everything is working correctly:
 ## ❓ Troubleshooting
 
 - **Command Not Found**: Ensure your npm global binaries directory is in your system's `PATH`.
-- **Node.js Version**: Verify you are using Node.js 18+ with `node -v`.
+- **Node.js Version**: Verify you are using Node.js 20+ with `node -v`.
 - **ngrok Errors**: If the tunnel fails to start, verify your authtoken with `paymongo dev --ngrok-token <token>`.
 - **Permission Denied**: On Unix-based systems, avoid using `sudo` for npm global installs. Use `nvm` or follow the permission fix in the Linux section.
 

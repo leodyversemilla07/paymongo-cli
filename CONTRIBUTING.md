@@ -12,7 +12,7 @@ This guide provides everything you need to know to get started with local develo
 
 Before you begin, ensure you have the following installed:
 
-- **Node.js**: v18.0.0 or higher (Check with `node -v`)
+- **Node.js**: v20.0.0 or higher (Check with `node -v`)
 - **npm**: v9.0.0 or higher
 - **Git**: For version control
 - **ngrok account**: Required for testing webhook forwarding features (Free tier is sufficient)

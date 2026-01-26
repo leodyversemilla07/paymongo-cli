@@ -32,7 +32,7 @@ PayMongo CLI is a powerful command-line interface that streamlines the PayMongo 
 
 ### System Requirements
 
-- **Node.js**: v18.0.0 or higher
+- **Node.js**: v20.0.0 or higher
 - **npm**: v9.0.0 or higher
 - **Internet Connection**: Required for API calls and ngrok tunneling.
 

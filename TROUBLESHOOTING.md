@@ -36,7 +36,7 @@ This guide provides solutions to common issues you might encounter while using t
 ### Node.js version conflicts
 
 **Issue**: `paymongo` command fails with syntax errors or "Module not found".
-**Solution**: Ensure you are using Node.js **v18.0.0** or higher.
+**Solution**: Ensure you are using Node.js **v20.0.0** or higher.
 
 - Check version: `node -v`
 - Upgrade Node.js at [nodejs.org](https://nodejs.org/).

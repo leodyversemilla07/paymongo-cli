@@ -28,7 +28,7 @@ PayMongo CLI is the official-feel command-line tool designed to streamline your 
 
 ### Prerequisites
 
-- **Node.js**: v18.0.0 or higher
+- **Node.js**: v20.0.0 or higher
 - **ngrok account**: Required for webhook forwarding (free tier works great!)
 
 ### Install via npm (Recommended)
