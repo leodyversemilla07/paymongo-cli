@@ -8,7 +8,7 @@ This document tracks the progress of improving test coverage for the PayMongo CL
 
 - **Overall Coverage**: ~65-70% statements (estimated post-all command testing completion)
 - **Target**: ≥80% statements/branches/functions/lines
-- **Progress**: API client, init command, config command, login command, dev command, env command, gui command, trigger command, webhooks command, CLI entry point, and payments command testing completed
+- **Progress**: API client, init command, config command, login command, dev command, env command, trigger command, webhooks command, CLI entry point, and payments command testing completed
 - **Total Tests**: 380 passing tests across 23 test suites
 
 ## Completed Work
@@ -107,18 +107,6 @@ This document tracks the progress of improving test coverage for the PayMongo CL
   - Resolved Commander.js testing by using `command.parseAsync()` pattern
   - All 12 tests passing, comprehensive validation and error handling covered
 
-- **GUI Command Testing**: ✅ **COMPLETED**
-  - Created comprehensive test file `tests/unit/gui-command.test.ts` with 11 test cases achieving 100% coverage
-  - Coverage improved to full coverage for src/commands/gui.ts
-  - Added tests for:
-    - GUI dashboard startup with default/custom port and host options
-    - WebServer integration and graceful shutdown handling
-    - SIGINT/SIGTERM signal handling for clean shutdown
-    - No configuration error handling
-    - Server startup error scenarios
-  - Resolved complex WebServer mocking and signal handler testing
-  - All 11 tests passing, comprehensive startup and shutdown scenarios covered
-
 - **Trigger Command Testing**: ✅ **COMPLETED**
   - Created comprehensive test file `tests/unit/trigger-command.test.ts` with 16 test cases achieving 100% coverage
   - Coverage improved to full coverage for src/commands/trigger.ts
@@ -175,7 +163,6 @@ This document tracks the progress of improving test coverage for the PayMongo CL
 | src/commands/dev.ts               | ~60%       | ~50%      | ~70%      | ~60%        | ✅ **Completed**     |
 | **src/commands/payments.ts**      | **100%**   | **100%**  | **100%**  | **100%**    | ✅ **Completed**     |
 | **src/commands/env.ts**           | **100%**   | **100%**  | **100%**  | **100%**    | ✅ **Completed**     |
-| **src/commands/gui.ts**           | **100%**   | **100%**  | **100%**  | **100%**    | ✅ **Completed**     |
 | **src/commands/trigger.ts**       | **100%**   | **100%**  | **100%**  | **100%**    | ✅ **Completed**     |
 | **src/commands/webhooks.ts**      | **100%**   | **100%**  | **100%**  | **100%**    | ✅ **Completed**     |
 | All other command files           | 0%         | 0%        | 0%        | Not started |

@@ -12,7 +12,7 @@ The development of PayMongo CLI is structured into four main phases, focusing on
 | ----------- | ----------------------------- | --------- |
 | **Phase 1** | **MVP & Core Workflow**       | Completed |
 | **Phase 2** | **Performance & Simulation**  | Completed |
-| **Phase 3** | **GUI & Advanced Analytics**  | Completed |
+| **Phase 3** | **Advanced Analytics**        | Completed |
 | **Phase 4** | **Polish & Developer Experience** | Completed |
 
 ---

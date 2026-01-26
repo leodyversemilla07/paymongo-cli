@@ -24,7 +24,6 @@ PayMongo CLI is a powerful command-line interface that streamlines the PayMongo 
 - **Test Webhooks Locally**: No more deploying to staging just to test a webhook.
 - **Manage Payments**: Create and monitor payment intents directly from your terminal.
 - **Collaborate**: Sync configurations with your team via GitHub.
-- **Visualize**: Use the GUI dashboard for a real-time overview of your integration.
 
 ---
 
