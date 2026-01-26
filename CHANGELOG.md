@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Comprehensive Test Coverage** - Added 380 unit tests across 23 test suites:
-  - Complete test coverage for 9 CLI command files (init, config, login, dev, payments, env, gui, trigger, webhooks)
+  - Complete test coverage for 8 CLI command files (init, config, login, dev, payments, env, trigger, webhooks)
   - 100% coverage for each tested command with comprehensive error handling and edge cases
   - Established testing patterns for Commander.js commands with ESM module mocking
   - Mock implementations for all external dependencies (axios, ngrok, filesystem operations)
