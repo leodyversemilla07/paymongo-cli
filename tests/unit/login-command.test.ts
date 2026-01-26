@@ -10,6 +10,8 @@ const mockOsHomedir = jest.fn<() => string>();
 const mockOsHostname = jest.fn<() => string>();
 const mockOsUserInfo = jest.fn<() => { username: string }>();
 
+const mockPathJoin = jest.fn<(path: string, ...paths: string[]) => string>();
+
 const mockFsExistsSync = jest.fn<(path: string) => boolean>();
 const mockFsMkdirSync = jest.fn<(path: string) => void>();
 const mockFsWriteFileSync = jest.fn<(path: string, data: string) => void>();
@@ -44,6 +46,16 @@ jest.unstable_mockModule('node:os', () => {
   return {
     default: osModule,
     ...osModule,
+  };
+});
+
+jest.unstable_mockModule('node:path', () => {
+  const pathModule = {
+    join: mockPathJoin,
+  };
+  return {
+    default: pathModule,
+    ...pathModule,
   };
 });
 
@@ -84,6 +96,7 @@ jest.unstable_mockModule('../../src/services/api/client.js', () => ({
 // Import after mocking
 await import('fs');
 await import('os');
+await import('node:path');
 await import('crypto');
 await import('@inquirer/prompts');
 await import('../../src/utils/validator.js');
@@ -103,6 +116,11 @@ describe('Login Command', () => {
     mockOsHomedir.mockReturnValue('/home/user');
     mockOsHostname.mockReturnValue('test-machine');
     mockOsUserInfo.mockReturnValue({ username: 'testuser' });
+
+    // Mock path.join to behave like Unix path.join (for Linux compatibility)
+    mockPathJoin.mockImplementation((...paths: string[]) => {
+      return paths.join('/').replace(/\\/g, '/');
+    });
 
     // Mock crypto
     mockCryptoRandomBytes.mockReturnValue(Buffer.from('1234567890123456'));
@@ -158,7 +176,9 @@ describe('Login Command', () => {
       const credManager = new CredentialManager();
       await credManager.clearCredentials();
 
-      expect(mockFsUnlinkSync).toHaveBeenCalledWith('\\home\\user\\.paymongo\\credentials.enc');
+      const { join } = await import('node:path');
+      const expectedPath = join('/home/user', '.paymongo', 'credentials.enc');
+      expect(mockFsUnlinkSync).toHaveBeenCalledWith(expectedPath);
     });
   });
 
