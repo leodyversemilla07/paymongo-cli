@@ -1,6 +1,6 @@
 {
   "name": "paymongo-cli",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Developer-first CLI tool for PayMongo integration development with local webhook forwarding, payment testing, and team collaboration features. See USER_GUIDE.md for comprehensive documentation.",
   "type": "module",
   "main": "dist/index.js",
