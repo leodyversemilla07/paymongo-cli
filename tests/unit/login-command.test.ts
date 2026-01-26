@@ -315,7 +315,7 @@ describe('Login Command', () => {
     });
 
     it('should handle API key validation failure', async () => {
-      mockApiClientValidate.mockResolvedValue(false);
+      mockApiClientValidate.mockRejectedValue(new Error('Invalid API key'));
 
       const apiClient = new ApiClient({
         config: {
@@ -331,8 +331,7 @@ describe('Login Command', () => {
         },
       });
 
-      const result = await apiClient.validateApiKey();
-      expect(result).toBe(false);
+      await expect(apiClient.validateApiKey()).rejects.toThrow('Invalid API key');
     });
   });
 

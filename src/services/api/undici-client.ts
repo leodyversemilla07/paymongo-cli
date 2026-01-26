@@ -28,7 +28,7 @@ interface PayMongoErrorResponse {
   }>;
 }
 
-export interface UndiciClientOptions {
+export interface ApiClientOptions {
   config: PayMongoConfig;
   timeout?: number;
   enableCache?: boolean;
@@ -36,7 +36,7 @@ export interface UndiciClientOptions {
   rateLimitConfig?: RateLimitConfig;
 }
 
-export class UndiciClient {
+export class ApiClient {
   private config: PayMongoConfig;
   private baseUrl: string;
   private defaultHeaders: Record<string, string>;
@@ -44,9 +44,9 @@ export class UndiciClient {
   private cache: Cache;
   private rateLimiter?: RateLimiter;
 
-  constructor(options: UndiciClientOptions) {
+  constructor(options: ApiClientOptions) {
     this.config = options.config;
-    this.baseUrl = 'https://api.paymongo.com/v1';
+    this.baseUrl = 'https://api.paymongo.com';
     this.timeout = options.timeout || REQUEST_TIMEOUT;
 
     this.defaultHeaders = {
@@ -273,19 +273,14 @@ export class UndiciClient {
     throw new PayMongoError(`HTTP ${statusCode}`, `HTTP_${statusCode}`, statusCode);
   }
 
-  async validateApiKey(): Promise<boolean> {
-    try {
-      await withRetry(() => this.makeRequest('GET', '/webhooks'));
-      return true;
-    } catch (_error) {
-      return false;
-    }
+  async validateApiKey(): Promise<void> {
+    await withRetry(() => this.makeRequest('GET', '/v1/webhooks'));
   }
 
   // Webhook methods
   async createWebhook(url: string, events: string[]): Promise<WebhookDataWithSecret> {
     const result = await withRetry(() =>
-      this.makeRequest('POST', '/webhooks', {
+      this.makeRequest('POST', '/v1/webhooks', {
         body: {
           data: {
             attributes: {
@@ -313,7 +308,7 @@ export class UndiciClient {
     }
 
     const result = await withRetry(() =>
-      this.makeRequest('GET', '/webhooks').then(
+      this.makeRequest('GET', '/v1/webhooks').then(
         (response) => (response.data as ApiResponse<WebhookData[]>).data
       )
     );
@@ -333,7 +328,7 @@ export class UndiciClient {
     }
 
     const result = await withRetry(() =>
-      this.makeRequest('GET', `/webhooks/${id}`).then(
+      this.makeRequest('GET', `/v1/webhooks/${id}`).then(
         (response) => (response.data as ApiResponse<WebhookData>).data
       )
     );
@@ -352,7 +347,7 @@ export class UndiciClient {
     await this.cache.invalidate(`webhooks_${this.config.environment}`);
 
     return withRetry(() =>
-      this.makeRequest('PUT', `/webhooks/${id}`, {
+      this.makeRequest('PUT', `/v1/webhooks/${id}`, {
         body: {
           data: {
             attributes: updates,
@@ -368,14 +363,14 @@ export class UndiciClient {
     await this.cache.invalidate(`webhooks_${this.config.environment}`);
 
     return withRetry(async () => {
-      await this.makeRequest('DELETE', `/webhooks/${id}`);
+      await this.makeRequest('DELETE', `/v1/webhooks/${id}`);
     });
   }
 
   // Payment methods (for validation and testing)
   async getPayment(id: string): Promise<PaymentDataFull> {
     return withRetry(() =>
-      this.makeRequest('GET', `/payments/${id}`).then(
+      this.makeRequest('GET', `/v1/payments/${id}`).then(
         (response) => (response.data as ApiResponse<PaymentDataFull>).data
       )
     );
@@ -386,7 +381,7 @@ export class UndiciClient {
     const validLimit = Math.max(1, Math.min(100, limit));
 
     const result = await withRetry(() =>
-      this.makeRequest('GET', '/payments', {
+      this.makeRequest('GET', '/v1/payments', {
         params: { limit: validLimit },
       }).then((response) => (response.data as ApiResponse<PaymentDataFull[]>).data)
     );
@@ -400,7 +395,7 @@ export class UndiciClient {
     paymentMethods: string[] = ['card', 'gcash', 'paymaya']
   ): Promise<PaymentIntentData> {
     return withRetry(() =>
-      this.makeRequest('POST', '/payment_intents', {
+      this.makeRequest('POST', '/v1/payment_intents', {
         body: {
           data: {
             attributes: {
@@ -421,7 +416,7 @@ export class UndiciClient {
     returnUrl?: string
   ): Promise<PaymentIntentData> {
     return withRetry(() =>
-      this.makeRequest('POST', `/payment_intents/${id}/confirm`, {
+      this.makeRequest('POST', `/v1/payment_intents/${id}/confirm`, {
         body: {
           data: {
             attributes: {
@@ -436,7 +431,7 @@ export class UndiciClient {
 
   async capturePaymentIntent(id: string): Promise<PaymentIntentData> {
     return withRetry(() =>
-      this.makeRequest('POST', `/payment_intents/${id}/capture`).then(
+      this.makeRequest('POST', `/v1/payment_intents/${id}/capture`).then(
         (response) => (response.data as ApiResponse<PaymentIntentData>).data
       )
     );
@@ -459,7 +454,7 @@ export class UndiciClient {
     }
 
     return withRetry(() =>
-      this.makeRequest('POST', '/refunds', {
+      this.makeRequest('POST', '/v1/refunds', {
         body: {
           data: {
             attributes: {
@@ -473,4 +468,4 @@ export class UndiciClient {
   }
 }
 
-export default UndiciClient;
+export default ApiClient;

@@ -167,7 +167,6 @@ const config = validateConfig(input);
 tests/
 ├── unit/             # Unit tests (single functions/classes)
 ├── integration/      # Integration tests (command end-to-end)
-└── e2e/             # End-to-end tests (full CLI workflows)
 ```
 
 ### Mocking ESM Modules

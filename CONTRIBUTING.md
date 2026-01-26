@@ -54,7 +54,6 @@ We maintain high test coverage to ensure reliability.
 - **Test Structure**:
   - `tests/unit`: Logic and utility tests.
   - `tests/integration`: API and service interaction tests.
-  - `tests/e2e`: Full command-line execution tests.
 
 ### 4. Code Quality
 
@@ -107,7 +106,7 @@ paymongo-cli/
 │   ├── utils/          # Shared utilities (Errors, Logging, Validators)
 │   ├── types/          # TypeScript definitions
 │   └── index.ts        # CLI Application initialization
-└── tests/              # Test suites (Unit, Integration, E2E)
+└── tests/              # Test suites (Unit, Integration)
 ```
 
 ### 2. Key Components

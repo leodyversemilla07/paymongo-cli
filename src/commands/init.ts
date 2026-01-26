@@ -6,6 +6,7 @@ import ConfigManager from '../services/config/manager.js';
 import ApiClient from '../services/api/client.js';
 import { validateApiKey } from '../utils/validator.js';
 import Spinner from '../utils/spinner.js';
+import { ApiKeyError, NetworkError, PayMongoError } from '../utils/errors.js';
 
 interface InitAnswers {
   projectName: string;
@@ -171,16 +172,32 @@ export async function initAction(options: InitOptions) {
     };
 
     const apiClient = new ApiClient({ config: tempConfig });
-    const isValid = await apiClient.validateApiKey();
 
-    if (!isValid) {
+    try {
+      await apiClient.validateApiKey();
+      spinner.succeed('API keys validated');
+    } catch (error) {
       spinner.fail('API key validation failed');
-      console.error(chalk.red('❌ Invalid API keys. Please check your keys and try again.'));
-      console.log(chalk.gray('Get your API keys from: https://dashboard.paymongo.com/developers'));
+
+      if (error instanceof ApiKeyError) {
+        console.error(chalk.red('❌ Invalid API keys. Please check your keys and try again.'));
+        console.log(chalk.gray('Get your API keys from: https://dashboard.paymongo.com/developers'));
+      } else if (error instanceof NetworkError) {
+        console.error(chalk.red('❌ Network error. Please check your internet connection and try again.'));
+      } else if (error instanceof PayMongoError) {
+        if (error.statusCode && error.statusCode >= 500) {
+          console.error(chalk.red('❌ PayMongo API is currently unavailable. Please try again later.'));
+        } else if (error.statusCode && error.statusCode === 429) {
+          console.error(chalk.red('❌ Too many requests. Please wait a moment and try again.'));
+        } else {
+          console.error(chalk.red(`❌ API error: ${error.message}`));
+        }
+      } else {
+        console.error(chalk.red('❌ Unexpected error during validation. Please try again.'));
+      }
+
       process.exit(1);
     }
-
-    spinner.succeed('API keys validated');
 
     // Save configuration
     spinner.start('Saving configuration...');

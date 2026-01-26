@@ -198,7 +198,7 @@ describe('Env Command', () => {
       };
 
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
-      mockApiClientValidateApiKey.mockResolvedValue(false);
+      mockApiClientValidateApiKey.mockRejectedValue(new Error('API key validation failed'));
 
       await envCommand.parseAsync(['node', 'test', 'switch', 'live']);
 

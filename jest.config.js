@@ -24,6 +24,8 @@ const config = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   injectGlobals: true,
+  // Suppress console output during tests for cleaner output
+  silent: true,
 };
 
 export default config;

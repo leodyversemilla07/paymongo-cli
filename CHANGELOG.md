@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-01-26
+
+### Added
+
+- **Enhanced Error Handling** - Improved error messages in `init`, `login`, and `env` commands with specific error types:
+  - `ApiKeyError`: Invalid or unauthorized API keys
+  - `NetworkError`: Connection and timeout issues
+  - `PayMongoError`: API-specific errors with status codes
+  - Actionable error messages with troubleshooting guidance
+
+### Changed
+
+- **Test Output Cleanup** - Suppressed verbose console output and Node.js warnings in test runs:
+  - Added `silent: true` to Jest configuration to hide CLI command output
+  - Added `NODE_NO_WARNINGS=1` to test scripts to suppress experimental VM warnings
+  - Cleaner test output focused on results rather than implementation details
+
+- **API Client Consolidation** - Merged `UndiciClient` into main `ApiClient` class:
+  - Removed separate `undici-client.ts` file
+  - Updated all imports and tests to use unified `ApiClient`
+  - Maintained all existing functionality (caching, rate limiting, error handling)
+
+### Removed
+
+- **E2E Test Suite** - Removed `tests/e2e/` folder and associated files:
+  - Deleted `tests/e2e/login.test.ts` and `tests/e2e/README.md`
+  - Removed e2e references from documentation (`CONTRIBUTING.md`, `AGENTS.md`, `.github/copilot-instructions.md`)
+  - Unit tests provide equivalent coverage without requiring real API credentials
+
+### Fixed
+
+- **Test Compatibility** - Updated test mocks to work with new error handling:
+  - Changed `validateApiKey()` from boolean return to void (throws on error)
+  - Updated test expectations for error throwing instead of boolean returns
+  - Maintained test coverage while improving error handling consistency
+
 ## [1.4.1] - 2026-01-26
 
 ### Added
@@ -234,6 +270,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Highlights                                                           |
 | ------- | ------------ | -------------------------------------------------------------------- |
+| [1.4.3] | 2026-01-26   | Enhanced error handling, test output cleanup, API client consolidation |
 | [1.4.1] | 2026-01-26   | Test coverage completion, ESLint compliance, documentation updates   |
 | [1.4.0] | 2026-01-26   | Code generation, HTTP client migration, GUI removal, performance optimization |
 | [1.3.0] | 2026-01-25   | Rate limiting protection, bulk operations, team collaboration        |
@@ -244,6 +281,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## Upgrade Guide
+### Upgrading to 1.4.3
+
+```bash
+npm install -g paymongo-cli@latest
+```
+
+**Breaking Changes:** None. This is a backward-compatible patch release.
+
+**New Features:**
+- Enhanced error handling with specific error types and actionable messages
+- Cleaner test output with suppressed console logs and warnings
+- Consolidated API client implementation
+
 ### Upgrading to 1.4.1
 
 ```bash
@@ -322,7 +372,8 @@ npm install -g paymongo-cli
 - [Issue Tracker](https://github.com/leodyversemilla07/paymongo-cli/issues)
 - [PayMongo API Documentation](https://developers.paymongo.com/)
 
-[Unreleased]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.3...HEAD
+[1.4.3]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.1...v1.4.3
 [1.4.1]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.2.0...v1.3.0

@@ -163,7 +163,7 @@ describe('Init Command', () => {
     });
 
     it('should exit with error when API key validation fails', async () => {
-      mockApiClientValidateApiKey.mockResolvedValue(false);
+      mockApiClientValidateApiKey.mockRejectedValue(new Error('Invalid API key'));
 
       await initAction({
         nonInteractive: true,
@@ -178,7 +178,7 @@ describe('Init Command', () => {
     });
 
     it('should exit with error when API key validation fails', async () => {
-      mockApiClientValidateApiKey.mockResolvedValue(false);
+      mockApiClientValidateApiKey.mockRejectedValue(new Error('Invalid API key'));
 
       await initAction({
         nonInteractive: true,
@@ -341,7 +341,8 @@ describe('Init Command', () => {
 
   describe('error handling', () => {
     it('should provide actionable error messages for API key issues', async () => {
-      const error = new Error('Invalid API key');
+      const { ApiKeyError } = await import('../../src/utils/errors.js');
+      const error = new ApiKeyError('Invalid API key', 'secret');
       mockApiClientValidateApiKey.mockRejectedValue(error);
 
       await initAction({
@@ -353,17 +354,14 @@ describe('Init Command', () => {
       });
 
       expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('API key validation failed'),
-        expect.any(String)
-      );
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Double-check your API keys')
+        expect.stringContaining('Invalid API keys')
       );
       expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
 
     it('should handle network errors with specific guidance', async () => {
-      const error = new Error('Network connection failed');
+      const { NetworkError } = await import('../../src/utils/errors.js');
+      const error = new NetworkError('Network connection failed');
       mockApiClientValidateApiKey.mockRejectedValue(error);
 
       await initAction({
@@ -375,11 +373,7 @@ describe('Init Command', () => {
       });
 
       expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('Network error'),
-        expect.any(String)
-      );
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Check your internet connection')
+        expect.stringContaining('Network error')
       );
       expect(mockProcessExit).toHaveBeenCalledWith(1);
     });

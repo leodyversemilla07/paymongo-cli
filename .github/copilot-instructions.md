@@ -64,7 +64,7 @@ npm run lint:fix       # ESLint auto-fix
 
 ### Testing Strategy
 - **Mocking ESM**: Use `jest.unstable_mockModule()` before dynamic imports
-- Structure: `tests/unit/`, `tests/integration/`, `tests/e2e/`
+- Structure: `tests/unit/`, `tests/integration/`
 - Mock external services (axios, ngrok, filesystem)
 
 Example test pattern:

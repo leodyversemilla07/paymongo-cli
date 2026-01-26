@@ -1,6 +1,6 @@
 {
   "name": "paymongo-cli",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Developer-first CLI tool for PayMongo integration development with local webhook forwarding, payment testing, and team collaboration features. See USER_GUIDE.md for comprehensive documentation.",
   "type": "module",
   "main": "dist/index.js",
@@ -12,8 +12,8 @@
     "build:incremental": "tsc --incremental",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test": "cross-env NODE_NO_WARNINGS=1 node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "cross-env NODE_NO_WARNINGS=1 node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "lint": "cross-env NODE_OPTIONS='--max-old-space-size=4096' eslint src/**/*.ts tests/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "lint:src": "cross-env NODE_OPTIONS='--max-old-space-size=4096' eslint src/**/*.ts",

@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import ConfigManager from '../services/config/manager.js';
 import ApiClient from '../services/api/client.js';
 import Spinner from '../utils/spinner.js';
+import { ApiKeyError, NetworkError, PayMongoError } from '../utils/errors.js';
 
 const command = new Command('env');
 
@@ -59,12 +60,32 @@ command
             spinner.start('Validating API keys...');
             const testConfig = { ...config, environment: environment as 'test' | 'live' };
             const apiClient = new ApiClient({ config: testConfig });
-            const isValid = await apiClient.validateApiKey();
 
-            if (!isValid) {
+            try {
+              await apiClient.validateApiKey();
+              spinner.succeed('API keys validated');
+            } catch (error) {
               spinner.fail('API key validation failed');
               console.log('');
               console.log(chalk.red('❌ Invalid API keys for the target environment.'));
+
+              if (error instanceof ApiKeyError) {
+                console.log(chalk.gray('The API keys appear to be invalid or expired.'));
+              } else if (error instanceof NetworkError) {
+                console.log(chalk.gray('Network connectivity issue. Please check your internet connection.'));
+              } else if (error instanceof PayMongoError) {
+                if (error.statusCode && error.statusCode >= 500) {
+                  console.log(chalk.gray('PayMongo API is currently unavailable.'));
+                } else if (error.statusCode && error.statusCode === 429) {
+                  console.log(chalk.gray('Too many requests. Please wait a moment.'));
+                } else {
+                  console.log(chalk.gray(`API error: ${error.message}`));
+                }
+              } else {
+                console.log(chalk.gray('Unexpected validation error.'));
+              }
+
+              console.log('');
               console.log(
                 chalk.gray('Use --force to skip validation, but note that commands may fail.')
               );
@@ -74,7 +95,6 @@ command
               );
               process.exit(1);
             }
-            spinner.succeed('API keys validated');
           }
 
           // Update configuration
