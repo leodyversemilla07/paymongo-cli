@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.4] - 2026-01-27
+
+### Changed
+
+- **Codebase Modularization** - Refactored large command files into modular components for better maintainability:
+  - `dev.ts`: Extracted `DevServer` class and subcommands (`status`, `stop`, `logs`) into separate files.
+  - `generate.ts`: Extracted code generation templates into modular template files organized by type and language.
+  - Reduced main command file sizes significantly (`dev.ts`: 735 -> ~330 lines, `generate.ts`: 1261 -> ~250 lines).
+
+- **Integration Testing** - Expanded integration test coverage:
+  - Added `dev-server.test.ts` for DevServer lifecycle and process management.
+  - Added `generate-templates.test.ts` for comprehensive template generation verification.
+  - Achieved pass on all 387 tests across 25 test suites.
+
+### Fixed
+
+- **Type Safety** - Resolved TypeScript errors in integration tests by adding proper type definitions for mock objects.
+
 ## [1.4.3] - 2026-01-26
 
 ### Added
@@ -372,7 +390,8 @@ npm install -g paymongo-cli
 - [Issue Tracker](https://github.com/leodyversemilla07/paymongo-cli/issues)
 - [PayMongo API Documentation](https://developers.paymongo.com/)
 
-[Unreleased]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.3...HEAD
+[Unreleased]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.4...HEAD
+[1.4.4]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.1...v1.4.3
 [1.4.1]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.3.0...v1.4.0

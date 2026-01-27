@@ -1,6 +1,4 @@
 import { Command } from 'commander';
-import * as http from 'http';
-import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
 import chalk from 'chalk';
@@ -8,9 +6,14 @@ import ConfigManager from '../services/config/manager.js';
 import ApiClient from '../services/api/client.js';
 import Spinner from '../utils/spinner.js';
 import { withRetry } from '../utils/errors.js';
-import { PayMongoConfig, TunnelInfo, WebhookEventPayload } from '../types/paymongo.js';
+import { TunnelInfo } from '../types/paymongo.js';
 import { DevProcessManager } from '../services/dev/process-manager.js';
-import { AnalyticsService } from '../services/analytics/service.js';
+import { DevServer } from '../services/dev/server.js';
+
+// Import subcommands
+import statusCommand from './dev/status.js';
+import stopCommand from './dev/stop.js';
+import logsCommand from './dev/logs.js';
 
 interface DevOptions {
   port?: string;
@@ -18,224 +21,6 @@ interface DevOptions {
   events?: string;
   ngrokToken?: string;
   detach?: boolean;
-}
-
-class DevServer {
-  private server: http.Server;
-  private port: number;
-  private config: PayMongoConfig;
-  private analytics: AnalyticsService;
-
-  constructor(port: number, config: PayMongoConfig) {
-    this.port = port;
-    this.config = config;
-    this.analytics = new AnalyticsService(config);
-
-    this.server = http.createServer((req, res) => {
-      this.handleWebhookRequest(req, res);
-    });
-  }
-
-  async start(): Promise<void> {
-    // Start HTTP server
-    return new Promise((resolve, reject) => {
-      this.server.listen(this.port, () => {
-        console.log(chalk.green('✓'), `Webhook server listening on http://localhost:${this.port}`);
-        resolve();
-      });
-
-      this.server.on('error', (error) => {
-        reject(new Error(`Failed to start server on port ${this.port}: ${error.message}`));
-      });
-    });
-  }
-
-  async stop(): Promise<void> {
-    return new Promise((resolve) => {
-      this.server.close(() => {
-        console.log(chalk.yellow('✓'), 'Webhook server stopped');
-        resolve();
-      });
-    });
-  }
-
-  private handleWebhookRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
-    // Accept both /webhook and /webhook/{project-slug} paths
-    const isWebhookPath = req.url?.startsWith('/webhook');
-    if (req.method !== 'POST' || !isWebhookPath) {
-      res.writeHead(404);
-      res.end('Not Found');
-      return;
-    }
-
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk.toString();
-    });
-
-    req.on('end', () => {
-      try {
-        const event = JSON.parse(body);
-
-        // Verify webhook signature if enabled
-        const signatureValid = this.verifyWebhookSignature(req, body);
-        if (!signatureValid) {
-          console.log(chalk.red('⚠️'), 'Webhook signature verification failed');
-          res.writeHead(401, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Invalid signature' }));
-
-          // Record failed analytics event
-          this.analytics.recordEvent({
-            type: event.data?.type || 'unknown',
-            success: false,
-            error: 'Invalid signature',
-            data: event.data?.attributes,
-          });
-          return;
-        }
-
-        // Log the webhook event
-        this.logWebhookEvent(event);
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true }));
-      } catch (error) {
-        console.error(chalk.red('✗'), 'Failed to process webhook:', (error as Error).message);
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid JSON' }));
-
-        // Record failed analytics event for JSON parsing errors
-        this.analytics.recordEvent({
-          type: 'unknown',
-          success: false,
-          error: 'Invalid JSON',
-        });
-      }
-    });
-  }
-
-  private logWebhookEvent(event: WebhookEventPayload): void {
-    const timestamp = new Date().toLocaleTimeString();
-    const eventType = event.data?.type || 'unknown';
-    const eventId = event.data?.id || 'unknown';
-
-    // Record analytics event
-    this.analytics.recordEvent({
-      type: eventType,
-      success: true,
-      data: event.data?.attributes,
-    });
-
-    console.log('');
-    console.log(chalk.gray('────────────────────────────────────────────────────────────'));
-    console.log(chalk.blue(`[${timestamp}]`), chalk.bold(eventType.toUpperCase()));
-
-    if (eventType === 'payment') {
-      const attributes = event.data.attributes as { amount?: number; status?: string };
-      const amount = attributes.amount ?? 0;
-      const status = attributes.status ?? 'unknown';
-
-      console.log(chalk.gray('└─'), `Amount: ₱${(amount / 100).toFixed(2)}`);
-      console.log(chalk.gray('└─'), `Status: ${status}`);
-      console.log(chalk.gray('└─'), `Payment ID: ${eventId}`);
-    }
-
-    console.log(
-      chalk.gray('└─'),
-      `View: https://dashboard.paymongo.com/${eventType === 'payment' ? 'payments' : 'webhooks'}/${eventId}`
-    );
-  }
-
-  private verifyWebhookSignature(req: http.IncomingMessage, body: string): boolean {
-    // Check if signature verification is enabled in config
-    if (!this.config.dev.verifyWebhookSignatures) {
-      console.log(chalk.yellow('ℹ️'), 'Webhook signature verification disabled in config');
-      return true; // Allow all requests when verification is disabled
-    }
-
-    const signatureHeader = req.headers['paymongo-signature'] as string;
-    if (!signatureHeader) {
-      console.log(chalk.red('⚠️'), 'Signature verification required but no signature header found');
-      return false;
-    }
-
-    // Parse signature header: t=<timestamp>,te=<signature>,li=
-    const signatureParts = signatureHeader.split(',');
-    if (signatureParts.length < 2) {
-      console.log(chalk.red('⚠️'), 'Invalid signature format');
-      return false;
-    }
-
-    const timestamp = signatureParts.find((part) => part.startsWith('t='))?.split('=')[1];
-    const signature = signatureParts.find((part) => part.startsWith('te='))?.split('=')[1];
-
-    if (!timestamp || !signature) {
-      console.log(chalk.red('⚠️'), 'Missing timestamp or signature in header');
-      return false;
-    }
-
-    const webhookId = signatureParts.find((part) => part.startsWith('li='))?.split('=')[1];
-
-    const webhookSecrets = this.config.webhookSecrets || {};
-    const configuredSecret = webhookId ? webhookSecrets[webhookId] : undefined;
-    let secretKeys: string[] = [];
-
-    if (configuredSecret) {
-      secretKeys = [configuredSecret];
-    } else {
-      secretKeys = Object.values(webhookSecrets).filter(
-        (secret) => typeof secret === 'string' && secret.length > 0
-      ) as string[];
-
-      if (webhookId && secretKeys.length > 0) {
-        console.log(
-          chalk.yellow('⚠️'),
-          `No webhook secret found for id ${webhookId}. Update your configuration.`
-        );
-        return false;
-      }
-    }
-
-    if (secretKeys.length === 0) {
-      console.log(
-        chalk.yellow('⚠️'),
-        'Signature verification enabled but no webhook secrets configured'
-      );
-      return true; // Allow requests when no secrets are configured yet
-    }
-
-    // Try to verify with each available secret
-    let isValid = false;
-    for (const secret of secretKeys) {
-      try {
-        const expectedSignature = crypto
-          .createHmac('sha256', secret)
-          .update(`${timestamp}.${body}`)
-          .digest('hex');
-
-        if (
-          crypto.timingSafeEqual(
-            Buffer.from(signature, 'hex'),
-            Buffer.from(expectedSignature, 'hex')
-          )
-        ) {
-          isValid = true;
-          break;
-        }
-      } catch (_error) {
-        // Continue trying other secrets
-        continue;
-      }
-    }
-
-    if (isValid) {
-      console.log(chalk.green('✓'), 'Signature verified successfully');
-      return true;
-    } else {
-      console.log(chalk.red('✗'), 'Signature verification failed');
-      return false;
-    }
-  }
 }
 
 const command = new Command('dev');
@@ -344,9 +129,9 @@ command
             if (!authtoken) {
               throw new Error(
                 'ngrok authtoken not found. Please either:\n' +
-                  '  1. Set NGROK_AUTHTOKEN environment variable, or\n' +
-                  '  2. Use --ngrok-token option: paymongo dev --ngrok-token YOUR_TOKEN\n' +
-                  '  Get your token from: https://dashboard.ngrok.com/get-started/your-authtoken'
+                '  1. Set NGROK_AUTHTOKEN environment variable, or\n' +
+                '  2. Use --ngrok-token option: paymongo dev --ngrok-token YOUR_TOKEN\n' +
+                '  Get your token from: https://dashboard.ngrok.com/get-started/your-authtoken'
               );
             }
 
@@ -547,7 +332,7 @@ command
       process.on('SIGTERM', cleanup);
 
       // Keep the process running
-      await new Promise(() => {}); // Never resolves
+      await new Promise(() => { }); // Never resolves
     } catch (error) {
       spinner.stop();
       const err = error as Error;
@@ -583,152 +368,9 @@ command
     }
   });
 
-// Subcommand: dev status
-command
-  .command('status')
-  .description('Check if dev server is running in background')
-  .action(async () => {
-    const state = DevProcessManager.loadState();
-
-    if (!state) {
-      console.log(chalk.yellow('No dev server is running in background.'));
-      console.log(chalk.gray('Start one with: paymongo dev --detach'));
-      return;
-    }
-
-    const isRunning = DevProcessManager.isProcessRunning(state.pid);
-
-    if (!isRunning) {
-      console.log(chalk.yellow('Dev server process is not running (stale state).'));
-      DevProcessManager.clearState();
-      console.log(chalk.gray('Start a new one with: paymongo dev --detach'));
-      return;
-    }
-
-    console.log(chalk.green('✓ Dev server is running'));
-    console.log('');
-    console.log(chalk.bold('Process:'));
-    console.log(chalk.gray('  PID:'), state.pid);
-    console.log(chalk.gray('  Uptime:'), DevProcessManager.formatUptime(state.startedAt));
-    console.log(chalk.gray('  Project:'), state.projectName);
-    console.log('');
-    console.log(chalk.bold('URLs:'));
-    console.log(chalk.gray('  External:'), chalk.yellow(state.webhookUrl));
-    console.log(chalk.gray('  Local:'), chalk.green(state.localUrl));
-    console.log('');
-    console.log(chalk.bold('Configuration:'));
-    console.log(chalk.gray('  Port:'), state.port);
-    console.log(chalk.gray('  Events:'), state.events.join(', '));
-    if (state.webhookId) {
-      console.log(chalk.gray('  Webhook ID:'), state.webhookId);
-    }
-    console.log('');
-    console.log(chalk.gray('Use "paymongo dev stop" to stop the server'));
-    console.log(chalk.gray('Use "paymongo dev logs" to view server logs'));
-  });
-
-// Subcommand: dev stop
-command
-  .command('stop')
-  .description('Stop the background dev server')
-  .action(async () => {
-    const spinner = new Spinner();
-    const state = DevProcessManager.loadState();
-
-    if (!state) {
-      console.log(chalk.yellow('No dev server is running in background.'));
-      return;
-    }
-
-    const isRunning = DevProcessManager.isProcessRunning(state.pid);
-
-    if (!isRunning) {
-      console.log(chalk.yellow('Dev server process is not running (cleaning up stale state).'));
-      DevProcessManager.clearState();
-      return;
-    }
-
-    spinner.start('Stopping dev server...');
-
-    // Kill the process
-    const killed = DevProcessManager.killProcess(state.pid);
-
-    if (killed) {
-      // Wait a moment for cleanup
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      DevProcessManager.clearState();
-      spinner.succeed('Dev server stopped');
-
-      // Note: The webhook might still be registered if the process didn't clean up properly
-      // The next dev start will clean it up
-      console.log('');
-      console.log(
-        chalk.gray(
-          'Note: If the webhook was not cleaned up, it will be removed on next "paymongo dev" start.'
-        )
-      );
-    } else {
-      spinner.fail('Failed to stop dev server');
-      console.log(chalk.yellow('Try manually killing the process:'));
-      console.log(chalk.gray(`  PID: ${state.pid}`));
-      if (process.platform === 'win32') {
-        console.log(chalk.gray(`  Run: taskkill /pid ${state.pid} /f`));
-      } else {
-        console.log(chalk.gray(`  Run: kill -9 ${state.pid}`));
-      }
-    }
-  });
-
-// Subcommand: dev logs
-command
-  .command('logs')
-  .description('View dev server logs')
-  .option('-n, --lines <number>', 'Number of lines to show', '50')
-  .option('-f, --follow', 'Follow log output (like tail -f)')
-  .option('--clear', 'Clear the log file')
-  .action(async (options) => {
-    if (options.clear) {
-      DevProcessManager.clearLogs();
-      console.log(chalk.green('✓ Logs cleared'));
-      return;
-    }
-
-    const logFile = DevProcessManager.getLogFile();
-    const lines = DevProcessManager.readLogs(parseInt(options.lines));
-
-    if (lines.length === 0) {
-      console.log(chalk.yellow('No logs available.'));
-      console.log(chalk.gray('Log file:'), logFile);
-      return;
-    }
-
-    console.log(chalk.bold('Dev Server Logs'));
-    console.log(chalk.gray(`(Last ${lines.length} lines from ${logFile})`));
-    console.log(chalk.gray('─'.repeat(60)));
-    console.log('');
-    lines.forEach((line) => console.log(line));
-
-    if (options.follow) {
-      console.log('');
-      console.log(chalk.gray('Following logs... Press Ctrl+C to stop'));
-
-      let lastSize = fs.statSync(logFile).size;
-
-      fs.watchFile(logFile, { interval: 500 }, () => {
-        const newSize = fs.statSync(logFile).size;
-        if (newSize > lastSize) {
-          const fd = fs.openSync(logFile, 'r');
-          const buffer = Buffer.alloc(newSize - lastSize);
-          fs.readSync(fd, buffer, 0, buffer.length, lastSize);
-          fs.closeSync(fd);
-          process.stdout.write(buffer.toString());
-          lastSize = newSize;
-        }
-      });
-
-      // Keep process running
-      await new Promise(() => {});
-    }
-  });
+// Register subcommands
+command.addCommand(statusCommand);
+command.addCommand(stopCommand);
+command.addCommand(logsCommand);
 
 export { command, DevServer };
