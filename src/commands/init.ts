@@ -181,12 +181,18 @@ export async function initAction(options: InitOptions) {
 
       if (error instanceof ApiKeyError) {
         console.error(chalk.red('❌ Invalid API keys. Please check your keys and try again.'));
-        console.log(chalk.gray('Get your API keys from: https://dashboard.paymongo.com/developers'));
+        console.log(
+          chalk.gray('Get your API keys from: https://dashboard.paymongo.com/developers')
+        );
       } else if (error instanceof NetworkError) {
-        console.error(chalk.red('❌ Network error. Please check your internet connection and try again.'));
+        console.error(
+          chalk.red('❌ Network error. Please check your internet connection and try again.')
+        );
       } else if (error instanceof PayMongoError) {
         if (error.statusCode && error.statusCode >= 500) {
-          console.error(chalk.red('❌ PayMongo API is currently unavailable. Please try again later.'));
+          console.error(
+            chalk.red('❌ PayMongo API is currently unavailable. Please try again later.')
+          );
         } else if (error.statusCode && error.statusCode === 429) {
           console.error(chalk.red('❌ Too many requests. Please wait a moment and try again.'));
         } else {
@@ -215,15 +221,35 @@ PAYMONGO_ENVIRONMENT=${answers.environment}
     fs.writeFileSync(envPath, envContent);
     spinner.succeed('.env file created');
 
-    // Add to .gitignore if it exists
+    // Ensure .env and .paymongo are ignored
     const gitignorePath = path.join(process.cwd(), '.gitignore');
+    const ignoreHeader = '# PayMongo';
+
+    let gitignoreContent = '';
     if (fs.existsSync(gitignorePath)) {
-      let gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
-      if (!gitignoreContent.includes('.env')) {
-        gitignoreContent += '\n# PayMongo\n.env\n.paymongo\n';
-        fs.writeFileSync(gitignorePath, gitignoreContent);
-        console.log(chalk.green('✓ Added .env and .paymongo to .gitignore'));
+      gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
+    }
+
+    const needsEnv = !gitignoreContent.includes('.env');
+    const needsPaymongo = !gitignoreContent.includes('.paymongo');
+
+    if (needsEnv || needsPaymongo) {
+      const lines: string[] = [];
+      if (!gitignoreContent.trim()) {
+        lines.push(ignoreHeader);
+      } else {
+        lines.push('', ignoreHeader);
       }
+      if (needsEnv) {
+        lines.push('.env');
+      }
+      if (needsPaymongo) {
+        lines.push('.paymongo');
+      }
+
+      gitignoreContent += lines.join('\n') + '\n';
+      fs.writeFileSync(gitignorePath, gitignoreContent);
+      console.log(chalk.green('✓ Added .env and .paymongo to .gitignore'));
     }
 
     // Success message

@@ -19,7 +19,7 @@ interface LoginAnswers {
 
 class CredentialManager {
   private credentialsPath: string;
-  private encryptionKey: string;
+  private encryptionKey: Buffer;
 
   constructor() {
     // Use OS-specific credential storage location
@@ -31,14 +31,27 @@ class CredentialManager {
     }
 
     this.credentialsPath = path.join(configDir, 'credentials.enc');
+    this.encryptionKey = this.deriveEncryptionKey();
+  }
 
-    // Use a machine-specific key for encryption
+  private deriveEncryptionKey(): Buffer {
     const machineId = os.hostname() + os.userInfo().username;
-    this.encryptionKey = crypto
-      .createHash('sha256')
-      .update(machineId)
-      .digest('hex')
-      .substring(0, 32);
+    const saltPath = path.join(path.dirname(this.credentialsPath), 'credentials.salt');
+    let salt: Buffer;
+
+    try {
+      if (fs.existsSync(saltPath)) {
+        const saltHex = fs.readFileSync(saltPath, 'utf8').trim();
+        salt = Buffer.from(saltHex, 'hex');
+      } else {
+        salt = crypto.randomBytes(16);
+        fs.writeFileSync(saltPath, salt.toString('hex'), { mode: 0o600 });
+      }
+    } catch {
+      salt = crypto.randomBytes(16);
+    }
+
+    return crypto.scryptSync(machineId, salt, 32);
   }
 
   async saveCredentials(credentials: {
@@ -47,15 +60,16 @@ class CredentialManager {
     publicKey?: string;
   }): Promise<void> {
     const data = JSON.stringify(credentials);
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-cbc', this.encryptionKey, iv);
-
-    let encrypted = cipher.update(data, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', this.encryptionKey, iv);
+    const encrypted = Buffer.concat([cipher.update(data, 'utf8'), cipher.final()]);
+    const tag = cipher.getAuthTag();
 
     const payload = {
+      v: 2,
       iv: iv.toString('hex'),
-      data: encrypted,
+      tag: tag.toString('hex'),
+      data: encrypted.toString('hex'),
     };
 
     fs.writeFileSync(this.credentialsPath, JSON.stringify(payload), { mode: 0o600 });
@@ -72,13 +86,36 @@ class CredentialManager {
       }
 
       const payload = JSON.parse(fs.readFileSync(this.credentialsPath, 'utf8'));
-      const iv = Buffer.from(payload.iv, 'hex');
-      const decipher = crypto.createDecipheriv('aes-256-cbc', this.encryptionKey, iv);
+      if (payload.v === 2 && payload.iv && payload.tag && payload.data) {
+        const iv = Buffer.from(payload.iv, 'hex');
+        const tag = Buffer.from(payload.tag, 'hex');
+        const decipher = crypto.createDecipheriv('aes-256-gcm', this.encryptionKey, iv);
+        decipher.setAuthTag(tag);
 
-      let decrypted = decipher.update(payload.data, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
+        const decrypted = Buffer.concat([
+          decipher.update(Buffer.from(payload.data, 'hex')),
+          decipher.final(),
+        ]).toString('utf8');
 
-      return JSON.parse(decrypted);
+        return JSON.parse(decrypted);
+      }
+
+      if (payload.iv && payload.data) {
+        const legacyKey = crypto
+          .createHash('sha256')
+          .update(os.hostname() + os.userInfo().username)
+          .digest('hex')
+          .substring(0, 32);
+        const iv = Buffer.from(payload.iv, 'hex');
+        const decipher = crypto.createDecipheriv('aes-256-cbc', legacyKey, iv);
+        let decrypted = decipher.update(payload.data, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        const credentials = JSON.parse(decrypted);
+        await this.saveCredentials(credentials);
+        return credentials;
+      }
+
+      return null;
     } catch (_error) {
       // If decryption fails, credentials are corrupted
       return null;
@@ -209,10 +246,14 @@ command
             chalk.gray('Get your API keys from: https://dashboard.paymongo.com/developers')
           );
         } else if (error instanceof NetworkError) {
-          console.error(chalk.red('❌ Network error. Please check your internet connection and try again.'));
+          console.error(
+            chalk.red('❌ Network error. Please check your internet connection and try again.')
+          );
         } else if (error instanceof PayMongoError) {
           if (error.statusCode && error.statusCode >= 500) {
-            console.error(chalk.red('❌ PayMongo API is currently unavailable. Please try again later.'));
+            console.error(
+              chalk.red('❌ PayMongo API is currently unavailable. Please try again later.')
+            );
           } else if (error.statusCode && error.statusCode === 429) {
             console.error(chalk.red('❌ Too many requests. Please wait a moment and try again.'));
           } else {

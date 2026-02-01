@@ -180,7 +180,7 @@ export class ApiClient {
     const secretKey = this.config.apiKeys[env]?.secret;
 
     if (!secretKey) {
-      throw new Error('Secret API key not found');
+      throw new ApiKeyError('Secret API key not found', 'secret');
     }
 
     const headers = {

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.5] - 2026-02-01
+
+### Changed
+
+- **Credential Encryption** - Migrated stored credentials to AES-256-GCM with scrypt-derived keys and per-machine salt, with automatic legacy AES-256-CBC migration on load.
+- **Init .gitignore Handling** - Made `.env` and `.paymongo` ignore entries idempotent and appended with a consistent header when missing.
+
+### Fixed
+
+- **API Key Errors** - Standardized missing secret key handling to throw `ApiKeyError` in the API client.
+- **Test Reliability** - Updated login and template tests for new encryption payloads and added DevServer webhook signature verification coverage.
+
 ## [1.4.4] - 2026-01-27
 
 ### Changed

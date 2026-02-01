@@ -11,6 +11,7 @@ const mockOsHostname = jest.fn<() => string>();
 const mockOsUserInfo = jest.fn<() => { username: string }>();
 
 const mockPathJoin = jest.fn<(path: string, ...paths: string[]) => string>();
+const mockPathDirname = jest.fn<(path: string) => string>();
 
 const mockFsExistsSync = jest.fn<(path: string) => boolean>();
 const mockFsMkdirSync = jest.fn<(path: string) => void>();
@@ -52,6 +53,7 @@ jest.unstable_mockModule('node:os', () => {
 jest.unstable_mockModule('node:path', () => {
   const pathModule = {
     join: mockPathJoin,
+    dirname: mockPathDirname,
   };
   return {
     default: pathModule,
@@ -74,6 +76,7 @@ jest.unstable_mockModule('crypto', () => ({
     })),
   })),
   randomBytes: mockCryptoRandomBytes,
+  scryptSync: jest.fn(() => Buffer.from('mock-scrypt-key-32-bytes-long---')),
   createCipheriv: mockCryptoCreateCipheriv,
   createDecipheriv: mockCryptoCreateDecipheriv,
 }));
@@ -121,18 +124,26 @@ describe('Login Command', () => {
     mockPathJoin.mockImplementation((...paths: string[]) => {
       return paths.join('/').replace(/\\/g, '/');
     });
+    mockPathDirname.mockImplementation((pathValue: string) => {
+      const normalized = pathValue.replace(/\\/g, '/');
+      const parts = normalized.split('/');
+      parts.pop();
+      return parts.join('/') || '/';
+    });
 
     // Mock crypto
-    mockCryptoRandomBytes.mockReturnValue(Buffer.from('1234567890123456'));
+    mockCryptoRandomBytes.mockImplementation((size: number) => Buffer.alloc(size, '1'));
     const mockCipher = {
-      update: jest.fn(() => 'encrypted'),
-      final: jest.fn(() => 'final'),
+      update: jest.fn(() => Buffer.from('encrypted')),
+      final: jest.fn(() => Buffer.from('final')),
+      getAuthTag: jest.fn(() => Buffer.from('tag')),
     };
     mockCryptoCreateCipheriv.mockReturnValue(mockCipher);
 
     const mockDecipher = {
-      update: jest.fn(() => 'decrypted'),
-      final: jest.fn(() => ''),
+      setAuthTag: jest.fn(() => {}),
+      update: jest.fn(() => Buffer.from('decrypted')),
+      final: jest.fn(() => Buffer.from('')),
     };
     mockCryptoCreateDecipheriv.mockReturnValue(mockDecipher);
 
@@ -192,8 +203,9 @@ describe('Login Command', () => {
 
       // Mock the decipher to return the credentials as JSON
       const mockDecipher = {
-        update: jest.fn(() => JSON.stringify(credentials)),
-        final: jest.fn(() => ''),
+        setAuthTag: jest.fn(() => {}),
+        update: jest.fn(() => Buffer.from(JSON.stringify(credentials))),
+        final: jest.fn(() => Buffer.from('')),
       };
       mockCryptoCreateDecipheriv.mockReturnValue(mockDecipher);
 
@@ -204,7 +216,9 @@ describe('Login Command', () => {
       mockFsExistsSync.mockReturnValue(true);
       mockFsReadFileSync.mockReturnValue(
         JSON.stringify({
-          iv: '1234567890123456',
+          v: 2,
+          iv: '123456789012',
+          tag: 'deadbeef',
           data: 'encrypted-data',
         })
       );
@@ -251,15 +265,18 @@ describe('Login Command', () => {
       mockFsExistsSync.mockReturnValue(true);
       mockFsReadFileSync.mockReturnValue(
         JSON.stringify({
-          iv: '1234567890123456',
+          v: 2,
+          iv: '123456789012',
+          tag: 'deadbeef',
           data: 'encrypted-credentials',
         })
       );
 
       // Mock decryption to return stored credentials
       const mockDecipher = {
-        update: jest.fn(() => JSON.stringify(storedCredentials)),
-        final: jest.fn(() => ''),
+        setAuthTag: jest.fn(() => {}),
+        update: jest.fn(() => Buffer.from(JSON.stringify(storedCredentials))),
+        final: jest.fn(() => Buffer.from('')),
       };
       mockCryptoCreateDecipheriv.mockReturnValue(mockDecipher);
 
