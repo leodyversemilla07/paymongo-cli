@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.6] - 2026-02-03
+
+### Changed
+
+- **Config Validation** - Allowed loading configs without API keys and normalized optional fields to avoid setup lockouts.
+- **Webhook Signatures** - Standardized signature verification format across dev server, trigger, and generated templates.
+- **CLI Startup** - Lazy-loaded prompt dependencies in several commands for faster startup.
+
+### Fixed
+
+- **Analytics Persistence** - Stored analytics in a safe user directory with test override support.
+- **Dev Auto-Register** - Respected `dev.autoRegisterWebhook` in the dev command.
+- **Team Import** - Enabled `--force` to overwrite existing keys during team import.
+- **Config Import** - Validated imports with schema and normalized missing optional fields.
+
 ## [1.4.5] - 2026-02-01
 
 ### Changed

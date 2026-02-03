@@ -5,6 +5,7 @@ import ConfigManager from '../services/config/manager.js';
 import Spinner from '../utils/spinner.js';
 import Logger from '../utils/logger.js';
 import WebhookEventStore, { StoredWebhookEvent } from '../utils/webhook-store.js';
+import crypto from 'crypto';
 
 interface WebhookPayload {
   data: {
@@ -18,6 +19,47 @@ interface WebhookPayload {
       data: Record<string, unknown>;
     };
   };
+}
+
+function buildSignatureHeader(
+  config: { webhookSecrets?: Record<string, string>; registeredWebhooks?: { id: string; url: string }[] } | null,
+  webhookUrl: string,
+  body: string
+): string | undefined {
+  if (!config?.webhookSecrets || Object.keys(config.webhookSecrets).length === 0) {
+    return undefined;
+  }
+
+  const registered = config.registeredWebhooks || [];
+  const match = registered.find((w) => w.url === webhookUrl);
+  const webhookId = match?.id;
+
+  let secret: string | undefined;
+  if (webhookId && config.webhookSecrets[webhookId]) {
+    secret = config.webhookSecrets[webhookId];
+  } else {
+    const secrets = Object.values(config.webhookSecrets).filter(
+      (value) => typeof value === 'string' && value.length > 0
+    );
+    secret = secrets[0];
+  }
+
+  if (!secret) {
+    return undefined;
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const signature = crypto
+    .createHmac('sha256', secret)
+    .update(`${timestamp}.${body}`)
+    .digest('hex');
+
+  const parts = [`t=${timestamp}`, `te=${signature}`];
+  if (webhookId) {
+    parts.push(`li=${webhookId}`);
+  }
+
+  return parts.join(',');
 }
 
 const command = new Command('trigger');
@@ -180,13 +222,16 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
 
     try {
       const { request } = await import('undici');
+      const body = JSON.stringify(webhookPayload);
+      const signatureHeader = buildSignatureHeader(config, webhookUrl, body);
       const response = await request(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'PayMongo-CLI/1.0.0',
+          ...(signatureHeader ? { 'paymongo-signature': signatureHeader } : {}),
         },
-        body: JSON.stringify(webhookPayload),
+        body,
         signal: AbortSignal.timeout(10000),
       });
 
@@ -482,6 +527,8 @@ async function replayWebhookEvent(
   }
 ) {
   const store = new WebhookEventStore();
+  const configManager = new ConfigManager();
+  const config = await configManager.load();
 
   try {
     // List mode - show recent events
@@ -590,13 +637,16 @@ async function replayWebhookEvent(
 
       try {
         const { request } = await import('undici');
+        const body = JSON.stringify(event.payload);
+        const signatureHeader = buildSignatureHeader(config, webhookUrl, body);
         const response = await request(webhookUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'User-Agent': 'PayMongo-CLI/1.0.0',
+            ...(signatureHeader ? { 'paymongo-signature': signatureHeader } : {}),
           },
-          body: JSON.stringify(event.payload),
+          body,
           signal: AbortSignal.timeout(10000),
         });
 

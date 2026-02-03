@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import Logger from '../../utils/logger.js';
 import { PayMongoConfig } from '../../types/paymongo.js';
 
@@ -38,7 +39,10 @@ export class AnalyticsService {
   constructor(config: PayMongoConfig) {
     this.logger = new Logger();
     this.config = config;
-    this.dataFile = path.join(process.cwd(), '.paymongo', 'analytics.json');
+    const analyticsDir = process.env.PAYMONGO_ANALYTICS_DIR;
+    this.dataFile = analyticsDir
+      ? path.join(analyticsDir, 'analytics.json')
+      : path.join(os.homedir(), '.paymongo-cli', 'analytics.json');
     this.loadEvents();
   }
 

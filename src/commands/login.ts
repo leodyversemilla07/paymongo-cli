@@ -1,5 +1,4 @@
 import { Command } from 'commander';
-import { select, password } from '@inquirer/prompts';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -171,6 +170,8 @@ command
       } else {
         // Interactive mode
         const storedCredentials = await credentialManager.loadCredentials();
+
+        const { select, password } = await import('@inquirer/prompts');
 
         const environment = await select({
           message: 'Environment:',

@@ -46,13 +46,28 @@ interface PayMongoWebhookPayload {
   };
 }
 
-function verifySignature(payload: string, signature: string, secret: string): boolean {
+function verifySignature(payload: string, signatureHeader: string, secret: string): boolean {
+  if (!signatureHeader) {
+    return false;
+  }
+
+  const parts = signatureHeader.split(',');
+  const timestamp = parts.find((part) => part.startsWith('t='))?.split('=')[1];
+  const signature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
+
+  if (!timestamp || !signature) {
+    return false;
+  }
+
   const expectedSignature = crypto
     .createHmac('sha256', secret)
-    .update(payload, 'utf8')
+    .update(timestamp + '.' + payload, 'utf8')
     .digest('hex');
 
-  return signature === \`sha256=\${expectedSignature}\`;
+  return crypto.timingSafeEqual(
+    Buffer.from(signature, 'hex'),
+    Buffer.from(expectedSignature, 'hex')
+  );
 }
 
 app.post('/webhooks/paymongo', (req: Request, res: Response) => {
@@ -113,13 +128,28 @@ interface PayMongoWebhookPayload {
   };
 }
 
-function verifySignature(payload: string, signature: string, secret: string): boolean {
+function verifySignature(payload: string, signatureHeader: string, secret: string): boolean {
+  if (!signatureHeader) {
+    return false;
+  }
+
+  const parts = signatureHeader.split(',');
+  const timestamp = parts.find((part) => part.startsWith('t='))?.split('=')[1];
+  const signature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
+
+  if (!timestamp || !signature) {
+    return false;
+  }
+
   const expectedSignature = crypto
     .createHmac('sha256', secret)
-    .update(payload, 'utf8')
+    .update(timestamp + '.' + payload, 'utf8')
     .digest('hex');
 
-  return signature === \`sha256=\${expectedSignature}\`;
+  return crypto.timingSafeEqual(
+    Buffer.from(signature, 'hex'),
+    Buffer.from(expectedSignature, 'hex')
+  );
 }
 
 export function handleWebhook(body: PayMongoWebhookPayload, signature?: string): { received: boolean } {

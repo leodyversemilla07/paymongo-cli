@@ -1,6 +1,5 @@
 import Table from 'cli-table3';
 import { Command } from 'commander';
-import { input, checkbox } from '@inquirer/prompts';
 import chalk from 'chalk';
 import ConfigManager from '../services/config/manager.js';
 import ApiClient from '../services/api/client.js';
@@ -230,6 +229,8 @@ export async function createAction(options: { url?: string; events?: string }) {
       };
     } else {
       // Interactive mode
+      const { input, checkbox } = await import('@inquirer/prompts');
+
       const url = await input({
         message: 'Webhook URL:',
         default: options.url || '',

@@ -5,6 +5,7 @@ import * as path from 'path';
 import ConfigManager from '../services/config/manager.js';
 import Spinner from '../utils/spinner.js';
 import { PayMongoConfig } from '../types/paymongo.js';
+import { validateConfig as zodValidateConfig } from '../types/schemas.js';
 
 function validateImportedConfig(config: unknown): asserts config is PayMongoConfig {
   if (typeof config !== 'object' || config === null) {
@@ -416,6 +417,13 @@ export async function importAction(filePath: string, options: { force?: boolean 
     // Validate the imported config
     spinner.start('Validating configuration...');
     validateImportedConfig(importedConfig);
+    const validation = zodValidateConfig(importedConfig);
+    if (!validation.success) {
+      spinner.fail('Invalid configuration');
+      console.error(chalk.red('❌ Configuration validation failed:'));
+      validation.errors?.forEach((err) => console.error(chalk.gray(`  • ${err}`)));
+      process.exit(1);
+    }
     spinner.succeed('Configuration validated');
 
     // Check for existing config and conflicts
@@ -450,6 +458,12 @@ export async function importAction(filePath: string, options: { force?: boolean 
 
     // Import the configuration
     spinner.start('Importing configuration...');
+    if (!importedConfig.apiKeys) {
+      importedConfig.apiKeys = {};
+    }
+    if (!importedConfig.webhookSecrets) {
+      importedConfig.webhookSecrets = {};
+    }
     await configManager.save(importedConfig);
     spinner.succeed('Configuration imported');
 

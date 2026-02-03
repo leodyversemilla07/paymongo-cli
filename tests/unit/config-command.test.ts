@@ -102,7 +102,7 @@ describe('Config Command', () => {
       projectName: 'test-project',
       environment: 'test',
       apiKeys: {},
-      webhooks: { url: null, events: [] },
+      webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
       dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
     });
 
@@ -162,7 +162,7 @@ describe('Config Command', () => {
         projectName: 'test-project',
         environment: 'test',
         apiKeys: { test: { public: 'pk_test_123', secret: 'sk_test_123' } },
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
 
@@ -213,7 +213,7 @@ describe('Config Command', () => {
         apiKeys: {
           live: { public: 'pk_live_very_long_key_here', secret: 'sk_live_very_long_secret_here' },
         },
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
 
@@ -239,7 +239,7 @@ describe('Config Command', () => {
         projectName: 'test-project',
         environment: 'test',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
         rateLimiting: {
           enabled: true,
@@ -270,7 +270,7 @@ describe('Config Command', () => {
         projectName: 'test-project',
         environment: 'test',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
         // No rateLimiting property
       };
@@ -291,7 +291,7 @@ describe('Config Command', () => {
         projectName: 'old-name',
         environment: 'test',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
 
@@ -341,7 +341,7 @@ describe('Config Command', () => {
         projectName: 'test',
         environment: 'test',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
 
@@ -362,7 +362,7 @@ describe('Config Command', () => {
         projectName: 'test',
         environment: 'test',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
 
@@ -383,7 +383,7 @@ describe('Config Command', () => {
         projectName: 'test',
         environment: 'test',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
 
@@ -418,7 +418,7 @@ describe('Config Command', () => {
         projectName: 'test',
         environment: 'test',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
 
@@ -446,7 +446,7 @@ describe('Config Command', () => {
         projectName: 'test-project',
         environment: 'test',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
 
@@ -476,7 +476,7 @@ describe('Config Command', () => {
         projectName: 'test-project',
         environment: 'test',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
 
@@ -499,7 +499,7 @@ describe('Config Command', () => {
         projectName: 'test-project',
         environment: 'test',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
 
@@ -594,7 +594,10 @@ describe('Config Command', () => {
       expect(mockSpinnerSucceed).toHaveBeenCalledWith('Configuration validated');
       expect(mockSpinnerStart).toHaveBeenCalledWith('Importing configuration...');
       expect(mockSpinnerSucceed).toHaveBeenCalledWith('Configuration imported');
-      expect(mockConfigManagerSave).toHaveBeenCalledWith(importedConfig);
+      expect(mockConfigManagerSave).toHaveBeenCalledWith({
+        ...importedConfig,
+        webhookSecrets: {},
+      });
       expect(console.log).toHaveBeenCalledWith(
         expect.stringContaining('✓ Configuration imported successfully')
       );
@@ -606,7 +609,7 @@ describe('Config Command', () => {
         projectName: 'existing',
         environment: 'test',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
       const importedConfig = {
@@ -614,7 +617,7 @@ describe('Config Command', () => {
         projectName: 'existing', // Same as existing
         environment: 'test', // Same as existing
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 4000, autoRegisterWebhook: false, verifyWebhookSignatures: true },
       };
 
@@ -630,7 +633,10 @@ describe('Config Command', () => {
         expect.stringMatching(/\.paymongo\.backup\.\d+\.json/),
         JSON.stringify(existingConfig, null, 2)
       );
-      expect(mockConfigManagerSave).toHaveBeenCalledWith(importedConfig);
+      expect(mockConfigManagerSave).toHaveBeenCalledWith({
+        ...importedConfig,
+        webhookSecrets: {},
+      });
     });
 
     it('should handle import file not found', async () => {
@@ -681,7 +687,7 @@ describe('Config Command', () => {
         projectName: 'existing',
         environment: 'test',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
       };
       const importedConfig = {
@@ -689,7 +695,7 @@ describe('Config Command', () => {
         projectName: 'different',
         environment: 'live',
         apiKeys: {},
-        webhooks: { url: null, events: [] },
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
         dev: { port: 4000, autoRegisterWebhook: false, verifyWebhookSignatures: true },
       };
 
@@ -701,7 +707,10 @@ describe('Config Command', () => {
       await importAction('config.json', { force: true });
 
       expect(mockSpinnerStart).not.toHaveBeenCalledWith('Checking for conflicts...');
-      expect(mockConfigManagerSave).toHaveBeenCalledWith(importedConfig);
+      expect(mockConfigManagerSave).toHaveBeenCalledWith({
+        ...importedConfig,
+        webhookSecrets: {},
+      });
     });
   });
 
@@ -713,7 +722,7 @@ describe('Config Command', () => {
           projectName: 'test',
           environment: 'test',
           apiKeys: {},
-          webhooks: { url: null, events: [] },
+          webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
           dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
         };
 
@@ -747,7 +756,7 @@ describe('Config Command', () => {
           projectName: 'test',
           environment: 'test',
           apiKeys: {},
-          webhooks: { url: null, events: [] },
+          webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
           dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
           rateLimiting: {
             enabled: false,
@@ -794,7 +803,7 @@ describe('Config Command', () => {
           projectName: 'test',
           environment: 'test',
           apiKeys: {},
-          webhooks: { url: null, events: [] },
+          webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
           dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
           rateLimiting: {
             enabled: true,
@@ -831,7 +840,7 @@ describe('Config Command', () => {
           projectName: 'test',
           environment: 'test',
           apiKeys: {},
-          webhooks: { url: null, events: [] },
+          webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
           dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
         };
 
@@ -886,7 +895,7 @@ describe('Config Command', () => {
           projectName: 'test',
           environment: 'test',
           apiKeys: {},
-          webhooks: { url: null, events: [] },
+          webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
           dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
         };
 
@@ -927,7 +936,7 @@ describe('Config Command', () => {
           projectName: 'test',
           environment: 'test',
           apiKeys: {},
-          webhooks: { url: null, events: [] },
+          webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
           dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
           rateLimiting: {
             enabled: true,
@@ -960,7 +969,7 @@ describe('Config Command', () => {
           projectName: 'test',
           environment: 'test',
           apiKeys: {},
-          webhooks: { url: null, events: [] },
+          webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
           dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
         };
 

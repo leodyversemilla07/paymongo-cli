@@ -4,7 +4,6 @@ import Spinner from '../../utils/spinner.js';
 import chalk from 'chalk';
 import { ConfigManager } from '../../services/config/manager.js';
 import { TeamService } from '../../services/team/service.js';
-import { input, confirm } from '@inquirer/prompts';
 
 const command = new Command('team')
   .description('Team collaboration with API key sharing')
@@ -89,10 +88,11 @@ command
   .command('import-keys')
   .description('Import shared API keys from team member')
   .option('-f, --force', 'Overwrite existing keys without confirmation')
-  .action(async (_options) => {
+  .action(async (options) => {
     const spinner = new Spinner();
 
     try {
+      const { input } = await import('@inquirer/prompts');
       const config = new ConfigManager();
       const teamService = new TeamService({ config });
 
@@ -126,7 +126,7 @@ command
       spinner.start('Importing keys...');
 
       const bundle = teamService.deserializeBundle(bundleJson);
-      await teamService.importKeyBundle(bundle, memberName);
+      await teamService.importKeyBundle(bundle, memberName, { force: options.force });
 
       spinner.succeed('Keys imported successfully!');
 
@@ -255,6 +255,7 @@ command
     const spinner = new Spinner();
 
     try {
+      const { confirm } = await import('@inquirer/prompts');
       // Confirm removal
       const confirmed = await confirm({
         message: `Are you sure you want to remove "${memberName}" from the team?`,

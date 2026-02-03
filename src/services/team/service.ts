@@ -93,7 +93,11 @@ export class TeamService {
     return bundle;
   }
 
-  async importKeyBundle(bundle: KeyBundle, memberName: string): Promise<void> {
+  async importKeyBundle(
+    bundle: KeyBundle,
+    memberName: string,
+    options: { force?: boolean } = {}
+  ): Promise<void> {
     const config = await this.config.load();
     if (!config) {
       throw new PayMongoError(
@@ -135,8 +139,9 @@ export class TeamService {
         }
         if (!config.apiKeys[env]) {
           config.apiKeys[env] = bundle.keys[env];
+        } else if (options.force) {
+          config.apiKeys[env] = bundle.keys[env];
         } else {
-          // Ask user if they want to overwrite (this will be handled in the command)
           console.log(`⚠️  ${env.toUpperCase()} keys already exist. Use --force to overwrite.`);
         }
 

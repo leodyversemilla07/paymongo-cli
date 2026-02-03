@@ -1,5 +1,4 @@
 import { Command } from 'commander';
-import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
 import fs from 'fs/promises';
 import ConfigManager from '../services/config/manager.js';
@@ -25,7 +24,7 @@ EXAMPLES
   $ paymongo generate webhook-handler --events payment.paid,payment.failed
   $ paymongo generate webhook-handler --language typescript --framework express
   $ paymongo generate payment-intent --methods card,gcash --language typescript
-  $ paymongo generate checkout-page --framework react --output Checkout.jsx
+  $ paymongo generate checkout-page --language react --output Checkout.jsx
 `
   )
   .addCommand(
@@ -39,9 +38,10 @@ EXAMPLES
         'after',
         `
 SUPPORTED EVENTS:
-  payment.paid, payment.failed, payment.refunded, payment.expired
-  source.chargeable, source.failed, source.cancelled
-  checkout.session.succeeded, checkout.session.cancelled
+  payment.paid, payment.failed, payment.refunded
+  source.chargeable
+  checkout_session.payment.paid
+  qrph.expired
 
 EXAMPLES:
   $ paymongo generate webhook-handler
@@ -122,6 +122,8 @@ async function generateWebhookHandler(options: {
 
     // Get events from options or prompt user
     let events: string[] = [];
+    const { input } = await import('@inquirer/prompts');
+
     if (options.events) {
       events = options.events.split(',').map(e => e.trim());
     } else {
@@ -134,9 +136,12 @@ async function generateWebhookHandler(options: {
 
     // Validate events
     const validEvents = [
-      'payment.paid', 'payment.failed', 'payment.refunded', 'payment.expired',
-      'source.chargeable', 'source.failed', 'source.cancelled',
-      'checkout.session.succeeded', 'checkout.session.cancelled'
+      'payment.paid',
+      'payment.failed',
+      'payment.refunded',
+      'source.chargeable',
+      'checkout_session.payment.paid',
+      'qrph.expired',
     ];
 
     const invalidEvents = events.filter(e => !validEvents.includes(e));
@@ -203,6 +208,8 @@ async function generatePaymentIntent(options: {
     }
 
     // Determine output file
+    const { input } = await import('@inquirer/prompts');
+
     let outputFile = options.output;
     if (!outputFile) {
       const defaultName = `create-payment-intent.${options.language === 'typescript' ? 'ts' : 'js'}`;
@@ -238,6 +245,8 @@ async function generateCheckoutPage(options: {
     const { code, extension } = getCheckoutPageTemplate(options.language);
 
     // Determine output file
+    const { input } = await import('@inquirer/prompts');
+
     let outputFile = options.output;
     if (!outputFile) {
       const defaultName = `checkout.${extension}`;

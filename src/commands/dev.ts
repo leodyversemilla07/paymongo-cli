@@ -190,7 +190,8 @@ command
 
       // Register webhook (unless disabled)
       let webhookId: string | undefined;
-      if (!options.noRegister) {
+      const shouldRegister = !options.noRegister && config.dev.autoRegisterWebhook !== false;
+      if (shouldRegister) {
         spinner.start('Registering webhook...');
         const events = (options.events || 'payment.paid,payment.failed').split(',');
         // Use project-specific webhook path

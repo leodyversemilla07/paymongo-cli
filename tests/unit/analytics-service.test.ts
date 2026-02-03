@@ -19,11 +19,12 @@ describe('AnalyticsService', () => {
     // Change to temp directory
     process.chdir(tempDir);
 
-    // Create .paymongo directory
+    // Create .paymongo directory for analytics storage
     const paymongoDir = path.join(tempDir, '.paymongo');
     if (!fs.existsSync(paymongoDir)) {
       fs.mkdirSync(paymongoDir, { recursive: true });
     }
+    process.env.PAYMONGO_ANALYTICS_DIR = paymongoDir;
 
     // Create config
     config = {
@@ -42,6 +43,7 @@ describe('AnalyticsService', () => {
   });
 
   afterEach(() => {
+    delete process.env.PAYMONGO_ANALYTICS_DIR;
     // Restore original cwd
     process.chdir(originalCwd);
 

@@ -19,29 +19,59 @@ const DevConfigSchema = z.object({
   verifyWebhookSignatures: z.boolean(),
 });
 
-// Team config schema (optional)
-const TeamConfigSchema = z.object({
-  githubToken: z.string().optional(),
-  repo: z.string().optional(),
-  branch: z.string().optional(),
-}).optional();
-
 // Main PayMongo config schema
 export const PayMongoConfigSchema = z.object({
   version: z.string().min(1, 'Version is required'),
   projectName: z.string().min(1, 'Project name is required'),
   environment: z.enum(['test', 'live']),
-  apiKeys: z.object({
-    test: ApiKeysSchema.optional(),
-    live: ApiKeysSchema.optional(),
-  }).refine(
-    (keys) => keys.test !== undefined || keys.live !== undefined,
-    { message: 'At least one environment API keys must be configured' }
-  ),
+  apiKeys: z
+    .object({
+      test: ApiKeysSchema.optional(),
+      live: ApiKeysSchema.optional(),
+    })
+    .optional(),
   webhooks: WebhooksConfigSchema,
-  webhookSecrets: z.record(z.string(), z.string()),
+  webhookSecrets: z.record(z.string(), z.string()).optional(),
   dev: DevConfigSchema,
-  team: TeamConfigSchema,
+  team: z
+    .object({
+      name: z.string().optional(),
+      members: z
+        .array(
+          z.object({
+            name: z.string(),
+            email: z.string().optional(),
+            addedAt: z.number(),
+            sharedKeys: z.array(z.string()).optional(),
+          })
+        )
+        .optional(),
+      sharedKeyBundles: z
+        .array(
+          z.object({
+            id: z.string(),
+            createdAt: z.number(),
+            environments: z.array(z.enum(['test', 'live'])),
+            sharedWith: z.array(z.string()),
+          })
+        )
+        .optional(),
+    })
+    .optional(),
+  registeredWebhooks: z
+    .array(
+      z.object({
+        id: z.string(),
+        url: z.string(),
+        createdAt: z.number(),
+      })
+    )
+    .optional(),
+  analytics: z
+    .object({
+      enabled: z.boolean(),
+    })
+    .optional(),
 });
 
 // Type inference from schema

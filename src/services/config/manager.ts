@@ -42,6 +42,14 @@ export class ConfigManager {
       // Validate required fields
       this.validateConfig(config);
 
+      // Normalize optional fields
+      if (!config.apiKeys) {
+        config.apiKeys = {};
+      }
+      if (!config.webhookSecrets) {
+        config.webhookSecrets = {};
+      }
+
       // Cache the config with file modification time
       try {
         const stats = fs.statSync(this.configPath);
@@ -149,23 +157,7 @@ export class ConfigManager {
       throw new ValidationError(firstError, field);
     }
     
-    // Additional runtime checks for current environment API keys
-    const cfg = config as PayMongoConfig;
-    const env = cfg.environment;
-    
-    if (!cfg.apiKeys[env]) {
-      throw new ValidationError(
-        `Config file is missing API keys for environment "${env}"`,
-        `apiKeys.${env}`
-      );
-    }
-
-    if (!cfg.apiKeys[env]?.secret) {
-      throw new ValidationError(
-        `Config file is missing secret API key for environment "${env}"`,
-        `apiKeys.${env}.secret`
-      );
-    }
+    // API keys are validated at command level to allow initial setup/reset
   }
 
   mergeConfig(base: PayMongoConfig, updates: Partial<PayMongoConfig>): PayMongoConfig {
