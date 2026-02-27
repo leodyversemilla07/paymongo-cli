@@ -44,7 +44,7 @@ command
     // Check if detach mode is requested
     if (options.detach) {
       // Check if already running
-      const existingState = DevProcessManager.loadState();
+      const existingState = await DevProcessManager.loadState();
       if (existingState && DevProcessManager.isProcessRunning(existingState.pid)) {
         console.log(chalk.yellow('⚠️  Dev server is already running in background'));
         console.log('');
@@ -73,7 +73,7 @@ command
         args.push('--ngrok-token', options.ngrokToken);
       }
 
-      const logFile = DevProcessManager.getLogFile();
+      const logFile = await DevProcessManager.getLogFile();
       const out = fs.openSync(logFile, 'a');
       const err = fs.openSync(logFile, 'a');
 
@@ -277,7 +277,7 @@ command
       console.log(chalk.gray('Press Ctrl+C to stop'));
 
       // Save state for background process management
-      DevProcessManager.saveState({
+      await DevProcessManager.saveState({
         pid: process.pid,
         port,
         tunnelUrl: tunnelUrl ?? '',
@@ -294,7 +294,7 @@ command
         console.log('\n' + chalk.yellow('Shutting down...'));
 
         // Clear saved state
-        DevProcessManager.clearState();
+        await DevProcessManager.clearState();
 
         try {
           // Disconnect ngrok
@@ -356,7 +356,7 @@ command
       }
 
       // Cleanup on error
-      DevProcessManager.clearState();
+      await DevProcessManager.clearState();
       try {
         if (tunnel) {
           await tunnel.close();

@@ -13,13 +13,13 @@ const logsCommand = new Command('logs')
     .option('--clear', 'Clear the log file')
     .action(async (options) => {
         if (options.clear) {
-            DevProcessManager.clearLogs();
+            await DevProcessManager.clearLogs();
             console.log(chalk.green('✓ Logs cleared'));
             return;
         }
 
-        const logFile = DevProcessManager.getLogFile();
-        const lines = DevProcessManager.readLogs(parseInt(options.lines));
+        const logFile = await DevProcessManager.getLogFile();
+        const lines = await DevProcessManager.readLogs(parseInt(options.lines));
 
         if (lines.length === 0) {
             console.log(chalk.yellow('No logs available.'));

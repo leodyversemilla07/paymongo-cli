@@ -25,7 +25,15 @@ export function validateApiKey(key: string, type: 'public' | 'secret'): boolean 
 
 export function validateWebhookUrl(url: string): boolean {
   try {
-    const parsedUrl = new URL(url);
+    const trimmed = url.trim();
+    if (trimmed.length > 2048) {
+      return false;
+    }
+    const parsedUrl = new URL(trimmed);
+    // Reject embedded credentials (e.g. https://user:pass@example.com)
+    if (parsedUrl.username || parsedUrl.password) {
+      return false;
+    }
     return (
       parsedUrl.protocol === 'https:' ||
       parsedUrl.hostname === 'localhost' ||

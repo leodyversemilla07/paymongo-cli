@@ -10,7 +10,7 @@ const stopCommand = new Command('stop')
     .description('Stop the background dev server')
     .action(async () => {
         const spinner = new Spinner();
-        const state = DevProcessManager.loadState();
+        const state = await DevProcessManager.loadState();
 
         if (!state) {
             console.log(chalk.yellow('No dev server is running in background.'));
@@ -21,7 +21,7 @@ const stopCommand = new Command('stop')
 
         if (!isRunning) {
             console.log(chalk.yellow('Dev server process is not running (cleaning up stale state).'));
-            DevProcessManager.clearState();
+            await DevProcessManager.clearState();
             return;
         }
 
@@ -33,7 +33,7 @@ const stopCommand = new Command('stop')
         if (killed) {
             // Wait a moment for cleanup
             await new Promise((resolve) => setTimeout(resolve, 1000));
-            DevProcessManager.clearState();
+            await DevProcessManager.clearState();
             spinner.succeed('Dev server stopped');
 
             // Note: The webhook might still be registered if the process didn't clean up properly

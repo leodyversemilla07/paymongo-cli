@@ -8,7 +8,7 @@ import { DevProcessManager } from '../../services/dev/process-manager.js';
 const statusCommand = new Command('status')
     .description('Check if dev server is running in background')
     .action(async () => {
-        const state = DevProcessManager.loadState();
+        const state = await DevProcessManager.loadState();
 
         if (!state) {
             console.log(chalk.yellow('No dev server is running in background.'));
@@ -20,7 +20,7 @@ const statusCommand = new Command('status')
 
         if (!isRunning) {
             console.log(chalk.yellow('Dev server process is not running (stale state).'));
-            DevProcessManager.clearState();
+            await DevProcessManager.clearState();
             console.log(chalk.gray('Start a new one with: paymongo dev --detach'));
             return;
         }

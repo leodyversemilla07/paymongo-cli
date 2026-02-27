@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { execSync } from 'child_process';
@@ -23,24 +23,22 @@ export class DevProcessManager {
   /**
    * Save the current dev server state
    */
-  static saveState(state: DevProcessState): void {
-    if (!fs.existsSync(STATE_DIR)) {
-      fs.mkdirSync(STATE_DIR, { recursive: true });
-    }
-    fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+  static async saveState(state: DevProcessState): Promise<void> {
+    await fs.mkdir(STATE_DIR, { recursive: true });
+    await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2));
   }
 
   /**
    * Load the saved dev server state
    */
-  static loadState(): DevProcessState | null {
+  static async loadState(): Promise<DevProcessState | null> {
     try {
-      if (!fs.existsSync(STATE_FILE)) {
+      const content = await fs.readFile(STATE_FILE, 'utf-8');
+      return JSON.parse(content) as DevProcessState;
+    } catch (error: unknown) {
+      if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
         return null;
       }
-      const content = fs.readFileSync(STATE_FILE, 'utf-8');
-      return JSON.parse(content) as DevProcessState;
-    } catch {
       return null;
     }
   }
@@ -48,12 +46,13 @@ export class DevProcessManager {
   /**
    * Clear the saved state
    */
-  static clearState(): void {
+  static async clearState(): Promise<void> {
     try {
-      if (fs.existsSync(STATE_FILE)) {
-        fs.unlinkSync(STATE_FILE);
+      await fs.unlink(STATE_FILE);
+    } catch (error: unknown) {
+      if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return;
       }
-    } catch {
       // Ignore errors
     }
   }
@@ -91,25 +90,23 @@ export class DevProcessManager {
   /**
    * Get the log file path
    */
-  static getLogFile(): string {
-    if (!fs.existsSync(STATE_DIR)) {
-      fs.mkdirSync(STATE_DIR, { recursive: true });
-    }
+  static async getLogFile(): Promise<string> {
+    await fs.mkdir(STATE_DIR, { recursive: true });
     return LOG_FILE;
   }
 
   /**
    * Read recent logs
    */
-  static readLogs(lines: number = 50): string[] {
+  static async readLogs(lines: number = 50): Promise<string[]> {
     try {
-      if (!fs.existsSync(LOG_FILE)) {
-        return [];
-      }
-      const content = fs.readFileSync(LOG_FILE, 'utf-8');
+      const content = await fs.readFile(LOG_FILE, 'utf-8');
       const allLines = content.split('\n').filter(line => line.trim());
       return allLines.slice(-lines);
-    } catch {
+    } catch (error: unknown) {
+      if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return [];
+      }
       return [];
     }
   }
@@ -117,12 +114,13 @@ export class DevProcessManager {
   /**
    * Clear log file
    */
-  static clearLogs(): void {
+  static async clearLogs(): Promise<void> {
     try {
-      if (fs.existsSync(LOG_FILE)) {
-        fs.writeFileSync(LOG_FILE, '');
+      await fs.writeFile(LOG_FILE, '');
+    } catch (error: unknown) {
+      if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return;
       }
-    } catch {
       // Ignore errors
     }
   }

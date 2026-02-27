@@ -49,5 +49,19 @@ describe('Validator Utils', () => {
       expect(validateWebhookUrl('not-a-url')).toBe(false);
       expect(validateWebhookUrl('')).toBe(false);
     });
+
+    it('should reject URLs with embedded credentials', () => {
+      expect(validateWebhookUrl('https://user:pass@example.com/webhook')).toBe(false);
+      expect(validateWebhookUrl('https://user@example.com/webhook')).toBe(false);
+    });
+
+    it('should reject URLs exceeding max length', () => {
+      const longPath = 'a'.repeat(2049);
+      expect(validateWebhookUrl(`https://example.com/${longPath}`)).toBe(false);
+    });
+
+    it('should trim whitespace from URLs', () => {
+      expect(validateWebhookUrl('  https://example.com/webhook  ')).toBe(true);
+    });
   });
 });

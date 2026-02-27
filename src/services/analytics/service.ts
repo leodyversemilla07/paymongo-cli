@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import Logger from '../../utils/logger.js';
@@ -35,6 +35,7 @@ export class AnalyticsService {
   private dataFile: string;
   private logger: Logger;
   private config: PayMongoConfig;
+  private _ready: Promise<void>;
 
   constructor(config: PayMongoConfig) {
     this.logger = new Logger();
@@ -43,38 +44,39 @@ export class AnalyticsService {
     this.dataFile = analyticsDir
       ? path.join(analyticsDir, 'analytics.json')
       : path.join(os.homedir(), '.paymongo-cli', 'analytics.json');
-    this.loadEvents();
+    this._ready = this.loadEvents();
   }
 
-  private loadEvents(): void {
+  private async loadEvents(): Promise<void> {
     try {
-      if (fs.existsSync(this.dataFile)) {
-        const data = JSON.parse(fs.readFileSync(this.dataFile, 'utf-8'));
-        this.events = data.events || [];
-        // Keep only last 1000 events
-        if (this.events.length > 1000) {
-          this.events = this.events.slice(-1000);
-        }
+      const data = JSON.parse(await fs.readFile(this.dataFile, 'utf-8'));
+      this.events = data.events || [];
+      // Keep only last 1000 events
+      if (this.events.length > 1000) {
+        this.events = this.events.slice(-1000);
       }
     } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return;
+      }
       this.logger.error('Failed to load analytics data', error as Error);
       this.events = [];
     }
   }
 
-  private saveEvents(): void {
+  private async saveEvents(): Promise<void> {
     try {
       const dir = path.dirname(this.dataFile);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      fs.writeFileSync(this.dataFile, JSON.stringify({ events: this.events }, null, 2));
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(this.dataFile, JSON.stringify({ events: this.events }, null, 2));
     } catch (error) {
       this.logger.error('Failed to save analytics data', error as Error);
     }
   }
 
-  public recordEvent(event: Omit<WebhookEvent, 'id' | 'timestamp'>): void {
+  public async recordEvent(event: Omit<WebhookEvent, 'id' | 'timestamp'>): Promise<void> {
+    await this._ready;
+
     // Check if analytics is enabled
     if (!this.config.analytics?.enabled) {
       return; // Silently skip recording if analytics is disabled
@@ -93,7 +95,7 @@ export class AnalyticsService {
       this.events = this.events.slice(-1000);
     }
 
-    this.saveEvents();
+    await this.saveEvents();
   }
 
   public getAnalytics(): AnalyticsData {
@@ -137,8 +139,8 @@ export class AnalyticsService {
     };
   }
 
-  public clearAnalytics(): void {
+  public async clearAnalytics(): Promise<void> {
     this.events = [];
-    this.saveEvents();
+    await this.saveEvents();
   }
 }

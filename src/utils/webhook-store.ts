@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { WebhookEventPayload } from '../types/paymongo.js';
@@ -16,20 +16,21 @@ export interface StoredWebhookEvent {
 
 class WebhookEventStore {
   private storePath: string;
+  private storeDir: string;
 
   constructor() {
     // Store webhook events in user's home directory
-    const paymongoDir = path.join(os.homedir(), '.paymongo');
-    this.storePath = path.join(paymongoDir, 'webhook-events.json');
+    this.storeDir = path.join(os.homedir(), '.paymongo');
+    this.storePath = path.join(this.storeDir, 'webhook-events.json');
+  }
 
-    // Ensure directory exists
-    if (!fs.existsSync(paymongoDir)) {
-      fs.mkdirSync(paymongoDir, { recursive: true });
-    }
+  private async ensureDir(): Promise<void> {
+    await fs.mkdir(this.storeDir, { recursive: true });
   }
 
   async storeEvent(event: StoredWebhookEvent): Promise<void> {
     try {
+      await this.ensureDir();
       const events = await this.loadEvents();
       events.push(event);
 
@@ -38,7 +39,7 @@ class WebhookEventStore {
         events.splice(0, events.length - 1000);
       }
 
-      fs.writeFileSync(this.storePath, JSON.stringify(events, null, 2));
+      await fs.writeFile(this.storePath, JSON.stringify(events, null, 2));
     } catch (error) {
       // Silently fail if we can't store events
       console.warn('Failed to store webhook event:', error);
@@ -47,12 +48,12 @@ class WebhookEventStore {
 
   async loadEvents(): Promise<StoredWebhookEvent[]> {
     try {
-      if (!fs.existsSync(this.storePath)) {
+      const data = await fs.readFile(this.storePath, 'utf-8');
+      return JSON.parse(data);
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
         return [];
       }
-      const data = fs.readFileSync(this.storePath, 'utf-8');
-      return JSON.parse(data);
-    } catch (_error) {
       return [];
     }
   }
@@ -69,10 +70,11 @@ class WebhookEventStore {
 
   async clearEvents(): Promise<void> {
     try {
-      if (fs.existsSync(this.storePath)) {
-        fs.unlinkSync(this.storePath);
-      }
+      await fs.unlink(this.storePath);
     } catch (error) {
+      if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return;
+      }
       console.warn('Failed to clear webhook events:', error);
     }
   }

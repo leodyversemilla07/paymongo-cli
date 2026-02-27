@@ -32,6 +32,17 @@ export const REQUEST_TIMEOUT = 30000; // 30 seconds
 export const MAX_RETRIES = 3;
 export const RETRY_DELAY = 1000; // 1 second
 
+// Cache Constants
+export const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+// Rate Limit Defaults
+export const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+export const RATE_LIMIT_DEFAULT_MAX = 100;
+export const RATE_LIMIT_WEBHOOKS_MAX = 30;
+export const RATE_LIMIT_PAYMENTS_MAX = 60;
+export const RATE_LIMIT_REFUNDS_MAX = 20;
+export const RATE_LIMIT_ENV_MULTIPLIER = 0.5; // Live gets 50% of test limits
+
 // Development Constants
 export const DEFAULT_DEV_PORT = 3000;
 export const DEFAULT_WEBHOOK_PATH = '/webhook';

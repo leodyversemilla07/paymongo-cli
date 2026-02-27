@@ -2,7 +2,18 @@ import { request } from 'undici';
 import { NetworkError, ApiKeyError, PayMongoError, withRetry } from '../../utils/errors.js';
 import Cache from '../../utils/cache.js';
 import RateLimiter, { RateLimitConfig } from './rate-limiter.js';
-import { CLI_VERSION } from '../../utils/constants.js';
+import {
+  CLI_VERSION,
+  REQUEST_TIMEOUT,
+  CACHE_TTL,
+  RATE_LIMIT_WINDOW_MS,
+  RATE_LIMIT_DEFAULT_MAX,
+  RATE_LIMIT_WEBHOOKS_MAX,
+  RATE_LIMIT_PAYMENTS_MAX,
+  RATE_LIMIT_REFUNDS_MAX,
+  RATE_LIMIT_ENV_MULTIPLIER,
+  PAYMONGO_API_BASE,
+} from '../../utils/constants.js';
 import {
   PayMongoConfig,
   WebhookData,
@@ -12,8 +23,6 @@ import {
   RefundData,
   ApiResponse,
 } from '../../types/paymongo.js';
-
-const REQUEST_TIMEOUT = 30000;
 
 // Error type with code property for network errors
 interface ErrorWithCode extends Error {
@@ -59,7 +68,7 @@ export class ApiClient {
 
   constructor(options: ApiClientOptions) {
     this.config = options.config;
-    this.baseUrl = 'https://api.paymongo.com';
+    this.baseUrl = PAYMONGO_API_BASE;
     this.timeout = options.timeout || REQUEST_TIMEOUT;
 
     this.defaultHeaders = {
@@ -67,7 +76,7 @@ export class ApiClient {
       'User-Agent': `paymongo-cli/${CLI_VERSION}`,
     };
 
-    this.cache = new Cache({ ttl: 2 * 60 * 1000 }); // 2 minute cache for API responses
+    this.cache = new Cache({ ttl: CACHE_TTL });
 
     // Initialize rate limiter if enabled
     const rateLimitEnabled =
@@ -100,29 +109,26 @@ export class ApiClient {
     // Live environment: 50 requests/minute (50% of test)
     return {
       default: {
-        maxRequests: 100,
-        windowMs: 60 * 1000, // 1 minute
-        environmentMultiplier: 0.5, // Live gets 50% of test limits
+        maxRequests: RATE_LIMIT_DEFAULT_MAX,
+        windowMs: RATE_LIMIT_WINDOW_MS,
+        environmentMultiplier: RATE_LIMIT_ENV_MULTIPLIER,
       },
       endpoints: {
-        // Webhook operations (more expensive)
         '/webhooks': {
-          maxRequests: 30, // Stricter limits for webhook creation
-          windowMs: 60 * 1000,
+          maxRequests: RATE_LIMIT_WEBHOOKS_MAX,
+          windowMs: RATE_LIMIT_WINDOW_MS,
         },
-        // Payment operations (critical)
         '/payments': {
-          maxRequests: 60,
-          windowMs: 60 * 1000,
+          maxRequests: RATE_LIMIT_PAYMENTS_MAX,
+          windowMs: RATE_LIMIT_WINDOW_MS,
         },
         '/payment_intents': {
-          maxRequests: 60,
-          windowMs: 60 * 1000,
+          maxRequests: RATE_LIMIT_PAYMENTS_MAX,
+          windowMs: RATE_LIMIT_WINDOW_MS,
         },
-        // Refunds (very strict)
         '/refunds': {
-          maxRequests: 20,
-          windowMs: 60 * 1000,
+          maxRequests: RATE_LIMIT_REFUNDS_MAX,
+          windowMs: RATE_LIMIT_WINDOW_MS,
         },
       },
       environments: {
