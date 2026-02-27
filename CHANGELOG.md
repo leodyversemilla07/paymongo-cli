@@ -18,11 +18,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `webhook-store.ts`: Lazy async directory creation, all read/write operations non-blocking.
   - `analytics/service.ts`: Async persistence with `_ready` promise to prevent constructor race conditions.
   - `process-manager.ts`: All static methods async; updated 13 call sites across dev subcommands.
+- **Deduplicated ValidationError** - Removed duplicate `ValidationError` class from `validator.ts`; single definition now lives in `errors.ts` and is re-exported.
+- **DevServer Logging** - Replaced raw `console.log`/`console.error` calls in `DevServer` with structured `Logger` instance for consistent, controllable output.
 
 ### Fixed
 
 - **Input Sanitization** - Enhanced `validateWebhookUrl()` with max URL length (2048 chars), automatic whitespace trimming, and rejection of URLs containing embedded credentials.
 - **Race Condition** - Fixed analytics service race where `loadEvents()` could overwrite in-memory state written by `recordEvent()` before async load completed.
+- **Unhandled Promises** - `recordEvent()` calls in `DevServer` are now properly awaited via extracted `processWebhookBody()` method, preventing silent failures.
+- **Bulk Import Errors** - `importWebhooks()` and `importPayments()` now catch file-not-found and malformed JSON errors, throwing descriptive `PayMongoError` instead of raw stack traces.
+
+### Added
+
+- **Unit Tests** - Added 62 new tests across 3 previously-uncovered modules:
+  - `BulkOperations` (19 tests): export/import, file errors, JSON validation, filename generation.
+  - `DevProcessManager` (22 tests): state persistence, process detection, log management, uptime formatting.
+  - `TeamService` (21 tests): key bundles, member management, serialization, team operations.
 
 ### Security
 
@@ -364,6 +375,10 @@ npm install -g paymongo-cli@latest
 - Sync file I/O in dev-mode hot paths converted to async for better event loop performance
 - Webhook URL validation hardened against credential leakage and oversized inputs
 - CLI version always matches `package.json` — no more stale User-Agent strings
+- Duplicate `ValidationError` class consolidated to single definition
+- DevServer uses structured Logger instead of raw console output
+- Bulk import operations now produce user-friendly error messages
+- 62 new unit tests covering BulkOperations, DevProcessManager, and TeamService
 
 ### Upgrading to 1.4.3
 
