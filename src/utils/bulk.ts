@@ -77,14 +77,29 @@ export class BulkOperations {
     webhooks: WebhookData[];
     metadata: BulkExportData['metadata'];
   }> {
-    const content = await fs.readFile(filename, 'utf-8');
-    const data = JSON.parse(content);
+    let content: string;
+    try {
+      content = await fs.readFile(filename, 'utf-8');
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === 'ENOENT') {
+        throw new PayMongoError(`File not found: ${filename}`, 'FILE_NOT_FOUND', 404);
+      }
+      throw new PayMongoError(`Cannot read file: ${filename}`, 'FILE_READ_ERROR', 400);
+    }
+
+    let data: unknown;
+    try {
+      data = JSON.parse(content);
+    } catch {
+      throw new PayMongoError(`Invalid JSON in ${filename}`, 'INVALID_JSON', 400);
+    }
 
     this.validateImportData(data, 'webhooks');
 
     return {
-      webhooks: data.data,
-      metadata: data.metadata,
+      webhooks: (data as Record<string, unknown>).data as WebhookData[],
+      metadata: (data as Record<string, unknown>).metadata as BulkExportData['metadata'],
     };
   }
 
@@ -95,14 +110,29 @@ export class BulkOperations {
     payments: PaymentDataFull[];
     metadata: BulkExportData['metadata'];
   }> {
-    const content = await fs.readFile(filename, 'utf-8');
-    const data = JSON.parse(content);
+    let content: string;
+    try {
+      content = await fs.readFile(filename, 'utf-8');
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === 'ENOENT') {
+        throw new PayMongoError(`File not found: ${filename}`, 'FILE_NOT_FOUND', 404);
+      }
+      throw new PayMongoError(`Cannot read file: ${filename}`, 'FILE_READ_ERROR', 400);
+    }
+
+    let data: unknown;
+    try {
+      data = JSON.parse(content);
+    } catch {
+      throw new PayMongoError(`Invalid JSON in ${filename}`, 'INVALID_JSON', 400);
+    }
 
     this.validateImportData(data, 'payments');
 
     return {
-      payments: data.data,
-      metadata: data.metadata,
+      payments: (data as Record<string, unknown>).data as PaymentDataFull[],
+      metadata: (data as Record<string, unknown>).metadata as BulkExportData['metadata'],
     };
   }
 

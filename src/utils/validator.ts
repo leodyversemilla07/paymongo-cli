@@ -1,14 +1,7 @@
 import { PayMongoConfig } from '../types/paymongo.js';
+import { ValidationError } from './errors.js';
 
-export class ValidationError extends Error {
-  constructor(
-    message: string,
-    public field?: string
-  ) {
-    super(message);
-    this.name = 'ValidationError';
-  }
-}
+export { ValidationError };
 
 export function validateApiKey(key: string, type: 'public' | 'secret'): boolean {
   if (!key || typeof key !== 'string') {

@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import chalk from 'chalk';
 import { PayMongoConfig, WebhookEventPayload } from '../../types/paymongo.js';
 import { AnalyticsService } from '../analytics/service.js';
+import Logger from '../../utils/logger.js';
 
 /**
  * Development server for receiving PayMongo webhooks locally.
@@ -13,11 +14,13 @@ export class DevServer {
   private port: number;
   private config: PayMongoConfig;
   private analytics: AnalyticsService;
+  private logger: Logger;
 
   constructor(port: number, config: PayMongoConfig) {
     this.port = port;
     this.config = config;
     this.analytics = new AnalyticsService(config);
+    this.logger = new Logger();
 
     this.server = http.createServer((req, res) => {
       this.handleWebhookRequest(req, res);
@@ -27,7 +30,7 @@ export class DevServer {
   async start(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.server.listen(this.port, () => {
-        console.log(chalk.green('✓'), `Webhook server listening on http://localhost:${this.port}`);
+        this.logger.success(`Webhook server listening on http://localhost:${this.port}`);
         resolve();
       });
 
@@ -40,7 +43,7 @@ export class DevServer {
   async stop(): Promise<void> {
     return new Promise((resolve) => {
       this.server.close(() => {
-        console.log(chalk.yellow('✓'), 'Webhook server stopped');
+        this.logger.warning('Webhook server stopped');
         resolve();
       });
     });
@@ -61,53 +64,61 @@ export class DevServer {
     });
 
     req.on('end', () => {
-      try {
-        const event = JSON.parse(body);
-
-        // Verify webhook signature if enabled
-        const signatureValid = this.verifyWebhookSignature(req, body);
-        if (!signatureValid) {
-          console.log(chalk.red('⚠️'), 'Webhook signature verification failed');
-          res.writeHead(401, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Invalid signature' }));
-
-          // Record failed analytics event
-          this.analytics.recordEvent({
-            type: event.data?.type || 'unknown',
-            success: false,
-            error: 'Invalid signature',
-            data: event.data?.attributes,
-          });
-          return;
-        }
-
-        // Log the webhook event
-        this.logWebhookEvent(event);
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true }));
-      } catch (error) {
-        console.error(chalk.red('✗'), 'Failed to process webhook:', (error as Error).message);
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid JSON' }));
-
-        // Record failed analytics event for JSON parsing errors
-        this.analytics.recordEvent({
-          type: 'unknown',
-          success: false,
-          error: 'Invalid JSON',
-        });
-      }
+      void this.processWebhookBody(body, req, res);
     });
   }
 
-  private logWebhookEvent(event: WebhookEventPayload): void {
+  private async processWebhookBody(
+    body: string,
+    req: http.IncomingMessage,
+    res: http.ServerResponse
+  ): Promise<void> {
+    try {
+      const event = JSON.parse(body);
+
+      // Verify webhook signature if enabled
+      const signatureValid = this.verifyWebhookSignature(req, body);
+      if (!signatureValid) {
+        this.logger.failure('Webhook signature verification failed');
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid signature' }));
+
+        // Record failed analytics event
+        await this.analytics.recordEvent({
+          type: event.data?.type || 'unknown',
+          success: false,
+          error: 'Invalid signature',
+          data: event.data?.attributes,
+        });
+        return;
+      }
+
+      // Log the webhook event
+      await this.logWebhookEvent(event);
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
+    } catch (error) {
+      this.logger.error('Failed to process webhook:', (error as Error).message);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid JSON' }));
+
+      // Record failed analytics event for JSON parsing errors
+      await this.analytics.recordEvent({
+        type: 'unknown',
+        success: false,
+        error: 'Invalid JSON',
+      });
+    }
+  }
+
+  private async logWebhookEvent(event: WebhookEventPayload): Promise<void> {
     const timestamp = new Date().toLocaleTimeString();
     const eventType = event.data?.type || 'unknown';
     const eventId = event.data?.id || 'unknown';
 
     // Record analytics event
-    this.analytics.recordEvent({
+    await this.analytics.recordEvent({
       type: eventType,
       success: true,
       data: event.data?.attributes,
@@ -136,20 +147,20 @@ export class DevServer {
   private verifyWebhookSignature(req: http.IncomingMessage, body: string): boolean {
     // Check if signature verification is enabled in config
     if (!this.config.dev.verifyWebhookSignatures) {
-      console.log(chalk.yellow('ℹ️'), 'Webhook signature verification disabled in config');
+      this.logger.warn('Webhook signature verification disabled in config');
       return true; // Allow all requests when verification is disabled
     }
 
     const signatureHeader = req.headers['paymongo-signature'] as string;
     if (!signatureHeader) {
-      console.log(chalk.red('⚠️'), 'Signature verification required but no signature header found');
+      this.logger.failure('Signature verification required but no signature header found');
       return false;
     }
 
     // Parse signature header: t=<timestamp>,te=<signature>,li=
     const signatureParts = signatureHeader.split(',');
     if (signatureParts.length < 2) {
-      console.log(chalk.red('⚠️'), 'Invalid signature format');
+      this.logger.failure('Invalid signature format');
       return false;
     }
 
@@ -157,7 +168,7 @@ export class DevServer {
     const signature = signatureParts.find((part) => part.startsWith('te='))?.split('=')[1];
 
     if (!timestamp || !signature) {
-      console.log(chalk.red('⚠️'), 'Missing timestamp or signature in header');
+      this.logger.failure('Missing timestamp or signature in header');
       return false;
     }
 
@@ -175,19 +186,13 @@ export class DevServer {
       ) as string[];
 
       if (webhookId && secretKeys.length > 0) {
-        console.log(
-          chalk.yellow('⚠️'),
-          `No webhook secret found for id ${webhookId}. Update your configuration.`
-        );
+        this.logger.warning(`No webhook secret found for id ${webhookId}. Update your configuration.`);
         return false;
       }
     }
 
     if (secretKeys.length === 0) {
-      console.log(
-        chalk.yellow('⚠️'),
-        'Signature verification enabled but no webhook secrets configured'
-      );
+      this.logger.warning('Signature verification enabled but no webhook secrets configured');
       return true; // Allow requests when no secrets are configured yet
     }
 
@@ -216,10 +221,10 @@ export class DevServer {
     }
 
     if (isValid) {
-      console.log(chalk.green('✓'), 'Signature verified successfully');
+      this.logger.success('Signature verified successfully');
       return true;
     } else {
-      console.log(chalk.red('✗'), 'Signature verification failed');
+      this.logger.failure('Signature verification failed');
       return false;
     }
   }

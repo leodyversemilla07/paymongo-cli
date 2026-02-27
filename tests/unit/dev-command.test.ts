@@ -323,6 +323,9 @@ describe('Dev Command', () => {
       const requestHandler = mockHttpCreateServer.mock.calls[0]?.[0] as unknown as RequestHandler;
       requestHandler(mockReq, mockRes);
 
+      // Wait for async processWebhookBody to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       expect(mockRes.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': 'application/json' });
       expect(mockRes.end).toHaveBeenCalledWith(JSON.stringify({ success: true }));
     });
@@ -424,6 +427,9 @@ describe('Dev Command', () => {
       const requestHandler = mockHttpCreateServer.mock.calls[0]?.[0] as unknown as RequestHandler;
       requestHandler(mockReq, mockRes);
 
+      // Wait for async processWebhookBody to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       expect(mockRes.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': 'application/json' });
       expect(mockRes.end).toHaveBeenCalledWith(JSON.stringify({ success: true }));
     });
@@ -489,6 +495,9 @@ describe('Dev Command', () => {
 
       const requestHandler = mockHttpCreateServer.mock.calls[0]?.[0] as unknown as RequestHandler;
       requestHandler(mockReq, mockRes);
+
+      // Wait for async processWebhookBody to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(mockRes.writeHead).toHaveBeenCalledWith(401, { 'Content-Type': 'application/json' });
       expect(mockRes.end).toHaveBeenCalledWith(JSON.stringify({ error: 'Invalid signature' }));
