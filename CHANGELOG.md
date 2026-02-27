@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.7] - 2026-02-27
+
+### Changed
+
+- **Error Handling** - Replaced all 60 `process.exit(1)` calls across 10 command files with a `CommandError` throw pattern and centralized global error handler in `index.ts`.
+- **CLI Version** - Version string is now dynamically read from `package.json` instead of being hardcoded, keeping User-Agent headers and `--version` output always in sync.
+- **Magic Numbers** - Extracted hardcoded cache TTL, rate limit thresholds, and API base URL into named constants in `constants.ts`.
+- **Async File I/O** - Converted synchronous `fs` operations to `fs/promises` in dev-mode hot paths:
+  - `webhook-store.ts`: Lazy async directory creation, all read/write operations non-blocking.
+  - `analytics/service.ts`: Async persistence with `_ready` promise to prevent constructor race conditions.
+  - `process-manager.ts`: All static methods async; updated 13 call sites across dev subcommands.
+
+### Fixed
+
+- **Input Sanitization** - Enhanced `validateWebhookUrl()` with max URL length (2048 chars), automatic whitespace trimming, and rejection of URLs containing embedded credentials.
+- **Race Condition** - Fixed analytics service race where `loadEvents()` could overwrite in-memory state written by `recordEvent()` before async load completed.
+
+### Security
+
+- Webhook URL validation now blocks URLs with embedded `user:pass@` credentials to prevent credential leakage.
+
 ## [1.4.6] - 2026-02-03
 
 ### Changed
@@ -315,6 +336,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Highlights                                                           |
 | ------- | ------------ | -------------------------------------------------------------------- |
+| [1.4.7] | 2026-02-27   | CommandError pattern, dynamic version, async FS, input sanitization  |
+| [1.4.6] | 2026-02-03   | Config validation, webhook signatures, lazy loading                  |
+| [1.4.5] | 2026-02-01   | AES-256-GCM encryption, .gitignore handling                          |
+| [1.4.4] | 2026-01-27   | Codebase modularization, integration testing                         |
 | [1.4.3] | 2026-01-26   | Enhanced error handling, test output cleanup, API client consolidation |
 | [1.4.1] | 2026-01-26   | Test coverage completion, ESLint compliance, documentation updates   |
 | [1.4.0] | 2026-01-26   | Code generation, HTTP client migration, GUI removal, performance optimization |
@@ -326,6 +351,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## Upgrade Guide
+### Upgrading to 1.4.7
+
+```bash
+npm install -g paymongo-cli@latest
+```
+
+**Breaking Changes:** None. This is a backward-compatible patch release.
+
+**Improvements:**
+- All `process.exit(1)` calls replaced with structured error handling — CLI now exits cleanly through global error handlers
+- Sync file I/O in dev-mode hot paths converted to async for better event loop performance
+- Webhook URL validation hardened against credential leakage and oversized inputs
+- CLI version always matches `package.json` — no more stale User-Agent strings
+
 ### Upgrading to 1.4.3
 
 ```bash
@@ -417,7 +456,10 @@ npm install -g paymongo-cli
 - [Issue Tracker](https://github.com/leodyversemilla07/paymongo-cli/issues)
 - [PayMongo API Documentation](https://developers.paymongo.com/)
 
-[Unreleased]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.4...HEAD
+[Unreleased]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.7...HEAD
+[1.4.7]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.6...v1.4.7
+[1.4.6]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.5...v1.4.6
+[1.4.5]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.1...v1.4.3
 [1.4.1]: https://github.com/leodyversemilla07/paymongo-cli/compare/v1.4.0...v1.4.1
