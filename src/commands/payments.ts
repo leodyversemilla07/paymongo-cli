@@ -7,6 +7,7 @@ import { PaymentSimulator, SimulationOptions } from '../services/payments/simula
 import { BulkOperations } from '../utils/bulk.js';
 import Spinner from '../utils/spinner.js';
 import { PaymentDataFull } from '../types/paymongo.js';
+import { CommandError } from '../utils/errors.js';
 
 export async function exportAction(options: { file?: string; limit?: string }) {
   const spinner = new Spinner();
@@ -62,7 +63,7 @@ export async function exportAction(options: { file?: string; limit?: string }) {
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to export payments:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -106,7 +107,7 @@ export async function importAction(filename: string, options: { json?: boolean }
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to import payments:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -182,7 +183,7 @@ export async function listAction(options: { limit?: string; json?: boolean }) {
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to fetch payments:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -250,7 +251,7 @@ export async function showAction(id: string, options: { json?: boolean }) {
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to fetch payment:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -312,7 +313,7 @@ export async function createIntentAction(options: {
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to create payment intent:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -462,7 +463,7 @@ export async function confirmAction(
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to confirm payment intent:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -510,7 +511,7 @@ export async function captureAction(intentId: string, options: { json?: boolean 
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to capture payment intent:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -573,7 +574,7 @@ export async function refundAction(
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to create refund:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 

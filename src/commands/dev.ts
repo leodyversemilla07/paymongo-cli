@@ -5,7 +5,7 @@ import chalk from 'chalk';
 import ConfigManager from '../services/config/manager.js';
 import ApiClient from '../services/api/client.js';
 import Spinner from '../utils/spinner.js';
-import { withRetry } from '../utils/errors.js';
+import { withRetry, CommandError } from '../utils/errors.js';
 import { TunnelInfo } from '../types/paymongo.js';
 import { DevProcessManager } from '../services/dev/process-manager.js';
 import { DevServer } from '../services/dev/server.js';
@@ -365,7 +365,7 @@ command
         // Ignore cleanup errors during shutdown
       }
 
-      process.exit(1);
+      throw new CommandError();
     }
   });
 

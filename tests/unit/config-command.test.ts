@@ -195,7 +195,7 @@ describe('Config Command', () => {
 
       const { showAction } = await import('../../src/commands/config.js');
 
-      await expect(showAction({})).rejects.toThrow('Process exited with code 1');
+      await expect(showAction({})).rejects.toThrow('Command failed');
 
       expect(mockSpinnerStart).toHaveBeenCalledWith('Loading configuration...');
       expect(mockSpinnerStop).toHaveBeenCalled();
@@ -428,7 +428,7 @@ describe('Config Command', () => {
       const { setAction } = await import('../../src/commands/config.js');
 
       await expect(setAction('projectName', 'new-name')).rejects.toThrow(
-        'Process exited with code 1'
+        'Command failed'
       );
 
       expect(mockSpinnerStop).toHaveBeenCalled();
@@ -532,7 +532,7 @@ describe('Config Command', () => {
 
       const { backupAction } = await import('../../src/commands/config.js');
 
-      await expect(backupAction({})).rejects.toThrow('Process exited with code 1');
+      await expect(backupAction({})).rejects.toThrow('Command failed');
 
       expect(mockSpinnerStop).toHaveBeenCalled();
       expect(console.error).toHaveBeenCalledWith(
@@ -560,7 +560,7 @@ describe('Config Command', () => {
 
       const { resetAction } = await import('../../src/commands/config.js');
 
-      await expect(resetAction()).rejects.toThrow('Process exited with code 1');
+      await expect(resetAction()).rejects.toThrow('Command failed');
 
       expect(mockSpinnerStop).toHaveBeenCalled();
       expect(console.error).toHaveBeenCalledWith(
@@ -644,7 +644,7 @@ describe('Config Command', () => {
 
       const { importAction } = await import('../../src/commands/config.js');
 
-      await expect(importAction('missing.json', {})).rejects.toThrow('Process exited with code 1');
+      await expect(importAction('missing.json', {})).rejects.toThrow('Command failed');
 
       expect(mockSpinnerFail).toHaveBeenCalledWith('File not found');
       expect(console.error).toHaveBeenCalledWith(
@@ -658,7 +658,7 @@ describe('Config Command', () => {
 
       const { importAction } = await import('../../src/commands/config.js');
 
-      await expect(importAction('config.json', {})).rejects.toThrow('Process exited with code 1');
+      await expect(importAction('config.json', {})).rejects.toThrow('Command failed');
 
       expect(mockSpinnerFail).toHaveBeenCalledWith('Invalid JSON');
       expect(console.error).toHaveBeenCalledWith(
@@ -675,7 +675,7 @@ describe('Config Command', () => {
 
       const { importAction } = await import('../../src/commands/config.js');
 
-      await expect(importAction('config.json', {})).rejects.toThrow('Process exited with code 1');
+      await expect(importAction('config.json', {})).rejects.toThrow('Command failed');
 
       expect(mockSpinnerStart).toHaveBeenCalledWith('Validating configuration...');
       // Validation fails, so process.exit is called
@@ -867,7 +867,7 @@ describe('Config Command', () => {
         const { rateLimitSetMaxRequestsAction } = await import('../../src/commands/config.js');
 
         await expect(rateLimitSetMaxRequestsAction('0')).rejects.toThrow(
-          'Process exited with code 1'
+          'Command failed'
         );
 
         expect(console.error).toHaveBeenCalledWith(
@@ -879,7 +879,7 @@ describe('Config Command', () => {
         const { rateLimitSetMaxRequestsAction } = await import('../../src/commands/config.js');
 
         await expect(rateLimitSetMaxRequestsAction('abc')).rejects.toThrow(
-          'Process exited with code 1'
+          'Command failed'
         );
 
         expect(console.error).toHaveBeenCalledWith(
@@ -921,7 +921,7 @@ describe('Config Command', () => {
       it('should reject invalid window seconds', async () => {
         const { rateLimitSetWindowAction } = await import('../../src/commands/config.js');
 
-        await expect(rateLimitSetWindowAction('0')).rejects.toThrow('Process exited with code 1');
+        await expect(rateLimitSetWindowAction('0')).rejects.toThrow('Command failed');
 
         expect(console.error).toHaveBeenCalledWith(
           expect.stringContaining('❌ Invalid time window')

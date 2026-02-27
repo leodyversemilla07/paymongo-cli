@@ -6,6 +6,7 @@ import ApiClient from '../services/api/client.js';
 import { BulkOperations } from '../utils/bulk.js';
 import Spinner from '../utils/spinner.js';
 import { validateWebhookUrl, validateEventTypes } from '../utils/validator.js';
+import { CommandError } from '../utils/errors.js';
 
 export async function exportAction(options: { file?: string }) {
   const spinner = new Spinner();
@@ -70,7 +71,7 @@ export async function exportAction(options: { file?: string }) {
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to export webhooks:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -197,7 +198,7 @@ export async function importAction(
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to import webhooks:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -344,7 +345,7 @@ export async function createAction(options: { url?: string; events?: string }) {
       );
     }
 
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -463,7 +464,7 @@ export async function listAction(options: { json?: boolean; status?: string; eve
       console.error(chalk.red('❌ Failed to list webhooks:'), err.message);
     }
 
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -524,7 +525,7 @@ export async function deleteAction(id: string, options: { yes?: boolean }) {
       console.error(chalk.red('❌ Failed to delete webhook:'), err.message);
     }
 
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -591,7 +592,7 @@ export async function showAction(id: string) {
       console.error(chalk.red('❌ Failed to get webhook details:'), err.message);
     }
 
-    process.exit(1);
+    throw new CommandError();
   }
 }
 

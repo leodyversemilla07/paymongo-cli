@@ -6,7 +6,7 @@ import ConfigManager from '../services/config/manager.js';
 import ApiClient from '../services/api/client.js';
 import { validateApiKey } from '../utils/validator.js';
 import Spinner from '../utils/spinner.js';
-import { ApiKeyError, NetworkError, PayMongoError } from '../utils/errors.js';
+import { ApiKeyError, NetworkError, PayMongoError, CommandError } from '../utils/errors.js';
 
 interface InitAnswers {
   projectName: string;
@@ -202,7 +202,7 @@ export async function initAction(options: InitOptions) {
         console.error(chalk.red('❌ Unexpected error during validation. Please try again.'));
       }
 
-      process.exit(1);
+      throw new CommandError();
     }
 
     // Save configuration
@@ -310,7 +310,7 @@ PAYMONGO_ENVIRONMENT=${answers.environment}
       console.log(chalk.yellow('💡 For help, visit: https://developers.paymongo.com/docs'));
     }
 
-    process.exit(1);
+    throw new CommandError();
   }
 }
 

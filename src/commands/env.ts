@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import ConfigManager from '../services/config/manager.js';
 import ApiClient from '../services/api/client.js';
 import Spinner from '../utils/spinner.js';
-import { ApiKeyError, NetworkError, PayMongoError } from '../utils/errors.js';
+import { ApiKeyError, NetworkError, PayMongoError, CommandError } from '../utils/errors.js';
 
 const command = new Command('env');
 
@@ -22,7 +22,7 @@ command
           // Validate environment
           if (!['test', 'live'].includes(environment)) {
             console.error(chalk.red('❌ Invalid environment. Must be "test" or "live"'));
-            process.exit(1);
+            throw new CommandError();
           }
 
           spinner.start('Loading configuration...');
@@ -52,7 +52,7 @@ command
             console.log(
               `3. Run: paymongo config set apiKeys.${environment}.public YOUR_PUBLIC_KEY`
             );
-            process.exit(1);
+            throw new CommandError();
           }
 
           // Validate API keys unless --force is used
@@ -93,7 +93,7 @@ command
               console.log(
                 chalk.yellow('💡 Get your API keys from: https://dashboard.paymongo.com/developers')
               );
-              process.exit(1);
+              throw new CommandError();
             }
           }
 
@@ -120,7 +120,7 @@ command
           spinner.stop();
           const err = error as Error;
           console.error(chalk.red('❌ Failed to switch environment:'), err.message);
-          process.exit(1);
+          throw new CommandError();
         }
       })
   )
@@ -156,7 +156,7 @@ command
       } catch (error) {
         const err = error as Error;
         console.error(chalk.red('❌ Failed to get current environment:'), err.message);
-        process.exit(1);
+        throw new CommandError();
       }
     })
   );

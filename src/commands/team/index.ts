@@ -4,6 +4,7 @@ import Spinner from '../../utils/spinner.js';
 import chalk from 'chalk';
 import { ConfigManager } from '../../services/config/manager.js';
 import { TeamService } from '../../services/team/service.js';
+import { CommandError } from '../../utils/errors.js';
 
 const command = new Command('team')
   .description('Team collaboration with API key sharing')
@@ -29,7 +30,7 @@ command
       if (invalidEnvs.length > 0) {
         console.error(chalk.red(`❌ Invalid environments: ${invalidEnvs.join(', ')}`));
         console.log(`Valid environments: ${validEnvs.join(', ')}`);
-        process.exit(1);
+        throw new CommandError();
       }
 
       spinner.start(`Creating key bundle for ${environments.join(', ')}...`);
@@ -80,7 +81,7 @@ command
       spinner.stop();
       const err = error as Error;
       console.error(chalk.red('❌ Failed to create key bundle:'), err.message);
-      process.exit(1);
+      throw new CommandError();
     }
   });
 
@@ -145,7 +146,7 @@ command
       spinner.stop();
       const err = error as Error;
       console.error(chalk.red('❌ Failed to import keys:'), err.message);
-      process.exit(1);
+      throw new CommandError();
     }
   });
 
@@ -218,7 +219,7 @@ command
       spinner.stop();
       const err = error as Error;
       console.error(chalk.red('❌ Failed to load team members:'), err.message);
-      process.exit(1);
+      throw new CommandError();
     }
   });
 
@@ -243,7 +244,7 @@ command
       spinner.stop();
       const err = error as Error;
       console.error(chalk.red('❌ Failed to rename team:'), err.message);
-      process.exit(1);
+      throw new CommandError();
     }
   });
 
@@ -281,7 +282,7 @@ command
       spinner.stop();
       const err = error as Error;
       console.error(chalk.red('❌ Failed to remove team member:'), err.message);
-      process.exit(1);
+      throw new CommandError();
     }
   });
 

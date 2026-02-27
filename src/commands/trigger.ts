@@ -6,6 +6,8 @@ import Spinner from '../utils/spinner.js';
 import Logger from '../utils/logger.js';
 import WebhookEventStore, { StoredWebhookEvent } from '../utils/webhook-store.js';
 import crypto from 'crypto';
+import { CLI_VERSION } from '../utils/constants.js';
+import { CommandError } from '../utils/errors.js';
 
 interface WebhookPayload {
   data: {
@@ -174,12 +176,12 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
       console.error(
         chalk.red('❌ No webhook URL provided. Use --url option or configure in .paymongo file')
       );
-      process.exit(1);
+      throw new CommandError();
     }
 
     if (!selectedEvent) {
       console.error(chalk.red('❌ No event selected'));
-      process.exit(1);
+      throw new CommandError();
     }
 
     spinner.start('Generating webhook payload...');
@@ -228,7 +230,7 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'PayMongo-CLI/1.0.0',
+          'User-Agent': `PayMongo-CLI/${CLI_VERSION}`,
           ...(signatureHeader ? { 'paymongo-signature': signatureHeader } : {}),
         },
         body,
@@ -259,7 +261,7 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
         console.log(chalk.yellow('💡 To fix:'));
         console.log(chalk.gray(`  • Verify your server has a POST handler at: ${webhookUrl}`));
         console.log(chalk.gray('  • Check that your server is running and accessible'));
-        process.exit(1);
+        throw new CommandError();
       } else if (response.statusCode >= 400 && response.statusCode < 500) {
         spinner.fail(`Webhook rejected by server (HTTP ${response.statusCode})`);
         console.log('');
@@ -275,7 +277,7 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
         console.log(chalk.gray('  • Invalid request format or headers'));
         console.log(chalk.gray('  • Authentication/authorization failure'));
         console.log(chalk.gray('  • Webhook signature verification failed'));
-        process.exit(1);
+        throw new CommandError();
       } else if (response.statusCode >= 500) {
         spinner.fail(`Webhook endpoint error (HTTP ${response.statusCode})`);
         console.log('');
@@ -290,7 +292,7 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
         console.log(chalk.yellow('💡 This is a server-side error. Check:'));
         console.log(chalk.gray('  • Server logs for the specific error'));
         console.log(chalk.gray('  • Webhook handler code for exceptions'));
-        process.exit(1);
+        throw new CommandError();
       }
     } catch (error) {
       const err = error as Error & {
@@ -311,7 +313,7 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
         console.log(chalk.yellow('💡 To fix:'));
         console.log(chalk.gray('  • Start your local server'));
         console.log(chalk.gray(`  • Verify the server is listening on the correct port`));
-        process.exit(1);
+        throw new CommandError();
       } else if (err.code === 'ENOTFOUND') {
         spinner.fail('Host not found');
         console.log('');
@@ -321,7 +323,7 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
         console.log(chalk.gray('  • The URL is spelled correctly'));
         console.log(chalk.gray('  • Your internet connection is working'));
         console.log(chalk.gray('  • DNS is resolving correctly'));
-        process.exit(1);
+        throw new CommandError();
       } else if (err.code === 'ETIMEDOUT' || err.message.includes('timeout')) {
         spinner.fail('Request timed out');
         console.log('');
@@ -335,7 +337,7 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
         console.log(chalk.yellow('💡 To fix:'));
         console.log(chalk.gray('  • Check your webhook handler for slow operations'));
         console.log(chalk.gray('  • Ensure async operations are handled properly'));
-        process.exit(1);
+        throw new CommandError();
       } else {
         spinner.fail(`Webhook delivery failed: ${err.message}`);
         console.log('');
@@ -344,14 +346,14 @@ async function sendWebhookEvent(options: { event?: string; url?: string; json?: 
         if (err.code) {
           console.log(chalk.gray(`   Code: ${err.code}`));
         }
-        process.exit(1);
+        throw new CommandError();
       }
     }
   } catch (error) {
     const err = error as Error;
     spinner.fail('Failed to trigger webhook event');
     logger.error('Trigger command error:', err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -617,7 +619,7 @@ async function replayWebhookEvent(
       if (!event) {
         console.log(chalk.red(`❌ Event not found: ${eventId}`));
         console.log(chalk.gray('Use "paymongo trigger replay --list" to see available events.'));
-        process.exit(1);
+        throw new CommandError();
       }
 
       // Use provided URL or original URL
@@ -643,7 +645,7 @@ async function replayWebhookEvent(
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'User-Agent': 'PayMongo-CLI/1.0.0',
+            'User-Agent': `PayMongo-CLI/${CLI_VERSION}`,
             ...(signatureHeader ? { 'paymongo-signature': signatureHeader } : {}),
           },
           body,
@@ -665,7 +667,7 @@ async function replayWebhookEvent(
         } else {
           spinner.fail(`Webhook replay failed (HTTP ${response.statusCode})`);
           console.log(chalk.red(`Server responded with: ${response.statusCode}`));
-          process.exit(1);
+          throw new CommandError();
         }
       } catch (error) {
         const err = error as Error & { code?: string };
@@ -676,13 +678,13 @@ async function replayWebhookEvent(
         } else {
           console.log(chalk.red(`❌ Error: ${err.message}`));
         }
-        process.exit(1);
+        throw new CommandError();
       }
     }
   } catch (error) {
     const err = error as Error;
     console.error(chalk.red(`❌ Failed to replay webhook: ${err.message}`));
-    process.exit(1);
+    throw new CommandError();
   }
 }
 

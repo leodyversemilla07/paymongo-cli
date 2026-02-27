@@ -124,10 +124,9 @@ describe('Env Command', () => {
 
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
 
-      await envCommand.parseAsync(['node', 'test', 'switch', 'invalid']);
+      await expect(envCommand.parseAsync(['node', 'test', 'switch', 'invalid'])).rejects.toThrow('Command failed');
 
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Invalid environment'));
-      expect(process.exit).toHaveBeenCalledWith(1);
     });
 
     it('should handle missing API keys for target environment', async () => {
@@ -145,10 +144,9 @@ describe('Env Command', () => {
 
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
 
-      await envCommand.parseAsync(['node', 'test', 'switch', 'live']);
+      await expect(envCommand.parseAsync(['node', 'test', 'switch', 'live'])).rejects.toThrow('Command failed');
 
       expect(mockSpinnerFail).toHaveBeenCalledWith('Missing API keys for live environment');
-      expect(process.exit).toHaveBeenCalledWith(1);
     });
 
     it('should handle no configuration found', async () => {
@@ -200,10 +198,9 @@ describe('Env Command', () => {
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
       mockApiClientValidateApiKey.mockRejectedValue(new Error('API key validation failed'));
 
-      await envCommand.parseAsync(['node', 'test', 'switch', 'live']);
+      await expect(envCommand.parseAsync(['node', 'test', 'switch', 'live'])).rejects.toThrow('Command failed');
 
       expect(mockSpinnerFail).toHaveBeenCalledWith('API key validation failed');
-      expect(process.exit).toHaveBeenCalledWith(1);
     });
   });
 

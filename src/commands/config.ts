@@ -6,6 +6,7 @@ import ConfigManager from '../services/config/manager.js';
 import Spinner from '../utils/spinner.js';
 import { PayMongoConfig } from '../types/paymongo.js';
 import { validateConfig as zodValidateConfig } from '../types/schemas.js';
+import { CommandError } from '../utils/errors.js';
 
 function validateImportedConfig(config: unknown): asserts config is PayMongoConfig {
   if (typeof config !== 'object' || config === null) {
@@ -214,7 +215,7 @@ export async function showAction(options: { json?: boolean }) {
       console.error(chalk.red('❌ Failed to load configuration:'), err.message);
     }
 
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -291,7 +292,7 @@ export async function setAction(key: string, value: string) {
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to update configuration:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -358,7 +359,7 @@ export async function backupAction(options: { directory?: string; name?: string 
       console.error(chalk.red('❌ Failed to create backup:'), err.message);
     }
 
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -383,7 +384,7 @@ export async function resetAction() {
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to reset configuration:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -398,7 +399,7 @@ export async function importAction(filePath: string, options: { force?: boolean 
     if (!fs.existsSync(filePath)) {
       spinner.fail('File not found');
       console.error(chalk.red(`❌ Import file not found: ${filePath}`));
-      process.exit(1);
+      throw new CommandError();
     }
 
     const fileContent = fs.readFileSync(filePath, 'utf-8');
@@ -409,7 +410,7 @@ export async function importAction(filePath: string, options: { force?: boolean 
     } catch (_parseError) {
       spinner.fail('Invalid JSON');
       console.error(chalk.red('❌ Invalid JSON in import file'));
-      process.exit(1);
+      throw new CommandError();
     }
 
     spinner.succeed('File read');
@@ -422,7 +423,7 @@ export async function importAction(filePath: string, options: { force?: boolean 
       spinner.fail('Invalid configuration');
       console.error(chalk.red('❌ Configuration validation failed:'));
       validation.errors?.forEach((err) => console.error(chalk.gray(`  • ${err}`)));
-      process.exit(1);
+      throw new CommandError();
     }
     spinner.succeed('Configuration validated');
 
@@ -441,7 +442,7 @@ export async function importAction(filePath: string, options: { force?: boolean 
         });
         console.log('');
         console.log(chalk.bold('Use --force to overwrite existing configuration'));
-        process.exit(1);
+        throw new CommandError();
       }
 
       spinner.succeed('No conflicts found');
@@ -473,7 +474,7 @@ export async function importAction(filePath: string, options: { force?: boolean 
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to import configuration:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -514,7 +515,7 @@ export async function rateLimitEnableAction() {
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to enable rate limiting:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -548,7 +549,7 @@ export async function rateLimitDisableAction() {
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to disable rate limiting:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -560,7 +561,7 @@ export async function rateLimitSetMaxRequestsAction(requestsStr: string) {
     const requests = parseInt(requestsStr, 10);
     if (isNaN(requests) || requests < 1) {
       console.error(chalk.red('❌ Invalid number of requests. Must be a positive integer.'));
-      process.exit(1);
+      throw new CommandError();
     }
 
     spinner.start('Loading configuration...');
@@ -594,7 +595,7 @@ export async function rateLimitSetMaxRequestsAction(requestsStr: string) {
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to update rate limit:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -606,7 +607,7 @@ export async function rateLimitSetWindowAction(secondsStr: string) {
     const seconds = parseInt(secondsStr, 10);
     if (isNaN(seconds) || seconds < 1) {
       console.error(chalk.red('❌ Invalid time window. Must be a positive integer (seconds).'));
-      process.exit(1);
+      throw new CommandError();
     }
 
     spinner.start('Loading configuration...');
@@ -640,7 +641,7 @@ export async function rateLimitSetWindowAction(secondsStr: string) {
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to update rate limit window:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 
@@ -703,7 +704,7 @@ export async function rateLimitStatusAction() {
     spinner.stop();
     const err = error as Error;
     console.error(chalk.red('❌ Failed to check rate limiting status:'), err.message);
-    process.exit(1);
+    throw new CommandError();
   }
 }
 

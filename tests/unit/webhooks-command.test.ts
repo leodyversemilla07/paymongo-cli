@@ -181,14 +181,13 @@ describe('Webhooks Command', () => {
     it('should handle API errors', async () => {
       mockApiClientListWebhooks.mockRejectedValue(new Error('API Error'));
 
-      await exportAction({});
+      await expect(exportAction({})).rejects.toThrow('Command failed');
 
       expect(mockSpinnerStop).toHaveBeenCalled();
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('Failed to export webhooks'),
         'API Error'
       );
-      expect(process.exit).toHaveBeenCalledWith(1);
     });
   });
 
@@ -261,14 +260,13 @@ describe('Webhooks Command', () => {
     it('should handle import errors', async () => {
       mockBulkImportWebhooks.mockRejectedValue(new Error('Import Error'));
 
-      await importAction('test.json', {});
+      await expect(importAction('test.json', {})).rejects.toThrow('Command failed');
 
       expect(mockSpinnerStop).toHaveBeenCalled();
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('Failed to import webhooks'),
         'Import Error'
       );
-      expect(process.exit).toHaveBeenCalledWith(1);
     });
   });
 
@@ -319,17 +317,16 @@ describe('Webhooks Command', () => {
     it('should handle API errors', async () => {
       mockApiClientCreateWebhook.mockRejectedValue(new Error('API Error'));
 
-      await createAction({
+      await expect(createAction({
         url: 'https://example.com/webhook',
         events: 'payment.paid',
-      });
+      })).rejects.toThrow('Command failed');
 
       expect(mockSpinnerStop).toHaveBeenCalled();
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('Failed to create webhook'),
         'API Error'
       );
-      expect(process.exit).toHaveBeenCalledWith(1);
     });
   });
 
@@ -439,11 +436,10 @@ describe('Webhooks Command', () => {
     it('should handle webhook not found', async () => {
       mockApiClientGetWebhook.mockRejectedValue(new Error('Webhook not found'));
 
-      await showAction('wh_invalid');
+      await expect(showAction('wh_invalid')).rejects.toThrow('Command failed');
 
       expect(mockSpinnerStop).toHaveBeenCalled();
       expect(console.error).toHaveBeenCalled();
-      expect(process.exit).toHaveBeenCalledWith(1);
     });
   });
 });

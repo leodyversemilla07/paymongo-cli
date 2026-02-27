@@ -21,7 +21,11 @@ export const ENV_FILE_NAME = '.env';
 
 // CLI Constants
 export const CLI_NAME = 'paymongo';
-export const CLI_VERSION = '1.0.0';
+
+import { createRequire } from 'module';
+const _require = createRequire(import.meta.url);
+const _pkg = _require('../../package.json') as { version: string };
+export const CLI_VERSION = _pkg.version;
 
 // HTTP Constants
 export const REQUEST_TIMEOUT = 30000; // 30 seconds

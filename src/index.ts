@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { createRequire } from 'module';
+import { CommandError } from './utils/errors.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
@@ -81,12 +82,18 @@ For more information, visit: https://github.com/leodyversemilla07/paymongo-cli
 
 // Global error handler
 process.on('uncaughtException', (error) => {
+  if (error instanceof CommandError) {
+    process.exit(1);
+  }
   console.error(chalk.red('An unexpected error occurred:'), error.message);
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error(chalk.red('Unhandled Rejection at:'), promise, 'reason:', reason);
+process.on('unhandledRejection', (reason) => {
+  if (reason instanceof CommandError) {
+    process.exit(1);
+  }
+  console.error(chalk.red('An unexpected error occurred:'), reason instanceof Error ? reason.message : String(reason));
   process.exit(1);
 });
 

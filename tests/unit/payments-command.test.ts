@@ -243,13 +243,12 @@ describe('Payments Command', () => {
       const mockConfig = { environment: 'test' };
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
 
-      await exportAction({ limit: 'invalid' });
+      await expect(exportAction({ limit: 'invalid' })).rejects.toThrow('Command failed');
 
       expect(mockConsoleError).toHaveBeenCalledWith(
         'red:❌ Failed to export payments:',
         'Limit must be a number between 1 and 1000'
       );
-      expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
 
     it('should handle no payments found', async () => {
@@ -419,13 +418,12 @@ describe('Payments Command', () => {
       const mockConfig = { environment: 'test' };
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
 
-      await createIntentAction({ amount: 'invalid', currency: 'PHP' });
+      await expect(createIntentAction({ amount: 'invalid', currency: 'PHP' })).rejects.toThrow('Command failed');
 
       expect(mockConsoleError).toHaveBeenCalledWith(
         'red:❌ Failed to create payment intent:',
         'Amount must be a positive number in centavos'
       );
-      expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
   });
 
@@ -470,13 +468,12 @@ describe('Payments Command', () => {
       const mockConfig = { environment: 'test' };
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
 
-      await confirmAction('pi_123', { simulate: false });
+      await expect(confirmAction('pi_123', { simulate: false })).rejects.toThrow('Command failed');
 
       expect(mockConsoleError).toHaveBeenCalledWith(
         'red:❌ Failed to confirm payment intent:',
         'Payment method ID is required. Use --payment-method <id>'
       );
-      expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
 
     it('should handle simulation mode', async () => {
@@ -589,13 +586,12 @@ describe('Payments Command', () => {
       const mockConfig = { environment: 'test' };
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
 
-      await refundAction('pay_456', { reason: 'invalid_reason' });
+      await expect(refundAction('pay_456', { reason: 'invalid_reason' })).rejects.toThrow('Command failed');
 
       expect(mockConsoleError).toHaveBeenCalledWith(
         'red:❌ Failed to create refund:',
         'Invalid reason. Must be one of: duplicate, fraudulent, requested_by_customer'
       );
-      expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
   });
 

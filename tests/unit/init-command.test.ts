@@ -165,31 +165,29 @@ describe('Init Command', () => {
     it('should exit with error when API key validation fails', async () => {
       mockApiClientValidateApiKey.mockRejectedValue(new Error('Invalid API key'));
 
-      await initAction({
+      await expect(initAction({
         nonInteractive: true,
         key: 'sk_test_123',
         env: 'test' as const,
         port: '3000',
         events: 'payment.paid,payment.failed',
-      });
+      })).rejects.toThrow('Command failed');
 
       expect(mockSpinnerFail).toHaveBeenCalledWith('API key validation failed');
-      expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
 
     it('should exit with error when API key validation fails', async () => {
       mockApiClientValidateApiKey.mockRejectedValue(new Error('Invalid API key'));
 
-      await initAction({
+      await expect(initAction({
         nonInteractive: true,
         key: 'sk_test_123',
         env: 'test' as const,
         port: '3000',
         events: 'payment.paid,payment.failed',
-      });
+      })).rejects.toThrow('Command failed');
 
       expect(mockSpinnerFail).toHaveBeenCalledWith('API key validation failed');
-      expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
 
     it('should handle file system errors during .env creation', async () => {
@@ -197,19 +195,18 @@ describe('Init Command', () => {
         throw new Error('Permission denied');
       });
 
-      await initAction({
+      await expect(initAction({
         nonInteractive: true,
         key: 'sk_test_123',
         env: 'test',
         port: '3000',
         events: 'payment.paid,payment.failed',
-      });
+      })).rejects.toThrow('Command failed');
 
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('File system error'),
         expect.any(String)
       );
-      expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
   });
 
@@ -345,18 +342,17 @@ describe('Init Command', () => {
       const error = new ApiKeyError('Invalid API key', 'secret');
       mockApiClientValidateApiKey.mockRejectedValue(error);
 
-      await initAction({
+      await expect(initAction({
         nonInteractive: true,
         key: 'sk_test_123',
         env: 'test',
         port: '3000',
         events: 'payment.paid,payment.failed',
-      });
+      })).rejects.toThrow('Command failed');
 
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('Invalid API keys')
       );
-      expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
 
     it('should handle network errors with specific guidance', async () => {
@@ -364,30 +360,29 @@ describe('Init Command', () => {
       const error = new NetworkError('Network connection failed');
       mockApiClientValidateApiKey.mockRejectedValue(error);
 
-      await initAction({
+      await expect(initAction({
         nonInteractive: true,
         key: 'sk_test_123',
         env: 'test',
         port: '3000',
         events: 'payment.paid,payment.failed',
-      });
+      })).rejects.toThrow('Command failed');
 
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('Network error')
       );
-      expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
 
     it('should handle file system permission errors', async () => {
       mockConfigManagerSave.mockRejectedValue(new Error('Permission denied'));
 
-      await initAction({
+      await expect(initAction({
         nonInteractive: true,
         key: 'sk_test_123',
         env: 'test',
         port: '3000',
         events: 'payment.paid,payment.failed',
-      });
+      })).rejects.toThrow('Command failed');
 
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('File system error'),
@@ -396,7 +391,6 @@ describe('Init Command', () => {
       expect(console.log).toHaveBeenCalledWith(
         expect.stringContaining('Make sure you have write permissions')
       );
-      expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
   });
 });

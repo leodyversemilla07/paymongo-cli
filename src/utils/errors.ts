@@ -71,6 +71,17 @@ export class WebhookError extends Error {
   }
 }
 
+/**
+ * Signals that a command has already displayed its error output and should exit with code 1.
+ * Throw this instead of calling process.exit(1) directly.
+ */
+export class CommandError extends Error {
+  constructor(message?: string) {
+    super(message || 'Command failed');
+    this.name = 'CommandError';
+  }
+}
+
 export interface RetryOptions {
   maxRetries?: number;
   delayMs?: number;

@@ -2,6 +2,7 @@ import { request } from 'undici';
 import { NetworkError, ApiKeyError, PayMongoError, withRetry } from '../../utils/errors.js';
 import Cache from '../../utils/cache.js';
 import RateLimiter, { RateLimitConfig } from './rate-limiter.js';
+import { CLI_VERSION } from '../../utils/constants.js';
 import {
   PayMongoConfig,
   WebhookData,
@@ -63,7 +64,7 @@ export class ApiClient {
 
     this.defaultHeaders = {
       'Content-Type': 'application/json',
-      'User-Agent': 'paymongo-cli/1.0.0',
+      'User-Agent': `paymongo-cli/${CLI_VERSION}`,
     };
 
     this.cache = new Cache({ ttl: 2 * 60 * 1000 }); // 2 minute cache for API responses

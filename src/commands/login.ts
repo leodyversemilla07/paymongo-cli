@@ -7,7 +7,7 @@ import chalk from 'chalk';
 import ConfigManager from '../services/config/manager.js';
 import ApiClient from '../services/api/client.js';
 import { validateApiKey } from '../utils/validator.js';
-import { ApiKeyError, NetworkError, PayMongoError } from '../utils/errors.js';
+import { ApiKeyError, NetworkError, PayMongoError, CommandError } from '../utils/errors.js';
 import Spinner from '../utils/spinner.js';
 
 interface LoginAnswers {
@@ -264,7 +264,7 @@ command
           console.error(chalk.red('❌ Unexpected error during validation. Please try again.'));
         }
 
-        process.exit(1);
+        throw new CommandError();
       }
 
       // Store credentials securely
@@ -348,7 +348,7 @@ command
         console.log(chalk.yellow('💡 For help, visit: https://developers.paymongo.com'));
       }
 
-      process.exit(1);
+      throw new CommandError();
     }
   });
 
