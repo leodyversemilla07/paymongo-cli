@@ -175,6 +175,7 @@ Analytics data helps you:
 | `paymongo dev`               | Start local development server with webhook forwarding. |
 | `paymongo payments`          | Manage payments and payment intents.                    |
 | `paymongo webhooks`          | List, create, and manage PayMongo webhooks with filtering by status and event type.             |
+| `paymongo doctor`            | Run local integration diagnostics for config, keys, ngrok, and webhook setup.                   |
 | `paymongo config`            | View and modify CLI configuration.                      |
 | `paymongo config analytics`  | Configure webhook analytics settings.                   |
 | `paymongo config rate-limit` | Configure rate limiting settings.                       |

@@ -26,6 +26,7 @@ program.addCommand(await import('./commands/webhooks.js').then((m) => m.default)
 program.addCommand(await import('./commands/payments.js').then((m) => m.default));
 program.addCommand(await import('./commands/trigger.js').then((m) => m.default));
 program.addCommand(await import('./commands/generate.js').then((m) => m.default));
+program.addCommand(await import('./commands/doctor.js').then((m) => m.default));
 program.addCommand(await import('./commands/team/index.js').then((m) => m.default));
 program.addCommand(await import('./commands/env.js').then((m) => m.default));
 
@@ -65,6 +66,10 @@ EXAMPLES
     $ paymongo generate webhook-handler                  # Generate webhook handler boilerplate
     $ paymongo generate payment-intent --language ts     # Generate TypeScript payment intent code
     $ paymongo generate checkout-page --framework react  # Generate React checkout component
+
+  Diagnostics:
+    $ paymongo doctor                                    # Check config, keys, ngrok, and webhook setup
+    $ paymongo doctor --no-network                       # Run offline diagnostics only
 
   Team Collaboration:
     $ paymongo team create "My Team"                      # Create a new team

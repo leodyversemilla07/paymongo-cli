@@ -374,6 +374,28 @@ Attach a payment method to a payment intent using PayMongo's current attach flow
 
 ---
 
+### Diagnostics
+
+#### `paymongo doctor`
+
+Run setup diagnostics for your local PayMongo integration.
+
+This command checks:
+
+- whether `.paymongo` exists and loads
+- whether the current environment keys are present and well-formed
+- whether PayMongo API validation succeeds
+- whether `NGROK_AUTHTOKEN` is configured for `paymongo dev`
+- whether webhook signature verification is safely configured
+
+Use offline mode if you only want local checks:
+
+```bash
+paymongo doctor --no-network
+```
+
+---
+
 ---
 
 ### Team Collaboration

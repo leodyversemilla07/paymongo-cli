@@ -134,6 +134,25 @@ Manage your webhooks on the PayMongo platform.
 
 ---
 
+### paymongo doctor
+
+Run diagnostics against your local PayMongo CLI setup.
+
+**Checks include:**
+
+- configuration presence and validity
+- current environment API key format
+- optional live API validation
+- ngrok token availability for `paymongo dev`
+- webhook URL and signature-verification setup
+
+**Options:**
+
+- `-j, --json`: Output check results as JSON.
+- `--no-network`: Skip live PayMongo API validation.
+
+---
+
 ### paymongo config
 
 Manage the local `.paymongo` configuration file.

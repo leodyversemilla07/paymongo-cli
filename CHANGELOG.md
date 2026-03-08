@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.12] - 2026-03-08
+
+### Added
+
+- **Doctor Command** - Added `paymongo doctor` to diagnose local PayMongo integration setup, including config presence, API key format, optional live API validation, ngrok readiness, and webhook signature configuration.
+
+### Changed
+
+- **CLI Help** - Added `doctor` examples to the top-level CLI help text.
+- **Documentation** - Added `doctor` usage to the README, API reference, and user guide.
+
+### Tests
+
+- **Diagnostics Coverage** - Added focused unit coverage for doctor success, failure, JSON output, and offline validation paths.
+
 ## [1.4.11] - 2026-03-08
 
 ### Changed
