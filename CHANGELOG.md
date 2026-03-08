@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.9] - 2026-03-08
+
+### Fixed
+
+- **Release Workflow** - Made `.github/workflows/release.yml` idempotent by switching GitHub release creation to `softprops/action-gh-release`, preventing `already_exists` failures when a release for the tag already exists.
+- **Release Pipeline** - Cut a follow-up patch release so tagged releases use the corrected workflow definition from the repository.
+
 ## [1.4.8] - 2026-03-08
 
 ### Changed
