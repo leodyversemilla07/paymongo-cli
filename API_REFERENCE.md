@@ -119,7 +119,8 @@ Manage your webhooks on the PayMongo platform.
 - `paymongo webhooks create`: Create a new webhook.
 - `paymongo webhooks list`: List all webhooks in the current environment.
 - `paymongo webhooks show <id>`: Show details of a specific webhook.
-- `paymongo webhooks delete <id>`: Delete a webhook.
+- `paymongo webhooks disable <id>`: Disable a webhook.
+- `paymongo webhooks enable <id>`: Enable a webhook.
 
 **`create` Options:**
 

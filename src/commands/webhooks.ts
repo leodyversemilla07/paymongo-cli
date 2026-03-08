@@ -2,6 +2,8 @@ import { Command } from 'commander';
 import {
   createAction,
   deleteAction,
+  disableAction,
+  enableAction,
   exportAction,
   importAction,
   listAction,
@@ -40,11 +42,18 @@ const command = new Command('webhooks')
       .action(async (options) => listAction(options))
   )
   .addCommand(
-    new Command('delete')
-      .description('Delete a webhook')
-      .argument('<id>', 'Webhook ID to delete')
+    new Command('disable')
+      .alias('delete')
+      .description('Disable a webhook')
+      .argument('<id>', 'Webhook ID to disable')
       .option('-y, --yes', 'Skip confirmation prompt')
-      .action(async (id, options) => deleteAction(id, options))
+      .action(async (id, options) => disableAction(id, options))
+  )
+  .addCommand(
+    new Command('enable')
+      .description('Enable a webhook')
+      .argument('<id>', 'Webhook ID to enable')
+      .action(async (id) => enableAction(id))
   )
   .addCommand(
     new Command('show')
@@ -53,6 +62,15 @@ const command = new Command('webhooks')
       .action(async (id) => showAction(id))
   );
 
-export { exportAction, importAction, createAction, listAction, deleteAction, showAction };
+export {
+  exportAction,
+  importAction,
+  createAction,
+  listAction,
+  disableAction,
+  enableAction,
+  deleteAction,
+  showAction,
+};
 
 export default command;

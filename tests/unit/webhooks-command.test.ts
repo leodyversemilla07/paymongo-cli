@@ -8,7 +8,8 @@ const mockConfigManagerSave = jest.fn<() => Promise<void>>();
 const mockApiClientListWebhooks = jest.fn<() => Promise<WebhookData[]>>();
 const mockApiClientGetWebhook = jest.fn<(id: string) => Promise<WebhookData>>();
 const mockApiClientCreateWebhook = jest.fn<(url: string, events: string[]) => Promise<WebhookDataWithSecret>>();
-const mockApiClientDeleteWebhook = jest.fn<(id: string) => Promise<void>>();
+const mockApiClientDisableWebhook = jest.fn<(id: string) => Promise<void>>();
+const mockApiClientEnableWebhook = jest.fn<(id: string) => Promise<void>>();
 const mockSpinnerStart = jest.fn();
 const mockSpinnerSucceed = jest.fn();
 const mockSpinnerFail = jest.fn();
@@ -34,7 +35,8 @@ jest.unstable_mockModule('../../src/services/api/client.js', () => ({
     listWebhooks: mockApiClientListWebhooks,
     getWebhook: mockApiClientGetWebhook,
     createWebhook: mockApiClientCreateWebhook,
-    deleteWebhook: mockApiClientDeleteWebhook,
+    disableWebhook: mockApiClientDisableWebhook,
+    enableWebhook: mockApiClientEnableWebhook,
   })),
 }));
 
@@ -73,6 +75,8 @@ const {
   importAction,
   createAction,
   listAction,
+  disableAction,
+  enableAction,
   deleteAction,
   showAction,
 } = await import('../../src/commands/webhooks.js');
@@ -119,7 +123,8 @@ describe('Webhooks Command', () => {
     mockConfigManagerSave.mockResolvedValue(undefined);
     mockApiClientListWebhooks.mockResolvedValue([mockWebhook]);
     mockApiClientGetWebhook.mockResolvedValue(mockWebhook);
-    mockApiClientDeleteWebhook.mockResolvedValue(undefined);
+    mockApiClientDisableWebhook.mockResolvedValue(undefined);
+    mockApiClientEnableWebhook.mockResolvedValue(undefined);
     mockBulkGenerateFilename.mockReturnValue('webhooks-test.json');
     mockBulkEnsureJsonExtension.mockReturnValue('custom.json');
     mockBulkExportWebhooks.mockResolvedValue('webhooks-test.json');
@@ -399,29 +404,44 @@ describe('Webhooks Command', () => {
     });
   });
 
-  describe('deleteAction', () => {
-    it('should delete webhook with confirmation', async () => {
-      await deleteAction('wh_123', {});
+  describe('disableAction', () => {
+    it('should disable webhook with confirmation', async () => {
+      await disableAction('wh_123', {});
 
       expect(mockConfirm).toHaveBeenCalled();
-      expect(mockApiClientDeleteWebhook).toHaveBeenCalledWith('wh_123');
-      expect(mockSpinnerSucceed).toHaveBeenCalledWith('Webhook deleted successfully');
+      expect(mockApiClientDisableWebhook).toHaveBeenCalledWith('wh_123');
+      expect(mockSpinnerSucceed).toHaveBeenCalledWith('Webhook disabled successfully');
     });
 
     it('should skip confirmation with --yes flag', async () => {
-      await deleteAction('wh_123', { yes: true });
+      await disableAction('wh_123', { yes: true });
 
       expect(mockConfirm).not.toHaveBeenCalled();
-      expect(mockApiClientDeleteWebhook).toHaveBeenCalledWith('wh_123');
+      expect(mockApiClientDisableWebhook).toHaveBeenCalledWith('wh_123');
     });
 
-    it('should cancel deletion when user declines', async () => {
+    it('should cancel disable when user declines', async () => {
       mockConfirm.mockResolvedValue(false);
 
-      await deleteAction('wh_123', {});
+      await disableAction('wh_123', {});
 
-      expect(mockApiClientDeleteWebhook).not.toHaveBeenCalled();
+      expect(mockApiClientDisableWebhook).not.toHaveBeenCalled();
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('cancelled'));
+    });
+
+    it('keeps deleteAction as a compatibility alias', async () => {
+      await deleteAction('wh_123', { yes: true });
+
+      expect(mockApiClientDisableWebhook).toHaveBeenCalledWith('wh_123');
+    });
+  });
+
+  describe('enableAction', () => {
+    it('should enable webhook', async () => {
+      await enableAction('wh_123');
+
+      expect(mockApiClientEnableWebhook).toHaveBeenCalledWith('wh_123');
+      expect(mockSpinnerSucceed).toHaveBeenCalledWith('Webhook enabled successfully');
     });
   });
 

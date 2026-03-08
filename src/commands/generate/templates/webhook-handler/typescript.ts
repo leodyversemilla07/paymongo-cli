@@ -46,14 +46,21 @@ interface PayMongoWebhookPayload {
   };
 }
 
-function verifySignature(payload: string, signatureHeader: string, secret: string): boolean {
+function verifySignature(
+  payload: string,
+  signatureHeader: string,
+  secret: string,
+  livemode: boolean
+): boolean {
   if (!signatureHeader) {
     return false;
   }
 
   const parts = signatureHeader.split(',');
   const timestamp = parts.find((part) => part.startsWith('t='))?.split('=')[1];
-  const signature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
+  const testSignature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
+  const liveSignature = parts.find((part) => part.startsWith('li='))?.split('=')[1];
+  const signature = livemode ? liveSignature : testSignature || liveSignature;
 
   if (!timestamp || !signature) {
     return false;
@@ -76,7 +83,7 @@ app.post('/webhooks/paymongo', (req: Request, res: Response) => {
     const payload = JSON.stringify(req.body);
 
     // Verify webhook signature (optional but recommended)
-    if (WEBHOOK_SECRET && !verifySignature(payload, signature, WEBHOOK_SECRET)) {
+    if (WEBHOOK_SECRET && !verifySignature(payload, signature, WEBHOOK_SECRET, req.body.data.attributes.livemode)) {
       console.log('Invalid signature');
       return res.status(400).json({ error: 'Invalid signature' });
     }
@@ -128,14 +135,21 @@ interface PayMongoWebhookPayload {
   };
 }
 
-function verifySignature(payload: string, signatureHeader: string, secret: string): boolean {
+function verifySignature(
+  payload: string,
+  signatureHeader: string,
+  secret: string,
+  livemode: boolean
+): boolean {
   if (!signatureHeader) {
     return false;
   }
 
   const parts = signatureHeader.split(',');
   const timestamp = parts.find((part) => part.startsWith('t='))?.split('=')[1];
-  const signature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
+  const testSignature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
+  const liveSignature = parts.find((part) => part.startsWith('li='))?.split('=')[1];
+  const signature = livemode ? liveSignature : testSignature || liveSignature;
 
   if (!timestamp || !signature) {
     return false;
@@ -157,7 +171,11 @@ export function handleWebhook(body: PayMongoWebhookPayload, signature?: string):
     const payload = JSON.stringify(body);
 
     // Verify webhook signature (optional but recommended)
-    if (WEBHOOK_SECRET && signature && !verifySignature(payload, signature, WEBHOOK_SECRET)) {
+    if (
+      WEBHOOK_SECRET &&
+      signature &&
+      !verifySignature(payload, signature, WEBHOOK_SECRET, body.data.attributes.livemode)
+    ) {
       console.log('Invalid signature');
       throw new Error('Invalid signature');
     }

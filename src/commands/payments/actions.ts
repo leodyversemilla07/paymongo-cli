@@ -267,7 +267,7 @@ export async function createIntentAction(options: {
   }
 }
 
-export async function confirmAction(
+export async function attachAction(
   intentId: string,
   options: {
     paymentMethod?: string;
@@ -362,13 +362,13 @@ export async function confirmAction(
       return;
     }
 
-    spinner.start('Confirming payment intent...');
-    const result = await createApiClient(config).confirmPaymentIntent(
+    spinner.start('Attaching payment method to payment intent...');
+    const result = await createApiClient(config).attachPaymentIntent(
       intentId,
       options.paymentMethod ?? '',
       options.returnUrl
     );
-    spinner.succeed('Payment intent confirmed');
+    spinner.succeed('Payment method attached');
 
     if (options.json) {
       console.log(JSON.stringify(result, null, 2));
@@ -376,7 +376,7 @@ export async function confirmAction(
     }
 
     const attrs = result.attributes;
-    console.log('\n' + chalk.bold('Payment Intent Confirmed'));
+    console.log('\n' + chalk.bold('Payment Method Attached'));
     console.log(chalk.gray('─'.repeat(50)));
     console.log(`${chalk.bold('ID:')} ${result.id}`);
     console.log(`${chalk.bold('Amount:')} ₱${(attrs.amount / 100).toFixed(2)} ${attrs.currency}`);
@@ -385,15 +385,13 @@ export async function confirmAction(
     console.log(`${chalk.bold('Created:')} ${new Date(attrs.created_at * 1000).toLocaleString()}`);
     console.log(`${chalk.bold('Updated:')} ${new Date(attrs.updated_at * 1000).toLocaleString()}`);
     console.log('');
-    console.log(
-      chalk.gray(
-        `Payment will be processed. Check status with: paymongo payments show-intent ${result.id}`
-      )
-    );
+    console.log(chalk.gray(`Check status with: paymongo payments show-intent ${result.id}`));
   } catch (error) {
-    handlePaymentsError('❌ Failed to confirm payment intent:', spinner, error);
+    handlePaymentsError('❌ Failed to attach payment method:', spinner, error);
   }
 }
+
+export const confirmAction = attachAction;
 
 export async function captureAction(intentId: string, options: { json?: boolean }) {
   const { spinner, configManager } = createPaymentsContext();

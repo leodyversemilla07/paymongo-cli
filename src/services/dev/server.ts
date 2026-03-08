@@ -77,7 +77,7 @@ export class DevServer {
       const event = JSON.parse(body);
 
       // Verify webhook signature if enabled
-      const signatureValid = this.verifyWebhookSignature(req, body);
+      const signatureValid = this.verifyWebhookSignature(req, body, event);
       if (!signatureValid) {
         this.logger.failure('Webhook signature verification failed');
         res.writeHead(401, { 'Content-Type': 'application/json' });
@@ -144,7 +144,11 @@ export class DevServer {
     );
   }
 
-  private verifyWebhookSignature(req: http.IncomingMessage, body: string): boolean {
+  private verifyWebhookSignature(
+    req: http.IncomingMessage,
+    body: string,
+    event?: WebhookEventPayload
+  ): boolean {
     // Check if signature verification is enabled in config
     if (!this.config.dev.verifyWebhookSignatures) {
       this.logger.warn('Webhook signature verification disabled in config');
@@ -157,7 +161,7 @@ export class DevServer {
       return false;
     }
 
-    // Parse signature header: t=<timestamp>,te=<signature>,li=
+    // Parse signature header: t=<timestamp>,te=<test-signature>,li=<live-signature>
     const signatureParts = signatureHeader.split(',');
     if (signatureParts.length < 2) {
       this.logger.failure('Invalid signature format');
@@ -165,33 +169,22 @@ export class DevServer {
     }
 
     const timestamp = signatureParts.find((part) => part.startsWith('t='))?.split('=')[1];
-    const signature = signatureParts.find((part) => part.startsWith('te='))?.split('=')[1];
+    const testSignature = signatureParts.find((part) => part.startsWith('te='))?.split('=')[1];
+    const liveSignature = signatureParts.find((part) => part.startsWith('li='))?.split('=')[1];
+    const livemode = Boolean(
+      (event?.data?.attributes as { livemode?: boolean } | undefined)?.livemode
+    );
+    const signature = livemode ? liveSignature : testSignature || liveSignature;
 
     if (!timestamp || !signature) {
       this.logger.failure('Missing timestamp or signature in header');
       return false;
     }
 
-    const webhookId = signatureParts.find((part) => part.startsWith('li='))?.split('=')[1];
-
     const webhookSecrets = this.config.webhookSecrets || {};
-    const configuredSecret = webhookId ? webhookSecrets[webhookId] : undefined;
-    let secretKeys: string[] = [];
-
-    if (configuredSecret) {
-      secretKeys = [configuredSecret];
-    } else {
-      secretKeys = Object.values(webhookSecrets).filter(
-        (secret) => typeof secret === 'string' && secret.length > 0
-      ) as string[];
-
-      if (webhookId && secretKeys.length > 0) {
-        this.logger.warning(
-          `No webhook secret found for id ${webhookId}. Update your configuration.`
-        );
-        return false;
-      }
-    }
+    const secretKeys = Object.values(webhookSecrets).filter(
+      (secret) => typeof secret === 'string' && secret.length > 0
+    ) as string[];
 
     if (secretKeys.length === 0) {
       this.logger.failure('Signature verification enabled but no webhook secrets are configured');

@@ -376,14 +376,31 @@ export class ApiClient {
     );
   }
 
-  async deleteWebhook(id: string): Promise<void> {
+  async disableWebhook(id: string): Promise<WebhookData> {
     // Invalidate cache when deleting
     await this.cache.invalidate(`webhook_${id}`);
     await this.cache.invalidate(`webhooks_${this.config.environment}`);
 
-    return withRetry(async () => {
-      await this.makeRequest('DELETE', `/v1/webhooks/${id}`);
-    });
+    return withRetry(() =>
+      this.makeRequest('POST', `/v1/webhooks/${id}/disable`).then(
+        (response) => (response.data as ApiResponse<WebhookData>).data
+      )
+    );
+  }
+
+  async enableWebhook(id: string): Promise<WebhookData> {
+    await this.cache.invalidate(`webhook_${id}`);
+    await this.cache.invalidate(`webhooks_${this.config.environment}`);
+
+    return withRetry(() =>
+      this.makeRequest('POST', `/v1/webhooks/${id}/enable`).then(
+        (response) => (response.data as ApiResponse<WebhookData>).data
+      )
+    );
+  }
+
+  async deleteWebhook(id: string): Promise<void> {
+    await this.disableWebhook(id);
   }
 
   // Payment methods (for validation and testing)
@@ -433,7 +450,7 @@ export class ApiClient {
     );
   }
 
-  async confirmPaymentIntent(
+  async attachPaymentIntent(
     id: string,
     paymentMethodId: string,
     returnUrl?: string
@@ -446,7 +463,7 @@ export class ApiClient {
     }
 
     return withRetry(() =>
-      this.makeRequest('POST', `/v1/payment_intents/${id}/confirm`, {
+      this.makeRequest('POST', `/v1/payment_intents/${id}/attach`, {
         body: {
           data: {
             attributes,
@@ -454,6 +471,14 @@ export class ApiClient {
         },
       }).then((response) => (response.data as ApiResponse<PaymentIntentData>).data)
     );
+  }
+
+  async confirmPaymentIntent(
+    id: string,
+    paymentMethodId: string,
+    returnUrl?: string
+  ): Promise<PaymentIntentData> {
+    return this.attachPaymentIntent(id, paymentMethodId, returnUrl);
   }
 
   async capturePaymentIntent(id: string): Promise<PaymentIntentData> {

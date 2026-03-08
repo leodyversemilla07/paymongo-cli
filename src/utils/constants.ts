@@ -66,7 +66,7 @@ export const ERROR_MESSAGES = {
 export const SUCCESS_MESSAGES = {
   CONFIG_SAVED: 'Configuration saved successfully',
   WEBHOOK_CREATED: 'Webhook created successfully',
-  WEBHOOK_DELETED: 'Webhook deleted successfully',
+  WEBHOOK_DELETED: 'Webhook disabled successfully',
   LOGIN_SUCCESSFUL: 'Login successful',
   DEV_SERVER_STARTED: 'Development server started',
 } as const;

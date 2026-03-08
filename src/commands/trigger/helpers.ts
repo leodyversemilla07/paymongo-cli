@@ -51,7 +51,8 @@ export function buildSignatureHeader(
     registeredWebhooks?: { id: string; url: string }[];
   } | null,
   webhookUrl: string,
-  body: string
+  body: string,
+  livemode: boolean
 ): string | undefined {
   if (!config?.webhookSecrets || Object.keys(config.webhookSecrets).length === 0) {
     return undefined;
@@ -80,10 +81,7 @@ export function buildSignatureHeader(
     .createHmac('sha256', secret)
     .update(`${timestamp}.${body}`)
     .digest('hex');
-  const parts = [`t=${timestamp}`, `te=${signature}`];
-  if (webhookId) {
-    parts.push(`li=${webhookId}`);
-  }
+  const parts = [`t=${timestamp}`, livemode ? 'te=' : `te=${signature}`, livemode ? `li=${signature}` : 'li='];
 
   return parts.join(',');
 }
@@ -98,7 +96,12 @@ export async function sendWebhookRequest(
 ) {
   const { request } = await import('undici');
   const body = JSON.stringify(payload);
-  const signatureHeader = buildSignatureHeader(config, webhookUrl, body);
+  const livemode =
+    'data' in payload &&
+    Boolean(
+      (payload.data as { attributes?: { livemode?: boolean } }).attributes?.livemode
+    );
+  const signatureHeader = buildSignatureHeader(config, webhookUrl, body, livemode);
 
   return request(webhookUrl, {
     method: 'POST',

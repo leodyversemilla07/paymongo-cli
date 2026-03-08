@@ -173,10 +173,10 @@ command
         let cleanedCount = 0;
         for (const webhook of config.registeredWebhooks) {
           try {
-            await apiClient.deleteWebhook(webhook.id);
+            await apiClient.disableWebhook(webhook.id);
             cleanedCount++;
           } catch {
-            // Webhook may already be deleted, ignore errors
+            // Webhook may already be disabled, ignore errors
           }
         }
         config.registeredWebhooks = [];
@@ -314,10 +314,10 @@ command
           // Stop server
           await devServer.stop();
 
-          // Delete webhook and remove from tracked list
+          // Disable webhook and remove from tracked list
           if (webhookId) {
             spinner.start('Cleaning up webhook...');
-            await new ApiClient({ config }).deleteWebhook(webhookId);
+            await new ApiClient({ config }).disableWebhook(webhookId);
 
             // Remove from tracked webhooks
             if (config.registeredWebhooks) {
@@ -327,7 +327,7 @@ command
               delete config.webhookSecrets[webhookId];
               await configManager.save(config);
             }
-            spinner.succeed('Webhook deleted');
+            spinner.succeed('Webhook disabled');
           }
         } catch (error) {
           console.error(chalk.red('Error during cleanup:'), (error as Error).message);

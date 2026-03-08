@@ -227,21 +227,24 @@ describe('ApiClient', () => {
     });
   });
 
-  describe('deleteWebhook', () => {
+  describe('disableWebhook', () => {
     const webhookId = 'hook_123';
 
-    it('should delete webhook', async () => {
+    it('should disable webhook', async () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({}), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: { id: webhookId, attributes: { status: 'disabled' } } }),
+          text: () => Promise.resolve(''),
+        },
       });
 
-      await apiClient.deleteWebhook(webhookId);
+      await apiClient.disableWebhook(webhookId);
 
       expect(mockRequest).toHaveBeenCalledWith(
-        `https://api.paymongo.com/v1/webhooks/${webhookId}`,
-        expect.objectContaining({ method: 'DELETE' })
+        `https://api.paymongo.com/v1/webhooks/${webhookId}/disable`,
+        expect.objectContaining({ method: 'POST' })
       );
     });
   });
@@ -363,23 +366,23 @@ describe('ApiClient', () => {
     });
   });
 
-  describe('confirmPaymentIntent', () => {
+  describe('attachPaymentIntent', () => {
     const paymentIntentId = 'pi_123';
     const paymentMethodId = 'pm_456';
     const returnUrl = 'https://example.com/return';
     const mockConfirmedIntent = { id: paymentIntentId, attributes: { status: 'succeeded' } };
 
-    it('should confirm payment intent with payment method only', async () => {
+    it('should attach payment method to payment intent', async () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: { json: () => Promise.resolve({ data: mockConfirmedIntent }), text: () => Promise.resolve('') },
       });
 
-      const result = await apiClient.confirmPaymentIntent(paymentIntentId, paymentMethodId);
+      const result = await apiClient.attachPaymentIntent(paymentIntentId, paymentMethodId);
 
       expect(mockRequest).toHaveBeenCalledWith(
-        `https://api.paymongo.com/v1/payment_intents/${paymentIntentId}/confirm`,
+        `https://api.paymongo.com/v1/payment_intents/${paymentIntentId}/attach`,
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({
@@ -394,17 +397,17 @@ describe('ApiClient', () => {
       expect(result).toEqual(mockConfirmedIntent);
     });
 
-    it('should confirm payment intent with return URL', async () => {
+    it('should attach payment method with return URL', async () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: { json: () => Promise.resolve({ data: mockConfirmedIntent }), text: () => Promise.resolve('') },
       });
 
-      await apiClient.confirmPaymentIntent(paymentIntentId, paymentMethodId, returnUrl);
+      await apiClient.attachPaymentIntent(paymentIntentId, paymentMethodId, returnUrl);
 
       expect(mockRequest).toHaveBeenCalledWith(
-        `https://api.paymongo.com/v1/payment_intents/${paymentIntentId}/confirm`,
+        `https://api.paymongo.com/v1/payment_intents/${paymentIntentId}/attach`,
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({

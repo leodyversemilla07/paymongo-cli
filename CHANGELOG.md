@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.10] - 2026-03-08
+
+### Changed
+
+- **Official API Alignment** - Updated webhook management to use disable/enable semantics instead of hard delete, while keeping the old delete command as a compatibility alias.
+- **Payment Intent Flow** - Switched the payment intent action path to PayMongo's current attach flow and updated the CLI to expose `payments attach` with `confirm` retained as an alias.
+- **Webhook Signing** - Aligned local webhook signature parsing, trigger signing, and generated webhook handler templates with PayMongo's documented `Paymongo-Signature` header format for test and live signatures.
+
+### Fixed
+
+- **Developer UX** - Updated command help text, user documentation, troubleshooting guidance, and CLI examples so the surfaced behavior matches the current PayMongo documentation and the CLI implementation.
+- **Regression Coverage** - Expanded unit coverage for webhook disable/enable behavior, payment intent attachment, dev-server signature verification, and compatibility aliases.
+
 ## [1.4.9] - 2026-03-08
 
 ### Fixed

@@ -10,7 +10,7 @@ const mockApiClientListPayments = jest.fn<(limit: number) => Promise<any[]>>();
 const mockApiClientGetPayment = jest.fn<(id: string) => Promise<any>>();
 const mockApiClientCreatePaymentIntent =
   jest.fn<(amount: number, currency: string, description?: string) => Promise<any>>();
-const mockApiClientConfirmPaymentIntent =
+const mockApiClientAttachPaymentIntent =
   jest.fn<(intentId: string, paymentMethodId: string, returnUrl?: string) => Promise<any>>();
 const mockApiClientCapturePaymentIntent = jest.fn<(intentId: string) => Promise<any>>();
 const mockApiClientCreateRefund =
@@ -19,7 +19,7 @@ const mockApiClient = jest.fn().mockImplementation(() => ({
   listPayments: mockApiClientListPayments,
   getPayment: mockApiClientGetPayment,
   createPaymentIntent: mockApiClientCreatePaymentIntent,
-  confirmPaymentIntent: mockApiClientConfirmPaymentIntent,
+  attachPaymentIntent: mockApiClientAttachPaymentIntent,
   capturePaymentIntent: mockApiClientCapturePaymentIntent,
   createRefund: mockApiClientCreateRefund,
 }));
@@ -137,6 +137,7 @@ const {
   importAction,
   listAction,
   showAction,
+  attachAction,
   createIntentAction,
   confirmAction,
   captureAction,
@@ -427,8 +428,8 @@ describe('Payments Command', () => {
     });
   });
 
-  describe('confirm command', () => {
-    it('should confirm payment intent successfully', async () => {
+  describe('attach command', () => {
+    it('should attach payment method successfully', async () => {
       const mockConfig = { environment: 'test' };
       const mockResult = {
         id: 'pi_123',
@@ -443,9 +444,9 @@ describe('Payments Command', () => {
       };
 
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
-      mockApiClientConfirmPaymentIntent.mockResolvedValue(mockResult);
+      mockApiClientAttachPaymentIntent.mockResolvedValue(mockResult);
 
-      await confirmAction('pi_123', {
+      await attachAction('pi_123', {
         paymentMethod: 'pm_456',
         returnUrl: 'https://example.com',
         simulate: false,
@@ -453,25 +454,25 @@ describe('Payments Command', () => {
       });
 
       expect(mockConfigManagerLoad).toHaveBeenCalledTimes(1);
-      expect(mockApiClientConfirmPaymentIntent).toHaveBeenCalledWith(
+      expect(mockApiClientAttachPaymentIntent).toHaveBeenCalledWith(
         'pi_123',
         'pm_456',
         'https://example.com'
       );
       expect(mockSpinnerStart).toHaveBeenCalledWith('Loading configuration...');
       expect(mockSpinnerSucceed).toHaveBeenCalledWith('Configuration loaded');
-      expect(mockSpinnerStart).toHaveBeenCalledWith('Confirming payment intent...');
-      expect(mockSpinnerSucceed).toHaveBeenCalledWith('Payment intent confirmed');
+      expect(mockSpinnerStart).toHaveBeenCalledWith('Attaching payment method to payment intent...');
+      expect(mockSpinnerSucceed).toHaveBeenCalledWith('Payment method attached');
     });
 
     it('should require payment method when not simulating', async () => {
       const mockConfig = { environment: 'test' };
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
 
-      await expect(confirmAction('pi_123', { simulate: false })).rejects.toThrow('Command failed');
+      await expect(attachAction('pi_123', { simulate: false })).rejects.toThrow('Command failed');
 
       expect(mockConsoleError).toHaveBeenCalledWith(
-        'red:❌ Failed to confirm payment intent:',
+        'red:❌ Failed to attach payment method:',
         'Payment method ID is required. Use --payment-method <id>'
       );
     });
@@ -502,7 +503,7 @@ describe('Payments Command', () => {
       };
       mockPaymentSimulator.mockImplementation(() => mockSimulatorInstance);
 
-      await confirmAction('pi_123', {
+      await attachAction('pi_123', {
         simulate: true,
         method: 'gcash',
         outcome: 'success',
@@ -515,6 +516,28 @@ describe('Payments Command', () => {
       });
       expect(mockSpinnerStart).toHaveBeenCalledWith('Simulating gcash payment...');
       expect(mockSpinnerSucceed).toHaveBeenCalledWith('Simulation completed (2000ms)');
+    });
+
+    it('keeps confirmAction as a compatibility alias', async () => {
+      const mockConfig = { environment: 'test' };
+      mockConfigManagerLoad.mockResolvedValue(mockConfig);
+      mockApiClientAttachPaymentIntent.mockResolvedValue({
+        id: 'pi_123',
+        attributes: {
+          amount: 10000,
+          currency: 'PHP',
+          status: 'succeeded',
+          created_at: Date.now() / 1000,
+          updated_at: Date.now() / 1000,
+        },
+      });
+
+      await confirmAction('pi_123', {
+        paymentMethod: 'pm_456',
+        simulate: false,
+      });
+
+      expect(mockApiClientAttachPaymentIntent).toHaveBeenCalledWith('pi_123', 'pm_456', undefined);
     });
   });
 

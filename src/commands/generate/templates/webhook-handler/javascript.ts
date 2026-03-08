@@ -32,14 +32,16 @@ app.use(express.json());
 // Webhook secret from PayMongo dashboard
 const WEBHOOK_SECRET = process.env.PAYMONGO_WEBHOOK_SECRET;
 
-function verifySignature(payload, signatureHeader, secret) {
+function verifySignature(payload, signatureHeader, secret, livemode) {
   if (!signatureHeader) {
     return false;
   }
 
   const parts = signatureHeader.split(',');
   const timestamp = parts.find((part) => part.startsWith('t='))?.split('=')[1];
-  const signature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
+  const testSignature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
+  const liveSignature = parts.find((part) => part.startsWith('li='))?.split('=')[1];
+  const signature = livemode ? liveSignature : testSignature || liveSignature;
 
   if (!timestamp || !signature) {
     return false;
@@ -62,7 +64,7 @@ app.post('/webhooks/paymongo', (req, res) => {
     const payload = JSON.stringify(req.body);
 
     // Verify webhook signature (optional but recommended)
-    if (WEBHOOK_SECRET && !verifySignature(payload, signature, WEBHOOK_SECRET)) {
+    if (WEBHOOK_SECRET && !verifySignature(payload, signature, WEBHOOK_SECRET, req.body.data.attributes.livemode)) {
       console.log('Invalid signature');
       return res.status(400).json({ error: 'Invalid signature' });
     }
@@ -100,14 +102,16 @@ const crypto = require('crypto');
 // Webhook secret from PayMongo dashboard
 const WEBHOOK_SECRET = process.env.PAYMONGO_WEBHOOK_SECRET;
 
-function verifySignature(payload, signatureHeader, secret) {
+function verifySignature(payload, signatureHeader, secret, livemode) {
   if (!signatureHeader) {
     return false;
   }
 
   const parts = signatureHeader.split(',');
   const timestamp = parts.find((part) => part.startsWith('t='))?.split('=')[1];
-  const signature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
+  const testSignature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
+  const liveSignature = parts.find((part) => part.startsWith('li='))?.split('=')[1];
+  const signature = livemode ? liveSignature : testSignature || liveSignature;
 
   if (!timestamp || !signature) {
     return false;
@@ -130,7 +134,7 @@ fastify.post('/webhooks/paymongo', async (request, reply) => {
     const payload = JSON.stringify(request.body);
 
     // Verify webhook signature (optional but recommended)
-    if (WEBHOOK_SECRET && !verifySignature(payload, signature, WEBHOOK_SECRET)) {
+    if (WEBHOOK_SECRET && !verifySignature(payload, signature, WEBHOOK_SECRET, request.body.data.attributes.livemode)) {
       console.log('Invalid signature');
       return reply.code(400).send({ error: 'Invalid signature' });
     }
@@ -175,14 +179,16 @@ const crypto = require('crypto');
 // Webhook secret from PayMongo dashboard
 const WEBHOOK_SECRET = process.env.PAYMONGO_WEBHOOK_SECRET;
 
-function verifySignature(payload, signatureHeader, secret) {
+function verifySignature(payload, signatureHeader, secret, livemode) {
   if (!signatureHeader) {
     return false;
   }
 
   const parts = signatureHeader.split(',');
   const timestamp = parts.find((part) => part.startsWith('t='))?.split('=')[1];
-  const signature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
+  const testSignature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
+  const liveSignature = parts.find((part) => part.startsWith('li='))?.split('=')[1];
+  const signature = livemode ? liveSignature : testSignature || liveSignature;
 
   if (!timestamp || !signature) {
     return false;
@@ -205,7 +211,7 @@ function handleWebhook(request, response) {
     const payload = JSON.stringify(request.body);
 
     // Verify webhook signature (optional but recommended)
-    if (WEBHOOK_SECRET && !verifySignature(payload, signature, WEBHOOK_SECRET)) {
+    if (WEBHOOK_SECRET && !verifySignature(payload, signature, WEBHOOK_SECRET, request.body.data.attributes.livemode)) {
       console.log('Invalid signature');
       response.writeHead(400, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify({ error: 'Invalid signature' }));

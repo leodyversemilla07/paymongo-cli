@@ -310,13 +310,17 @@ Create a new webhook interactively or with options.
 
 Show detailed webhook information.
 
-##### `webhooks delete <id>`
+##### `webhooks disable <id>`
 
-Delete a webhook (with confirmation).
+Disable a webhook (with confirmation).
 
 | Option      | Description       |
 | :---------- | :---------------- |
 | `-y, --yes` | Skip confirmation |
+
+##### `webhooks enable <id>`
+
+Re-enable a disabled webhook.
 
 ---
 
@@ -357,6 +361,16 @@ Create a new payment intent.
 | `-c, --currency <currency>`       | Currency code (default: PHP)                 |
 | `-d, --description <description>` | Payment description                          |
 | `-j, --json`                      | JSON output                                  |
+
+##### `payments attach <intentId>`
+
+Attach a payment method to a payment intent using PayMongo's current attach flow.
+
+| Option                    | Description                                           |
+| :------------------------ | :---------------------------------------------------- |
+| `-p, --payment-method`    | Payment method ID to attach                           |
+| `-r, --return-url <url>`  | Return URL for redirect-based payment methods         |
+| `-s, --simulate`          | Run the local simulation flow instead of calling API  |
 
 ---
 

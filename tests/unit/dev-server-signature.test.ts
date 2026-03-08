@@ -27,8 +27,10 @@ describe('DevServer signature verification', () => {
       req.headers['paymongo-signature'] = signature;
     }
     return (
-      server as unknown as { verifyWebhookSignature: (req: unknown, body: string) => boolean }
-    ).verifyWebhookSignature(req, body);
+      server as unknown as {
+        verifyWebhookSignature: (req: unknown, body: string, event?: unknown) => boolean;
+      }
+    ).verifyWebhookSignature(req, body, JSON.parse(body));
   }
 
   it('returns true when verification disabled', () => {
@@ -53,30 +55,32 @@ describe('DevServer signature verification', () => {
   });
 
   it('returns true for valid signature with matching webhook secret', () => {
-    const body = JSON.stringify({ data: { id: 'evt_1', type: 'payment' } });
+    const body = JSON.stringify({
+      data: { id: 'evt_1', type: 'event', attributes: { type: 'payment.paid', livemode: false } },
+    });
     const timestamp = '1710000000';
     const secret = 'whsec_test_123';
-    const webhookId = 'wh_123';
     const expected = crypto
       .createHmac('sha256', secret)
       .update(`${timestamp}.${body}`)
       .digest('hex');
 
-    config.webhookSecrets = { [webhookId]: secret };
+    config.webhookSecrets = { wh_123: secret };
     const server = new DevServer(3000, config);
-    const header = `t=${timestamp},te=${expected},li=${webhookId}`;
+    const header = `t=${timestamp},te=${expected},li=`;
     expect(callVerify(server, header, body)).toBe(true);
   });
 
   it('returns false for invalid signature with configured secrets', () => {
-    const body = JSON.stringify({ data: { id: 'evt_2', type: 'payment' } });
+    const body = JSON.stringify({
+      data: { id: 'evt_2', type: 'event', attributes: { type: 'payment.failed', livemode: false } },
+    });
     const timestamp = '1710000001';
     const secret = 'whsec_test_456';
-    const webhookId = 'wh_456';
-    config.webhookSecrets = { [webhookId]: secret };
+    config.webhookSecrets = { wh_456: secret };
 
     const server = new DevServer(3000, config);
-    const header = `t=${timestamp},te=deadbeef,li=${webhookId}`;
+    const header = `t=${timestamp},te=deadbeef,li=`;
     expect(callVerify(server, header, body)).toBe(false);
   });
 });

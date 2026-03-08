@@ -422,7 +422,7 @@ export async function listAction(options: { json?: boolean; status?: string; eve
   }
 }
 
-export async function deleteAction(id: string, options: { yes?: boolean }) {
+export async function disableAction(id: string, options: { yes?: boolean }) {
   const { spinner, configManager } = createWebhooksContext();
 
   try {
@@ -433,20 +433,20 @@ export async function deleteAction(id: string, options: { yes?: boolean }) {
 
     if (!options.yes) {
       const { confirm } = await import('@inquirer/prompts');
-      const shouldDelete = await confirm({
-        message: `This will permanently delete webhook ${id}. Continue?`,
+      const shouldDisable = await confirm({
+        message: `This will disable webhook ${id}. Continue?`,
         default: false,
       });
 
-      if (!shouldDelete) {
-        console.log(chalk.yellow('Webhook deletion cancelled.'));
+      if (!shouldDisable) {
+        console.log(chalk.yellow('Webhook disable cancelled.'));
         return;
       }
     }
 
-    spinner.start('Deleting webhook...');
-    await createApiClient(config).deleteWebhook(id);
-    spinner.succeed('Webhook deleted successfully');
+    spinner.start('Disabling webhook...');
+    await createApiClient(config).disableWebhook(id);
+    spinner.succeed('Webhook disabled successfully');
   } catch (error) {
     spinner.stop();
     const err = error as Error;
@@ -464,12 +464,42 @@ export async function deleteAction(id: string, options: { yes?: boolean }) {
       console.log(chalk.gray('• Verify the webhook ID is correct'));
       console.log(chalk.gray('• Use "paymongo webhooks list" to see available webhooks'));
     } else {
-      console.error(chalk.red('❌ Failed to delete webhook:'), err.message);
+      console.error(chalk.red('❌ Failed to disable webhook:'), err.message);
     }
 
     throw new CommandError();
   }
 }
+
+export async function enableAction(id: string) {
+  const { spinner, configManager } = createWebhooksContext();
+
+  try {
+    const config = await loadWebhooksConfig(spinner, configManager);
+    if (!config) {
+      return;
+    }
+
+    spinner.start('Enabling webhook...');
+    await createApiClient(config).enableWebhook(id);
+    spinner.succeed('Webhook enabled successfully');
+  } catch (error) {
+    spinner.stop();
+    const err = error as Error;
+
+    if (err.message.includes('API key') || err.message.includes('unauthorized')) {
+      console.error(chalk.red('❌ Authentication failed:'), err.message);
+    } else if (err.message.includes('not found') || err.message.includes('404')) {
+      console.error(chalk.red('❌ Webhook not found:'), err.message);
+    } else {
+      console.error(chalk.red('❌ Failed to enable webhook:'), err.message);
+    }
+
+    throw new CommandError();
+  }
+}
+
+export const deleteAction = disableAction;
 
 export async function showAction(id: string) {
   const { spinner, configManager } = createWebhooksContext();

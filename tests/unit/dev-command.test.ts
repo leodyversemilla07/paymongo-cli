@@ -10,7 +10,7 @@ const mockPassword = jest.fn();
 const mockApiClientValidate = jest.fn<() => Promise<boolean>>();
 const mockApiClientCreateWebhook =
   jest.fn<() => Promise<{ id: string; attributes: { secret: string } }>>();
-const mockApiClientDeleteWebhook = jest.fn<() => Promise<void>>();
+const mockApiClientDisableWebhook = jest.fn<() => Promise<void>>();
 
 const mockFsExistsSync = jest.fn<() => boolean>();
 const mockFsMkdirSync = jest.fn();
@@ -140,7 +140,7 @@ jest.unstable_mockModule('../../src/services/api/client.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     validateApiKey: mockApiClientValidate,
     createWebhook: mockApiClientCreateWebhook,
-    deleteWebhook: mockApiClientDeleteWebhook,
+    disableWebhook: mockApiClientDisableWebhook,
   })),
 }));
 
@@ -198,7 +198,7 @@ describe('Dev Command', () => {
       id: 'webhook-123',
       attributes: { secret: 'webhook-secret' },
     });
-    mockApiClientDeleteWebhook.mockResolvedValue(undefined);
+    mockApiClientDisableWebhook.mockResolvedValue(undefined);
 
     mockDevProcessManagerLoadState.mockReturnValue(null);
     mockDevProcessManagerIsProcessRunning.mockReturnValue(false);

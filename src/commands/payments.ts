@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import {
+  attachAction,
   captureAction,
   confirmAction,
   createIntentAction,
@@ -54,8 +55,9 @@ command
       .action(createIntentAction)
   )
   .addCommand(
-    new Command('confirm')
-      .description('Confirm a payment intent with a payment method')
+    new Command('attach')
+      .alias('confirm')
+      .description('Attach a payment method to a payment intent')
       .arguments('<intentId>')
       .option(
         '-p, --payment-method <id>',
@@ -71,7 +73,7 @@ command
         'success'
       )
       .option('-d, --delay <ms>', 'Custom simulation delay in milliseconds')
-      .action(confirmAction)
+      .action(attachAction)
   )
   .addCommand(
     new Command('capture')
@@ -99,6 +101,7 @@ export {
   listAction,
   showAction,
   createIntentAction,
+  attachAction,
   confirmAction,
   captureAction,
   refundAction,

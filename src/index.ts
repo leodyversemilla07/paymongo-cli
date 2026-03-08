@@ -53,13 +53,13 @@ EXAMPLES
     $ paymongo webhooks list                             # List all webhooks
     $ paymongo webhooks create                           # Create a new webhook interactively
     $ paymongo webhooks show wh_123                      # Show webhook details
-    $ paymongo webhooks delete wh_123                    # Delete a webhook
+    $ paymongo webhooks disable wh_123                   # Disable a webhook
 
   Payment Operations:
     $ paymongo payments list                             # List recent payments
     $ paymongo payments show pay_123                     # Show payment details
     $ paymongo payments create-intent --amount 10000     # Create payment intent for ₱100
-    $ paymongo payments confirm pi_123 --simulate        # Simulate payment confirmation
+    $ paymongo payments attach pi_123 --simulate         # Simulate payment method attachment
 
   Code Generation:
     $ paymongo generate webhook-handler                  # Generate webhook handler boilerplate

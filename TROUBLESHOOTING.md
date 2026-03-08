@@ -99,7 +99,7 @@ This guide provides solutions to common issues you might encounter while using t
 **Solution**:
 
 - Ensure your Secret API key has permission to manage webhooks.
-- Check if you have reached the maximum number of webhooks (PayMongo allows up to 5 per environment). Delete unused webhooks: `paymongo webhooks list` then `paymongo webhooks delete --id <id>`.
+- Check if you have reached the maximum number of webhooks (PayMongo allows up to 5 per environment). Disable unused webhooks: `paymongo webhooks list` then `paymongo webhooks disable <id>`.
 
 ---
 
