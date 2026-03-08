@@ -11,4 +11,9 @@ export { getPaymentIntentTemplate as getJavaScriptPaymentIntent } from './paymen
 export { getPaymentIntentTemplate as getTypeScriptPaymentIntent } from './payment-intent/typescript.js';
 
 // Checkout page templates
-export { getCheckoutPageTemplate, getHtmlTemplate, getReactTemplate, getVueTemplate } from './checkout-page/index.js';
+export {
+  getCheckoutPageTemplate,
+  getHtmlTemplate,
+  getReactTemplate,
+  getVueTemplate,
+} from './checkout-page/index.js';

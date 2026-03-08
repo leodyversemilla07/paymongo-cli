@@ -108,7 +108,9 @@ export async function listAction(options: { limit?: string; json?: boolean }) {
     }
 
     spinner.start('Fetching payments...');
-    const payments = await createApiClient(config).listPayments(parseInt(options.limit || '10', 10));
+    const payments = await createApiClient(config).listPayments(
+      parseInt(options.limit || '10', 10)
+    );
     spinner.succeed(`Found ${payments.length} payments`);
 
     if (options.json) {
@@ -208,7 +210,9 @@ export async function showAction(id: string, options: { json?: boolean }) {
 
     console.log(`${chalk.bold('Payment Intent:')} ${attrs.payment_intent_id}`);
     console.log('');
-    console.log(chalk.gray(`View in dashboard: https://dashboard.paymongo.com/payments/${payment.id}`));
+    console.log(
+      chalk.gray(`View in dashboard: https://dashboard.paymongo.com/payments/${payment.id}`)
+    );
   } catch (error) {
     handlePaymentsError('❌ Failed to fetch payment:', spinner, error);
   }
@@ -344,8 +348,12 @@ export async function confirmAction(
       console.log(`${chalk.bold('Amount:')} ₱${(attrs.amount / 100).toFixed(2)} ${attrs.currency}`);
       console.log(`${chalk.bold('Status:')} ${getStatusColor(attrs.status)(attrs.status)}`);
       console.log(`${chalk.bold('Description:')} ${attrs.description || 'N/A'}`);
-      console.log(`${chalk.bold('Created:')} ${new Date(attrs.created_at * 1000).toLocaleString()}`);
-      console.log(`${chalk.bold('Updated:')} ${new Date(attrs.updated_at * 1000).toLocaleString()}`);
+      console.log(
+        `${chalk.bold('Created:')} ${new Date(attrs.created_at * 1000).toLocaleString()}`
+      );
+      console.log(
+        `${chalk.bold('Updated:')} ${new Date(attrs.updated_at * 1000).toLocaleString()}`
+      );
       console.log('');
       console.log(chalk.yellow('⚠️ This was a simulation - no real payment was processed'));
       console.log(
@@ -378,7 +386,9 @@ export async function confirmAction(
     console.log(`${chalk.bold('Updated:')} ${new Date(attrs.updated_at * 1000).toLocaleString()}`);
     console.log('');
     console.log(
-      chalk.gray(`Payment will be processed. Check status with: paymongo payments show-intent ${result.id}`)
+      chalk.gray(
+        `Payment will be processed. Check status with: paymongo payments show-intent ${result.id}`
+      )
     );
   } catch (error) {
     handlePaymentsError('❌ Failed to confirm payment intent:', spinner, error);
@@ -432,17 +442,17 @@ export async function refundAction(
 
     const validReasons = ['duplicate', 'fraudulent', 'requested_by_customer'];
     if (options.reason && !validReasons.includes(options.reason)) {
-      throw new Error(
-        `Invalid reason. Must be one of: ${validReasons.join(', ')}`
-      );
+      throw new Error(`Invalid reason. Must be one of: ${validReasons.join(', ')}`);
     }
 
-    const amount = options.amount ? parseBoundedInt(
-      options.amount,
-      options.amount,
-      'Refund amount must be a positive number in centavos',
-      (parsed) => parsed > 0
-    ) : undefined;
+    const amount = options.amount
+      ? parseBoundedInt(
+          options.amount,
+          options.amount,
+          'Refund amount must be a positive number in centavos',
+          (parsed) => parsed > 0
+        )
+      : undefined;
 
     spinner.start('Creating refund...');
     const refund = await createApiClient(config).createRefund(

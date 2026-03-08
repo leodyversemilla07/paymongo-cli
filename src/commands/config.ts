@@ -69,7 +69,9 @@ command
           .action(rateLimitSetWindowAction)
       )
       .addCommand(
-        new Command('status').description('Show current rate limiting settings').action(rateLimitStatusAction)
+        new Command('status')
+          .description('Show current rate limiting settings')
+          .action(rateLimitStatusAction)
       )
   );
 

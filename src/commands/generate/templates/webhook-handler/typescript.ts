@@ -6,24 +6,24 @@
  * Generate event handler switch cases
  */
 function generateEventHandlers(events: string[]): string {
-    return events
-        .map(
-            (event) => `
+  return events
+    .map(
+      (event) => `
       case '${event}':
         console.log('Processing ${event} event:', data);
         // Add your ${event} handling logic here
         break;`
-        )
-        .join('');
+    )
+    .join('');
 }
 
 /**
  * Express.js TypeScript webhook handler template
  */
 export function expressTemplate(events: string[]): string {
-    const eventHandlers = generateEventHandlers(events);
+  const eventHandlers = generateEventHandlers(events);
 
-    return `import express, { Request, Response } from 'express';
+  return `import express, { Request, Response } from 'express';
 import crypto from 'crypto';
 
 const app = express();
@@ -106,9 +106,9 @@ app.listen(PORT, () => {
  * Generic TypeScript webhook handler template
  */
 export function genericTemplate(events: string[]): string {
-    const eventHandlers = generateEventHandlers(events);
+  const eventHandlers = generateEventHandlers(events);
 
-    return `// TypeScript webhook handler for ${events.join(', ')}
+  return `// TypeScript webhook handler for ${events.join(', ')}
 
 import crypto from 'crypto';
 
@@ -182,10 +182,10 @@ export function handleWebhook(body: PayMongoWebhookPayload, signature?: string):
  * Get TypeScript webhook handler template by framework
  */
 export function getWebhookHandlerTemplate(events: string[], framework: string): string {
-    switch (framework) {
-        case 'express':
-            return expressTemplate(events);
-        default:
-            return genericTemplate(events);
-    }
+  switch (framework) {
+    case 'express':
+      return expressTemplate(events);
+    default:
+      return genericTemplate(events);
+  }
 }

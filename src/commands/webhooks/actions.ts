@@ -125,13 +125,19 @@ export async function importAction(
 
     const apiClient = createApiClient(config);
     const results: Array<
-      | { success: true; webhook: Awaited<ReturnType<typeof apiClient.createWebhook>>; original: (typeof webhooks)[number] }
+      | {
+          success: true;
+          webhook: Awaited<ReturnType<typeof apiClient.createWebhook>>;
+          original: (typeof webhooks)[number];
+        }
       | { success: false; error: Error; original: (typeof webhooks)[number] }
     > = [];
 
     for (const [index, webhook] of webhooks.entries()) {
       try {
-        spinner.start(`Creating webhook ${index + 1}/${webhooks.length}: ${webhook.attributes.url}`);
+        spinner.start(
+          `Creating webhook ${index + 1}/${webhooks.length}: ${webhook.attributes.url}`
+        );
         const createdWebhook = await apiClient.createWebhook(
           webhook.attributes.url,
           webhook.attributes.events
@@ -157,7 +163,9 @@ export async function importAction(
     if (successful > 0) {
       console.log('\n' + chalk.green('✅ Successfully created webhooks:'));
       results
-        .filter((result): result is Extract<(typeof results)[number], { success: true }> => result.success)
+        .filter(
+          (result): result is Extract<(typeof results)[number], { success: true }> => result.success
+        )
         .forEach((result, index) => {
           console.log(`  ${index + 1}. ${result.webhook.id} - ${result.webhook.attributes.url}`);
         });
@@ -166,9 +174,14 @@ export async function importAction(
     if (failed > 0) {
       console.log('\n' + chalk.red('❌ Failed webhooks:'));
       results
-        .filter((result): result is Extract<(typeof results)[number], { success: false }> => !result.success)
+        .filter(
+          (result): result is Extract<(typeof results)[number], { success: false }> =>
+            !result.success
+        )
         .forEach((result, index) => {
-          console.log(`  ${index + 1}. ${result.original.attributes.url} - ${result.error.message}`);
+          console.log(
+            `  ${index + 1}. ${result.original.attributes.url} - ${result.error.message}`
+          );
         });
     }
   } catch (error) {
@@ -227,7 +240,9 @@ export async function createAction(options: { url?: string; events?: string }) {
             return 'At least one event must be selected';
           }
           try {
-            validateEventTypes(value.map((entry) => (typeof entry === 'string' ? entry : String(entry))));
+            validateEventTypes(
+              value.map((entry) => (typeof entry === 'string' ? entry : String(entry)))
+            );
             return true;
           } catch {
             return 'Invalid event types selected';
@@ -293,7 +308,9 @@ export async function createAction(options: { url?: string; events?: string }) {
     } else {
       console.error(chalk.red('❌ Failed to create webhook:'), err.message);
       console.log('');
-      console.log(chalk.yellow('💡 For help, visit: https://developers.paymongo.com/docs/webhooks'));
+      console.log(
+        chalk.yellow('💡 For help, visit: https://developers.paymongo.com/docs/webhooks')
+      );
     }
 
     throw new CommandError();
@@ -321,7 +338,9 @@ export async function listAction(options: { json?: boolean; status?: string; eve
 
     let filteredWebhooks = webhooks;
     if (options.status) {
-      filteredWebhooks = filteredWebhooks.filter((webhook) => webhook.attributes.status === options.status);
+      filteredWebhooks = filteredWebhooks.filter(
+        (webhook) => webhook.attributes.status === options.status
+      );
     }
     if (options.events) {
       const eventFilter = options.events.toLowerCase();
@@ -369,8 +388,12 @@ export async function listAction(options: { json?: boolean; status?: string; eve
     console.log(chalk.gray(`Total: ${filteredWebhooks.length} webhooks`));
 
     if (filteredWebhooks.some((webhook) => webhook.attributes.url.includes('ngrok'))) {
-      console.log(chalk.yellow('ℹ️  Note: URLs containing "ngrok" are tunnels that forward to your localhost'));
-      console.log(chalk.gray('   These are created by "paymongo dev" and cleaned up when the server stops.'));
+      console.log(
+        chalk.yellow('ℹ️  Note: URLs containing "ngrok" are tunnels that forward to your localhost')
+      );
+      console.log(
+        chalk.gray('   These are created by "paymongo dev" and cleaned up when the server stops.')
+      );
       console.log('');
     }
 
@@ -466,8 +489,14 @@ export async function showAction(id: string) {
     console.log(chalk.bold('ID:'), webhook.id);
     console.log(chalk.bold('URL:'), webhook.attributes.url);
     console.log(chalk.bold('Status:'), webhook.attributes.status);
-    console.log(chalk.bold('Created:'), new Date(webhook.attributes.created_at * 1000).toLocaleString());
-    console.log(chalk.bold('Updated:'), new Date(webhook.attributes.updated_at * 1000).toLocaleString());
+    console.log(
+      chalk.bold('Created:'),
+      new Date(webhook.attributes.created_at * 1000).toLocaleString()
+    );
+    console.log(
+      chalk.bold('Updated:'),
+      new Date(webhook.attributes.updated_at * 1000).toLocaleString()
+    );
     console.log('');
     console.log(chalk.bold('Events:'));
     webhook.attributes.events.forEach((event: string) => {

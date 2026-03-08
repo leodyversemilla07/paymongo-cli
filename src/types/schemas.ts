@@ -98,16 +98,16 @@ export function validateConfig(config: unknown): {
   errors?: string[];
 } {
   const result = PayMongoConfigSchema.safeParse(config);
-  
+
   if (result.success) {
     return { success: true, data: result.data };
   }
-  
+
   const errors = result.error.issues.map((err) => {
     const path = err.path.join('.');
     return path ? `${path}: ${err.message}` : err.message;
   });
-  
+
   return { success: false, errors };
 }
 
@@ -122,15 +122,15 @@ export function validatePartialConfig(config: unknown): {
   errors?: string[];
 } {
   const result = PartialPayMongoConfigSchema.safeParse(config);
-  
+
   if (result.success) {
     return { success: true, data: result.data };
   }
-  
+
   const errors = result.error.issues.map((err) => {
     const path = err.path.join('.');
     return path ? `${path}: ${err.message}` : err.message;
   });
-  
+
   return { success: false, errors };
 }

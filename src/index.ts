@@ -93,7 +93,10 @@ process.on('unhandledRejection', (reason) => {
   if (reason instanceof CommandError) {
     process.exit(1);
   }
-  console.error(chalk.red('An unexpected error occurred:'), reason instanceof Error ? reason.message : String(reason));
+  console.error(
+    chalk.red('An unexpected error occurred:'),
+    reason instanceof Error ? reason.message : String(reason)
+  );
   process.exit(1);
 });
 

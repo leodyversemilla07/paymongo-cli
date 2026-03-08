@@ -129,9 +129,9 @@ command
             if (!authtoken) {
               throw new Error(
                 'ngrok authtoken not found. Please either:\n' +
-                '  1. Set NGROK_AUTHTOKEN environment variable, or\n' +
-                '  2. Use --ngrok-token option: paymongo dev --ngrok-token YOUR_TOKEN\n' +
-                '  Get your token from: https://dashboard.ngrok.com/get-started/your-authtoken'
+                  '  1. Set NGROK_AUTHTOKEN environment variable, or\n' +
+                  '  2. Use --ngrok-token option: paymongo dev --ngrok-token YOUR_TOKEN\n' +
+                  '  Get your token from: https://dashboard.ngrok.com/get-started/your-authtoken'
               );
             }
 
@@ -341,7 +341,7 @@ command
       process.on('SIGTERM', cleanup);
 
       // Keep the process running
-      await new Promise(() => { }); // Never resolves
+      await new Promise(() => {}); // Never resolves
     } catch (error) {
       spinner.stop();
       const err = error as Error;

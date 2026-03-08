@@ -48,7 +48,9 @@ export async function sendWebhookEvent(options: { event?: string; url?: string; 
     }
 
     if (!webhookUrl) {
-      console.error(chalk.red('❌ No webhook URL provided. Use --url option or configure in .paymongo file'));
+      console.error(
+        chalk.red('❌ No webhook URL provided. Use --url option or configure in .paymongo file')
+      );
       throw new CommandError();
     }
 
@@ -260,16 +262,22 @@ export async function replayWebhookEvent(
       console.log(table.toString());
 
       if (events.length > 10) {
-        console.log(chalk.gray(`\n... and ${events.length - 10} more events. Use --list to see all.`));
+        console.log(
+          chalk.gray(`\n... and ${events.length - 10} more events. Use --list to see all.`)
+        );
       }
 
-      console.log(chalk.gray('\n💡 Use "paymongo trigger replay <eventId>" to replay a specific event'));
+      console.log(
+        chalk.gray('\n💡 Use "paymongo trigger replay <eventId>" to replay a specific event')
+      );
       return;
     }
 
     if (options.event && !eventId) {
       const events = await store.loadEvents();
-      const matchingEvents = events.filter((event: StoredWebhookEvent) => event.event === options.event);
+      const matchingEvents = events.filter(
+        (event: StoredWebhookEvent) => event.event === options.event
+      );
 
       if (matchingEvents.length === 0) {
         console.log(chalk.yellow(`No events found for type: ${options.event}`));
@@ -291,7 +299,9 @@ export async function replayWebhookEvent(
         );
       });
 
-      console.log(chalk.gray('\n💡 Use "paymongo trigger replay <eventId>" to replay a specific event'));
+      console.log(
+        chalk.gray('\n💡 Use "paymongo trigger replay <eventId>" to replay a specific event')
+      );
       return;
     }
 

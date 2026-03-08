@@ -148,7 +148,11 @@ export async function backupAction(options: { directory?: string; name?: string 
   const { spinner, configManager } = createConfigContext();
 
   try {
-    const config = await loadRequiredConfig(spinner, configManager, 'Loading current configuration...');
+    const config = await loadRequiredConfig(
+      spinner,
+      configManager,
+      'Loading current configuration...'
+    );
     if (!config) {
       return;
     }
@@ -264,7 +268,10 @@ export async function importAction(filePath: string, options: { force?: boolean 
     if (existingConfig) {
       spinner.start('Creating backup...');
       const backupPath = `.paymongo.backup.${Date.now()}.json`;
-      fs.writeFileSync(backupPath, JSON.stringify(configManager.mergeConfig(existingConfig, {}), null, 2));
+      fs.writeFileSync(
+        backupPath,
+        JSON.stringify(configManager.mergeConfig(existingConfig, {}), null, 2)
+      );
       spinner.succeed(`Backup created: ${backupPath}`);
     }
 

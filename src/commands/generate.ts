@@ -30,8 +30,15 @@ EXAMPLES
   .addCommand(
     new Command('webhook-handler')
       .description('Generate a webhook handler for specific events')
-      .option('-e, --events <events>', 'Comma-separated list of events (e.g., payment.paid,payment.failed)')
-      .option('-l, --language <language>', 'Programming language (javascript, typescript)', 'javascript')
+      .option(
+        '-e, --events <events>',
+        'Comma-separated list of events (e.g., payment.paid,payment.failed)'
+      )
+      .option(
+        '-l, --language <language>',
+        'Programming language (javascript, typescript)',
+        'javascript'
+      )
       .option('-f, --framework <framework>', 'Framework (express, fastify, hapi)', 'express')
       .option('-o, --output <file>', 'Output file path')
       .addHelpText(
@@ -57,7 +64,11 @@ EXAMPLES:
   .addCommand(
     new Command('payment-intent')
       .description('Generate payment intent creation code')
-      .option('-l, --language <language>', 'Programming language (javascript, typescript)', 'javascript')
+      .option(
+        '-l, --language <language>',
+        'Programming language (javascript, typescript)',
+        'javascript'
+      )
       .option('-m, --methods <methods>', 'Payment methods (card,gcash,paymaya,grab_pay,qrph)')
       .option('-o, --output <file>', 'Output file path')
       .addHelpText(
@@ -125,13 +136,13 @@ async function generateWebhookHandler(options: {
     const { input } = await import('@inquirer/prompts');
 
     if (options.events) {
-      events = options.events.split(',').map(e => e.trim());
+      events = options.events.split(',').map((e) => e.trim());
     } else {
       const eventInput = await input({
         message: 'Enter webhook events (comma-separated):',
         default: 'payment.paid,payment.failed',
       });
-      events = eventInput.split(',').map(e => e.trim());
+      events = eventInput.split(',').map((e) => e.trim());
     }
 
     // Validate events
@@ -144,7 +155,7 @@ async function generateWebhookHandler(options: {
       'qrph.expired',
     ];
 
-    const invalidEvents = events.filter(e => !validEvents.includes(e));
+    const invalidEvents = events.filter((e) => !validEvents.includes(e));
     if (invalidEvents.length > 0) {
       console.log(chalk.yellow(`Warning: Unknown events: ${invalidEvents.join(', ')}`));
       console.log(chalk.gray(`Valid events: ${validEvents.join(', ')}`));
@@ -178,7 +189,6 @@ async function generateWebhookHandler(options: {
     console.log(chalk.gray(`Events handled: ${events.join(', ')}`));
     console.log(chalk.gray(`Language: ${options.language}`));
     console.log(chalk.gray(`Framework: ${options.framework}`));
-
   } catch (error) {
     spinner.fail('Generation failed');
     console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
@@ -196,7 +206,7 @@ async function generatePaymentIntent(options: {
     // Get payment methods from options or use defaults
     let methods: string[] = ['card', 'gcash', 'paymaya'];
     if (options.methods) {
-      methods = options.methods.split(',').map(m => m.trim());
+      methods = options.methods.split(',').map((m) => m.trim());
     }
 
     // Generate code using extracted templates
@@ -227,17 +237,13 @@ async function generatePaymentIntent(options: {
     console.log('\n' + chalk.green('✅ Payment intent code generated successfully!'));
     console.log(chalk.gray(`Payment methods: ${methods.join(', ')}`));
     console.log(chalk.gray(`Language: ${options.language}`));
-
   } catch (error) {
     spinner.fail('Generation failed');
     console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
   }
 }
 
-async function generateCheckoutPage(options: {
-  language: string;
-  output?: string;
-}) {
+async function generateCheckoutPage(options: { language: string; output?: string }) {
   const spinner = new Spinner();
 
   try {
@@ -263,7 +269,6 @@ async function generateCheckoutPage(options: {
 
     console.log('\n' + chalk.green('✅ Checkout page generated successfully!'));
     console.log(chalk.gray(`Framework: ${options.language}`));
-
   } catch (error) {
     spinner.fail('Generation failed');
     console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));

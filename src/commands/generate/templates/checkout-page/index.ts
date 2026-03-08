@@ -6,7 +6,7 @@
  * HTML/Vanilla JS checkout page template
  */
 export function getHtmlTemplate(): string {
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -145,7 +145,7 @@ export function getHtmlTemplate(): string {
  * React checkout component template
  */
 export function getReactTemplate(): string {
-    return `import React, { useState } from 'react';
+  return `import React, { useState } from 'react';
 
 interface CheckoutFormProps {
   clientKey: string;
@@ -346,7 +346,7 @@ export default CheckoutForm;`;
  * Vue checkout component template
  */
 export function getVueTemplate(): string {
-    return `<template>
+  return `<template>
   <div class="checkout-container">
     <div class="checkout-form">
       <h2>Complete Your Payment</h2>
@@ -547,12 +547,12 @@ input {
  * Get checkout page template by framework
  */
 export function getCheckoutPageTemplate(language: string): { code: string; extension: string } {
-    switch (language) {
-        case 'react':
-            return { code: getReactTemplate(), extension: 'jsx' };
-        case 'vue':
-            return { code: getVueTemplate(), extension: 'vue' };
-        default:
-            return { code: getHtmlTemplate(), extension: 'html' };
-    }
+  switch (language) {
+    case 'react':
+      return { code: getReactTemplate(), extension: 'jsx' };
+    case 'vue':
+      return { code: getVueTemplate(), extension: 'vue' };
+    default:
+      return { code: getHtmlTemplate(), extension: 'html' };
+  }
 }

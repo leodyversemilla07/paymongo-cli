@@ -36,7 +36,11 @@ export class DevProcessManager {
       const content = await fs.readFile(STATE_FILE, 'utf-8');
       return JSON.parse(content) as DevProcessState;
     } catch (error: unknown) {
-      if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as NodeJS.ErrnoException).code === 'ENOENT'
+      ) {
         return null;
       }
       return null;
@@ -50,7 +54,11 @@ export class DevProcessManager {
     try {
       await fs.unlink(STATE_FILE);
     } catch (error: unknown) {
-      if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as NodeJS.ErrnoException).code === 'ENOENT'
+      ) {
         return;
       }
       // Ignore errors
@@ -101,10 +109,14 @@ export class DevProcessManager {
   static async readLogs(lines: number = 50): Promise<string[]> {
     try {
       const content = await fs.readFile(LOG_FILE, 'utf-8');
-      const allLines = content.split('\n').filter(line => line.trim());
+      const allLines = content.split('\n').filter((line) => line.trim());
       return allLines.slice(-lines);
     } catch (error: unknown) {
-      if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as NodeJS.ErrnoException).code === 'ENOENT'
+      ) {
         return [];
       }
       return [];
@@ -118,7 +130,11 @@ export class DevProcessManager {
     try {
       await fs.writeFile(LOG_FILE, '');
     } catch (error: unknown) {
-      if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as NodeJS.ErrnoException).code === 'ENOENT'
+      ) {
         return;
       }
       // Ignore errors
@@ -130,7 +146,7 @@ export class DevProcessManager {
    */
   static formatUptime(startedAt: number): string {
     const seconds = Math.floor((Date.now() - startedAt) / 1000);
-    
+
     if (seconds < 60) {
       return `${seconds}s`;
     } else if (seconds < 3600) {

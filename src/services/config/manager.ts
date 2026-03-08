@@ -149,14 +149,14 @@ export class ConfigManager {
   private validateConfig(config: unknown): asserts config is PayMongoConfig {
     // Use Zod for comprehensive schema validation
     const result = zodValidateConfig(config);
-    
+
     if (!result.success && result.errors) {
       // Throw the first validation error with field context
       const firstError = result.errors[0] || 'Invalid configuration';
       const field = firstError.includes(':') ? firstError.split(':')[0] : undefined;
       throw new ValidationError(firstError, field);
     }
-    
+
     // API keys are validated at command level to allow initial setup/reset
   }
 

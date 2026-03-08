@@ -51,7 +51,11 @@ class WebhookEventStore {
       const data = await fs.readFile(this.storePath, 'utf-8');
       return JSON.parse(data);
     } catch (error) {
-      if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as NodeJS.ErrnoException).code === 'ENOENT'
+      ) {
         return [];
       }
       return [];
@@ -72,7 +76,11 @@ class WebhookEventStore {
     try {
       await fs.unlink(this.storePath);
     } catch (error) {
-      if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as NodeJS.ErrnoException).code === 'ENOENT'
+      ) {
         return;
       }
       console.warn('Failed to clear webhook events:', error);

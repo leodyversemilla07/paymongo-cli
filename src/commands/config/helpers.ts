@@ -24,7 +24,9 @@ export function createConfigContext(): { spinner: Spinner; configManager: Config
   };
 }
 
-export function showNoConfigMessage(message: string = "Run 'paymongo init' to set up your project first."): void {
+export function showNoConfigMessage(
+  message: string = "Run 'paymongo init' to set up your project first."
+): void {
   console.log(chalk.yellow('No PayMongo configuration found.'));
   console.log(chalk.gray(message));
 }
@@ -175,7 +177,9 @@ export function coerceConfigValue(value: string): boolean | number | string {
   return value;
 }
 
-export function ensureRateLimitingConfig(config: PayMongoConfig): NonNullable<PayMongoConfig['rateLimiting']> {
+export function ensureRateLimitingConfig(
+  config: PayMongoConfig
+): NonNullable<PayMongoConfig['rateLimiting']> {
   if (!config.rateLimiting) {
     config.rateLimiting = {
       enabled: true,

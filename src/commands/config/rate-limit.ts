@@ -162,8 +162,12 @@ export async function rateLimitStatusAction() {
     console.log('');
     console.log(chalk.gray('Commands:'));
     console.log(chalk.gray("• 'paymongo config rate-limit disable' - Disable rate limiting"));
-    console.log(chalk.gray("• 'paymongo config rate-limit set-max-requests <n>' - Set max requests"));
-    console.log(chalk.gray("• 'paymongo config rate-limit set-window <seconds>' - Set time window"));
+    console.log(
+      chalk.gray("• 'paymongo config rate-limit set-max-requests <n>' - Set max requests")
+    );
+    console.log(
+      chalk.gray("• 'paymongo config rate-limit set-window <seconds>' - Set time window")
+    );
   } catch (error) {
     spinner.stop();
     const err = error as Error;

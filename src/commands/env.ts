@@ -72,7 +72,9 @@ command
               if (error instanceof ApiKeyError) {
                 console.log(chalk.gray('The API keys appear to be invalid or expired.'));
               } else if (error instanceof NetworkError) {
-                console.log(chalk.gray('Network connectivity issue. Please check your internet connection.'));
+                console.log(
+                  chalk.gray('Network connectivity issue. Please check your internet connection.')
+                );
               } else if (error instanceof PayMongoError) {
                 if (error.statusCode && error.statusCode >= 500) {
                   console.log(chalk.gray('PayMongo API is currently unavailable.'));

@@ -6,7 +6,7 @@
  * TypeScript payment intent creation template
  */
 export function getPaymentIntentTemplate(methods: string[]): string {
-    return `import axios from 'axios';
+  return `import axios from 'axios';
 
 interface PaymentIntent {
   id: string;

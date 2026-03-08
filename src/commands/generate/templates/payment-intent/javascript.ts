@@ -6,7 +6,7 @@
  * JavaScript payment intent creation template
  */
 export function getPaymentIntentTemplate(methods: string[]): string {
-    return `const axios = require('axios');
+  return `const axios = require('axios');
 
 // PayMongo API credentials
 const PAYMONGO_SECRET_KEY = process.env.PAYMONGO_SECRET_KEY;

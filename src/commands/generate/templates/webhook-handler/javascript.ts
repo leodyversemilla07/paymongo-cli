@@ -6,24 +6,24 @@
  * Generate event handler switch cases
  */
 function generateEventHandlers(events: string[]): string {
-    return events
-        .map(
-            (event) => `
+  return events
+    .map(
+      (event) => `
   case '${event}':
     console.log('Processing ${event} event:', data);
     // Add your ${event} handling logic here
     break;`
-        )
-        .join('');
+    )
+    .join('');
 }
 
 /**
  * Express.js webhook handler template
  */
 export function expressTemplate(events: string[]): string {
-    const eventHandlers = generateEventHandlers(events);
+  const eventHandlers = generateEventHandlers(events);
 
-    return `const express = require('express');
+  return `const express = require('express');
 const crypto = require('crypto');
 
 const app = express();
@@ -92,9 +92,9 @@ app.listen(PORT, () => {
  * Fastify webhook handler template
  */
 export function fastifyTemplate(events: string[]): string {
-    const eventHandlers = generateEventHandlers(events);
+  const eventHandlers = generateEventHandlers(events);
 
-    return `const fastify = require('fastify')({ logger: true });
+  return `const fastify = require('fastify')({ logger: true });
 const crypto = require('crypto');
 
 // Webhook secret from PayMongo dashboard
@@ -166,9 +166,9 @@ start();`;
  * Generic/vanilla Node.js webhook handler template
  */
 export function genericTemplate(events: string[]): string {
-    const eventHandlers = generateEventHandlers(events);
+  const eventHandlers = generateEventHandlers(events);
 
-    return `// Simple webhook handler for ${events.join(', ')}
+  return `// Simple webhook handler for ${events.join(', ')}
 
 const crypto = require('crypto');
 
@@ -236,12 +236,12 @@ module.exports = { handleWebhook };`;
  * Get JavaScript webhook handler template by framework
  */
 export function getWebhookHandlerTemplate(events: string[], framework: string): string {
-    switch (framework) {
-        case 'express':
-            return expressTemplate(events);
-        case 'fastify':
-            return fastifyTemplate(events);
-        default:
-            return genericTemplate(events);
-    }
+  switch (framework) {
+    case 'express':
+      return expressTemplate(events);
+    case 'fastify':
+      return fastifyTemplate(events);
+    default:
+      return genericTemplate(events);
+  }
 }

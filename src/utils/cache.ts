@@ -81,7 +81,7 @@ export class Cache {
     try {
       const fileNames = await fs.readdir(this.cacheDir);
       const files: FileInfo[] = [];
-      
+
       for (const file of fileNames) {
         const filePath = path.join(this.cacheDir, file);
         const stats = await fs.stat(filePath);
@@ -92,7 +92,7 @@ export class Cache {
           size: stats.size,
         });
       }
-      
+
       // Sort by modification time (oldest first)
       files.sort((a, b) => a.mtime - b.mtime);
 
@@ -122,7 +122,7 @@ export class Cache {
       } catch {
         return null;
       }
-      
+
       if (await this.isExpired(cachePath)) {
         return null;
       }
@@ -162,9 +162,7 @@ export class Cache {
     await this.initialized;
     try {
       const files = await fs.readdir(this.cacheDir);
-      await Promise.all(
-        files.map((file) => fs.unlink(path.join(this.cacheDir, file)))
-      );
+      await Promise.all(files.map((file) => fs.unlink(path.join(this.cacheDir, file))));
     } catch {
       // Ignore clear errors
     }

@@ -186,7 +186,9 @@ export class DevServer {
       ) as string[];
 
       if (webhookId && secretKeys.length > 0) {
-        this.logger.warning(`No webhook secret found for id ${webhookId}. Update your configuration.`);
+        this.logger.warning(
+          `No webhook secret found for id ${webhookId}. Update your configuration.`
+        );
         return false;
       }
     }

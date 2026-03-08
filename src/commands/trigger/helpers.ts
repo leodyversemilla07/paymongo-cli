@@ -46,7 +46,10 @@ export const AVAILABLE_TRIGGER_EVENTS = [
 ] as const;
 
 export function buildSignatureHeader(
-  config: { webhookSecrets?: Record<string, string>; registeredWebhooks?: { id: string; url: string }[] } | null,
+  config: {
+    webhookSecrets?: Record<string, string>;
+    registeredWebhooks?: { id: string; url: string }[];
+  } | null,
   webhookUrl: string,
   body: string
 ): string | undefined {
@@ -73,7 +76,10 @@ export function buildSignatureHeader(
   }
 
   const timestamp = Math.floor(Date.now() / 1000).toString();
-  const signature = crypto.createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex');
+  const signature = crypto
+    .createHmac('sha256', secret)
+    .update(`${timestamp}.${body}`)
+    .digest('hex');
   const parts = [`t=${timestamp}`, `te=${signature}`];
   if (webhookId) {
     parts.push(`li=${webhookId}`);
@@ -83,7 +89,10 @@ export function buildSignatureHeader(
 }
 
 export async function sendWebhookRequest(
-  config: { webhookSecrets?: Record<string, string>; registeredWebhooks?: { id: string; url: string }[] } | null,
+  config: {
+    webhookSecrets?: Record<string, string>;
+    registeredWebhooks?: { id: string; url: string }[];
+  } | null,
   webhookUrl: string,
   payload: WebhookPayload | StoredWebhookEvent['payload']
 ) {
