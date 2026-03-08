@@ -19,6 +19,19 @@ const DevConfigSchema = z.object({
   verifyWebhookSignatures: z.boolean(),
 });
 
+const RateLimitEndpointSchema = z.object({
+  maxRequests: z.number().int().min(1),
+  windowMs: z.number().int().min(1),
+});
+
+const RateLimitingSchema = z.object({
+  enabled: z.boolean(),
+  maxRequests: z.number().int().min(1),
+  windowMs: z.number().int().min(1),
+  environmentMultiplier: z.number().positive().optional(),
+  endpoints: z.record(z.string(), RateLimitEndpointSchema).optional(),
+});
+
 // Main PayMongo config schema
 export const PayMongoConfigSchema = z.object({
   version: z.string().min(1, 'Version is required'),
@@ -33,6 +46,7 @@ export const PayMongoConfigSchema = z.object({
   webhooks: WebhooksConfigSchema,
   webhookSecrets: z.record(z.string(), z.string()).optional(),
   dev: DevConfigSchema,
+  rateLimiting: RateLimitingSchema.optional(),
   team: z
     .object({
       name: z.string().optional(),

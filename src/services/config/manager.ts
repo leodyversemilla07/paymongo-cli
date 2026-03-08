@@ -141,7 +141,7 @@ export class ConfigManager {
       dev: {
         port: 3000,
         autoRegisterWebhook: true,
-        verifyWebhookSignatures: false, // Default to false for development ease
+        verifyWebhookSignatures: true,
       },
     };
   }

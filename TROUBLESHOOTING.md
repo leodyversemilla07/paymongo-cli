@@ -117,14 +117,19 @@ This guide provides solutions to common issues you might encounter while using t
 
 ### Webhook signature verification failed
 
-**Issue**: CLI logs `Warning: Invalid webhook signature`.
+**Issue**: CLI rejects requests with `Invalid webhook signature`.
 **Solution**:
 
 - If you're using `paymongo dev`, the secret should be handled automatically.
 - Ensure your local app isn't modifying the raw request body before it reaches the verification logic.
-- If you don't need verification for local dev, disable it:
+- New projects enable verification by default.
+- If you are sending unsigned requests for manual local testing, disable it temporarily:
   ```bash
-  paymongo config set dev.verifyWebhookSignatures false
+  paymongo config set dev.verifySignatures false
+  ```
+- Re-enable it after testing:
+  ```bash
+  paymongo config set dev.verifySignatures true
   ```
 
 ### Local network access

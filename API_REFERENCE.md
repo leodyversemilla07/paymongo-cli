@@ -242,7 +242,7 @@ This file is typically located in your project root.
   "dev": {
     "port": 3000,
     "autoRegisterWebhook": true,
-    "verifyWebhookSignatures": false
+    "verifyWebhookSignatures": true
   }
 }
 ```

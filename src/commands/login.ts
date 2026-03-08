@@ -230,7 +230,7 @@ command
         },
         webhooks: { url: '', events: [] },
         webhookSecrets: {},
-        dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
+        dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: true },
       };
 
       const apiClient = new ApiClient({ config: tempConfig });

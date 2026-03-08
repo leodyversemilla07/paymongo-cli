@@ -102,7 +102,7 @@ paymongo-cli/
 ├── bin/                # CLI Entry points
 ├── src/
 │   ├── commands/       # Commander.js command implementations
-│   ├── services/       # Core business logic (API, Config, GitHub)
+│   ├── services/       # Core business logic (API, Config, Dev, Analytics, Team)
 │   ├── utils/          # Shared utilities (Errors, Logging, Validators)
 │   ├── types/          # TypeScript definitions
 │   └── index.ts        # CLI Application initialization
@@ -148,7 +148,7 @@ try {
 ### 2. Security
 
 - **Credentials**: Sensitive data like API keys should **never** be logged or hardcoded.
-- **Encryption**: Global credentials are stored at `~/.paymongo/credentials.enc` using AES-256-CBC. Use the `CredentialsManager` service for access.
+- **Encryption**: Global credentials are stored at `~/.paymongo/credentials.enc` using AES-256-GCM. Use `CredentialManager` for access.
 - **Git**: Ensure `.paymongo` and `.env` remain in `.gitignore`.
 
 ### 3. Performance

@@ -23,7 +23,7 @@ PayMongo CLI is a powerful command-line interface that streamlines the PayMongo 
 
 - **Test Webhooks Locally**: No more deploying to staging just to test a webhook.
 - **Manage Payments**: Create and monitor payment intents directly from your terminal.
-- **Collaborate**: Sync configurations with your team via GitHub.
+- **Collaborate**: Share API key bundles with your team locally.
 
 ---
 
@@ -49,14 +49,14 @@ The CLI uses **ngrok** to create a secure tunnel from the internet to your local
 
 1.  Sign up for a free account at [ngrok.com](https://ngrok.com).
 2.  Get your **Authtoken** from the [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken).
-3.  Configure the token in the CLI:
+3.  Configure the token via environment variable or a per-run flag:
 
 ```bash
-# Method 1: CLI Configuration (Recommended)
-paymongo config set ngrok.authtoken YOUR_AUTHTOKEN
-
-# Method 2: Environment Variable
+# Method 1: Environment Variable
 export NGROK_AUTHTOKEN=YOUR_AUTHTOKEN
+
+# Method 2: Per-run flag
+paymongo dev --ngrok-token YOUR_AUTHTOKEN
 ```
 
 ---
@@ -248,7 +248,7 @@ Set a configuration value.
 ```bash
 paymongo config set dev.port 4000
 paymongo config set environment live
-paymongo config set ngrok.authtoken YOUR_TOKEN
+export NGROK_AUTHTOKEN=YOUR_TOKEN
 ```
 
 ##### `config reset`
@@ -366,42 +366,40 @@ Create a new payment intent.
 
 #### `paymongo team`
 
-**Purpose**: Team collaboration features via GitHub.
+**Purpose**: Team collaboration via shareable API key bundles.
 
-**Authentication**: GitHub token required for sync operations.
+**Authentication**: No GitHub auth required; uses your local PayMongo config.
 
 **Subcommands**:
 
-##### `team sync`
+##### `team share-keys`
 
-Sync configuration with team repository.
+Generate a shareable API key bundle for one or more environments.
 
-| Option                        | Description                    |
-| :---------------------------- | :----------------------------- |
-| `-r, --repo <repo>`           | GitHub repository (owner/repo) |
-| `-b, --branch <branch>`       | Branch, default: main          |
-| `-f, --force`                 | Force overwrite                |
-| `-d, --direction <direction>` | sync/push/pull, default: sync  |
+| Option              | Description                            |
+| :------------------ | :------------------------------------- |
+| `-e, --env <envs>`  | Environments to share (`test,live`)    |
+| `-c, --copy`        | Copy the bundle to clipboard if possible |
 
-##### `team auth`
+##### `team import-keys`
 
-Set up GitHub authentication.
+Import a shared API key bundle from another teammate.
 
-| Option                | Description                  |
-| :-------------------- | :--------------------------- |
-| `-t, --token <token>` | GitHub Personal Access Token |
+| Option              | Description                        |
+| :------------------ | :--------------------------------- |
+| `-f, --force`       | Overwrite existing keys if needed  |
 
-##### `team invite <email>`
+##### `team list-members`
 
-Invite team member.
+List locally tracked team members and shared key history.
 
-| Option              | Description                         |
-| :------------------ | :---------------------------------- |
-| `-r, --role <role>` | Role assignment, default: developer |
+##### `team rename <name>`
 
-##### `team members`
+Rename the local team.
 
-List team members (shows repository info).
+##### `team remove-member <memberName>`
+
+Remove a tracked team member.
 
 ---
 
@@ -416,7 +414,7 @@ List team members (shows repository info).
 | `config`   | No                    | Local configuration only          |
 | `webhooks` | Yes                   | All webhook operations            |
 | `payments` | Yes                   | All payment operations            |
-| `team`     | GitHub token for sync | Team features require GitHub auth |
+| `team`     | No                    | Shares/imports API key bundles locally |
 
 ### Command Dependencies
 
@@ -442,6 +440,16 @@ For security, PayMongo signs webhook events. The CLI supports verifying these si
     - The CLI stores this secret in `.paymongo` under `webhookSecrets`.
     - For every incoming request, the CLI validates the `paymongo-signature` header using `HMAC SHA256`.
     - If the signature is invalid, the CLI logs a warning and returns a `401 Unauthorized` status.
+3.  **Manual testing note**:
+    - New configs enable signature verification by default.
+    - If you are sending unsigned local test requests manually, temporarily disable verification:
+      ```bash
+      paymongo config set dev.verifySignatures false
+      ```
+    - Re-enable it once your webhook secret is available:
+      ```bash
+      paymongo config set dev.verifySignatures true
+      ```
 
 ### File Structure and Configuration
 
@@ -449,22 +457,22 @@ The CLI manages configuration at both the project and system levels:
 
 - **Project Level (`.paymongo`)**: Stores project-specific settings like the development port, active webhook IDs, and webhook secrets.
 - **Environment (`.env`)**: Standard environment variables (`PAYMONGO_SECRET_KEY`, etc.) for your application to use.
-- **System Level (`~/.paymongo/credentials.enc`)**: Stores your global API keys securely using AES-256-CBC encryption. This allows you to switch projects without re-authenticating.
+- **System Level (`~/.paymongo/credentials.enc`)**: Stores your global API keys securely using AES-256-GCM encryption. This allows you to switch projects without re-authenticating.
 
 ### Team Collaboration
 
-Sync your PayMongo configuration across your team using GitHub.
+Share API keys with your team using generated bundles.
 
-1.  **Authenticate with GitHub**:
+1.  **Generate a bundle**:
     ```bash
-    paymongo team auth --token YOUR_GITHUB_PAT
+    paymongo team share-keys --env test
     ```
-2.  **Sync Configuration**:
+2.  **Import it on a teammate machine**:
     ```bash
-    paymongo team sync --repo owner/repo
+    paymongo team import-keys
     ```
 
-This allows everyone on the team to use the same project settings without sharing secrets over insecure channels.
+This keeps sharing explicit and avoids requiring GitHub-based sync for secrets.
 
 ---
 
@@ -472,11 +480,11 @@ This allows everyone on the team to use the same project settings without sharin
 
 | Issue                     | Solution                                                                                                         |
 | :------------------------ | :--------------------------------------------------------------------------------------------------------------- |
-| **ngrok authtoken error** | Run `paymongo config set ngrok.authtoken YOUR_TOKEN`.                                                            |
+| **ngrok authtoken error** | Set `NGROK_AUTHTOKEN` or run `paymongo dev --ngrok-token YOUR_TOKEN`.                                           |
 | **Connection Refused**    | Ensure your local app is running on the specified port (default: 3000).                                          |
 | **Invalid API Key**       | Run `paymongo login` to update your credentials globally.                                                        |
 | **Webhook not received**  | Check if the tunnel URL is active in the `paymongo dev` logs and registered in your PayMongo dashboard.          |
-| **Signature Fail**        | Ensure `dev.verifyWebhookSignatures` is `false` if you haven't synced your secrets or are using manual webhooks. |
+| **Signature Fail**        | If you are sending unsigned local test requests, run `paymongo config set dev.verifySignatures false`, then re-enable it once secrets are configured. |
 
 ---
 

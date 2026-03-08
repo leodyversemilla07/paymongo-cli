@@ -17,10 +17,10 @@ PayMongo CLI is the official-feel command-line tool designed to streamline your 
 - **Payment Testing**: Create and monitor payment intents and payments directly from your terminal.
 - **Real-time Monitoring**: Watch webhook events as they happen with formatted terminal logs.
 - **Privacy-First Analytics**: Optional local webhook event tracking to improve your development workflow (opt-in only).
-- **Team Collaboration**: Sync configurations across your team using GitHub integration.
+- **Team Collaboration**: Share API key bundles with teammates for test/live environments.
 - **Bulk Operations**: Import/export payments and webhooks for easy migration between environments.
 - **Rate Limiting Protection**: Built-in API abuse prevention with configurable limits and automatic backoff.
-- **Secure Management**: Encrypted storage for your API keys.
+- **Secure Management**: Local credential encryption for stored login sessions.
 
 ---
 
@@ -43,10 +43,12 @@ To use the `dev` server with webhook forwarding, you need an ngrok authtoken:
 
 1. Sign up at [ngrok.com](https://ngrok.com)
 2. Copy your authtoken from the [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken)
-3. Configure it in the CLI:
+3. Configure it via environment variable or pass it at runtime:
 
 ```bash
-paymongo config set ngrok.authtoken YOUR_AUTHTOKEN
+export NGROK_AUTHTOKEN=YOUR_AUTHTOKEN
+# or
+paymongo dev --ngrok-token YOUR_AUTHTOKEN
 ```
 
 ---
@@ -168,7 +170,7 @@ Analytics data helps you:
 | `paymongo config`            | View and modify CLI configuration.                      |
 | `paymongo config analytics`  | Configure webhook analytics settings.                   |
 | `paymongo config rate-limit` | Configure rate limiting settings.                       |
-| `paymongo team`              | Sync configurations with your team via GitHub.          |
+| `paymongo team`              | Share API key bundles with your team.                   |
 | `paymongo trigger`           | Simulate webhook events locally for testing.            |
 
 > Use `paymongo <command> --help` for detailed information on any command.

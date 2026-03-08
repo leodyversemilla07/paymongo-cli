@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-PayMongo CLI is a developer-first command-line tool for PayMongo payment integration with local webhook forwarding. It uses **ESM modules** with Commander.js for CLI commands and provides both terminal and web-based interfaces.
+PayMongo CLI is a developer-first command-line tool for PayMongo payment integration with local webhook forwarding. It uses **ESM modules** with Commander.js for CLI commands and provides a terminal-first interface.
 
-**Tech Stack**: TypeScript, Node.js 18+, Express, Socket.io, ngrok, Axios, Zod, Winston, Jest
+**Tech Stack**: TypeScript, Node.js 20+, Commander.js, built-in `http`, `undici`, ngrok, Zod, Jest
 
 ---
 
@@ -134,8 +134,10 @@ src/
 ├── services/         # Business logic
 │   ├── api/         # PayMongo API client
 │   ├── config/      # Configuration management
-│   ├── web/         # Express + Socket.io server
-│   └── github/      # GitHub integration
+│   ├── dev/         # Local dev server + process management
+│   ├── analytics/   # Local webhook analytics
+│   ├── payments/    # Payment simulation helpers
+│   └── team/        # Team key-sharing workflows
 ├── types/           # TypeScript definitions + Zod schemas
 ├── utils/           # Shared utilities
 └── index.ts         # CLI entry point
@@ -174,8 +176,8 @@ tests/
 Use `jest.unstable_mockModule()` before dynamic imports:
 
 ```typescript
-jest.unstable_mockModule('axios', () => ({
-  default: mockAxios,
+jest.unstable_mockModule('undici', () => ({
+  request: mockRequest,
 }));
 
 const { ApiClient } = await import('../../src/services/api/client.js');

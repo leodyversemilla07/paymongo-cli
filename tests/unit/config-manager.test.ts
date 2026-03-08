@@ -96,7 +96,7 @@ describe('ConfigManager', () => {
       expect(defaultConfig.environment).toBe('test');
       expect(defaultConfig.dev.port).toBe(3000);
       expect(defaultConfig.dev.autoRegisterWebhook).toBe(true);
-      expect(defaultConfig.dev.verifyWebhookSignatures).toBe(false);
+      expect(defaultConfig.dev.verifyWebhookSignatures).toBe(true);
       expect(defaultConfig.webhooks.events).toEqual(['payment.paid', 'payment.failed']);
     });
   });

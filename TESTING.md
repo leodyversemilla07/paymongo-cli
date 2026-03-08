@@ -4,12 +4,12 @@
 
 This document tracks the progress of improving test coverage for the PayMongo CLI project from the initial ~12% to the target 80-85%.
 
-## Current Status (2026-01-25)
+## Current Status (2026-03-08)
 
-- **Overall Coverage**: ~65-70% statements (estimated post-all command testing completion)
+- **Overall Coverage**: strong command and service coverage with full green suite
 - **Target**: ≥80% statements/branches/functions/lines
 - **Progress**: API client, init command, config command, login command, dev command, env command, trigger command, webhooks command, CLI entry point, and payments command testing completed
-- **Total Tests**: 380 passing tests across 23 test suites
+- **Total Tests**: 459 passing tests across 29 test suites
 
 ## Completed Work
 
@@ -79,9 +79,8 @@ This document tracks the progress of improving test coverage for the PayMongo CL
   - Resolved testing challenges: crypto timingSafeEqual mocking, HTTP request/response simulation, ESM module mocking for complex dependencies
 
 - **CLI Entry Point Testing**: ✅ **COMPLETED**
-  - Created integration tests in `tests/unit/index.test.ts` with 3 test cases
   - Tests verify CLI initialization, help display, version information, and error handling
-  - Uses subprocess spawning to test actual CLI behavior rather than complex module mocking
+  - Uses in-process execution instead of subprocess spawning for sandbox-friendly test runs
 
 - **Payments Command Testing**: ✅ **COMPLETED**
   - Created comprehensive test file `tests/unit/payments-command.test.ts` with 20 test cases achieving 100% coverage
@@ -195,7 +194,7 @@ This document tracks the progress of improving test coverage for the PayMongo CL
 
 1. **ESM Mocking Complexity**: Required careful setup of `jest.unstable_mockModule()` for modern ES modules
 2. **Interceptor Testing**: Needed to test interceptor functions directly rather than through full API calls
-3. **Error Handler Mocking**: Complex to mock axios.isAxiosError in interceptor context
+3. **Network Layer Mocking**: `undici` request/response behavior requires careful ESM mocking
 4. **Commander.js Testing**: Resolved by extracting command action logic to separate exported function for direct testing
 5. **Console Mocking**: Required global.console usage for reliable spy functionality across test suites
 6. **ESM Module Resolution**: Fixed import path issues in tests by using '../../src/' prefix for consistency
@@ -219,4 +218,4 @@ This document tracks the progress of improving test coverage for the PayMongo CL
 
 ---
 
-_Last updated: 2026-01-25_
+_Last updated: 2026-03-08_

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.8] - 2026-03-08
+
+### Changed
+
+- **Command Modularization** - Refactored the large `config`, `payments`, `webhooks`, and `trigger` command files into focused helper/action modules to improve maintainability and make future changes safer.
+- **Test Execution** - Reworked CLI entry/config integration tests to avoid subprocess spawning in restricted environments while preserving end-to-end behavior checks.
+- **Documentation Alignment** - Updated README, installation, user guide, troubleshooting, testing, and contributor guidance to match the current Node 20+ runtime, `undici` network layer, ngrok token handling, and local team key-sharing workflow.
+
+### Fixed
+
+- **Config Validation Drift** - Added `rateLimiting` to the Zod configuration schema so runtime validation matches the declared config type and command behavior.
+- **CLI Test Reliability** - Eliminated environment-specific `EPERM` failures in spawn-based tests by switching to sandbox-friendly execution patterns.
+- **Release Metadata** - Synchronized package metadata by updating the npm package version and lockfile version fields to the current release line.
+
+### Security
+
+- **Webhook Verification Defaults** - New configs now enable webhook signature verification by default, and the dev server now rejects requests when verification is enabled but no webhook secret is configured.
+- **Secret Messaging** - Clarified CLI messaging around webhook secret storage to describe the actual `.paymongo` storage location.
+
 ## [1.4.7] - 2026-02-27
 
 ### Changed

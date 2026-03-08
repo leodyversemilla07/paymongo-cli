@@ -192,8 +192,8 @@ export class DevServer {
     }
 
     if (secretKeys.length === 0) {
-      this.logger.warning('Signature verification enabled but no webhook secrets configured');
-      return true; // Allow requests when no secrets are configured yet
+      this.logger.failure('Signature verification enabled but no webhook secrets are configured');
+      return false;
     }
 
     // Try to verify with each available secret

@@ -231,6 +231,14 @@ command
           console.log(chalk.blue('ℹ️'), 'You can still test webhooks manually:');
           console.log(chalk.gray(`   Webhook URL: ${webhookUrl}`));
           console.log(chalk.gray('   Copy this URL to your PayMongo dashboard'));
+          if (config.dev.verifyWebhookSignatures) {
+            console.log(chalk.gray('   Signature verification is currently enabled'));
+            console.log(
+              chalk.gray(
+                '   For manual unsigned testing, run: paymongo config set dev.verifySignatures false'
+              )
+            );
+          }
           console.log('');
 
           if (err.message.includes('API key') || err.message.includes('unauthorized')) {

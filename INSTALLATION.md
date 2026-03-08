@@ -93,9 +93,11 @@ Webhook forwarding requires [ngrok](https://ngrok.com). While the CLI manages th
 2. **Get your Token**: Navigate to [Your Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken) in the dashboard.
 3. **Configure the CLI**:
    ```bash
-   paymongo config set ngrok.authtoken YOUR_AUTHTOKEN
+   export NGROK_AUTHTOKEN=YOUR_AUTHTOKEN
+   # or pass it when starting the dev tunnel
+   paymongo dev --ngrok-token YOUR_AUTHTOKEN
    ```
-   _Alternatively, set the `NGROK_AUTHTOKEN` environment variable._
+   _The CLI currently reads the `NGROK_AUTHTOKEN` environment variable or the `--ngrok-token` flag._
 
 ---
 

@@ -1,8 +1,9 @@
-import ConfigManager from '../../src/services/config/manager';
-import { PayMongoConfig } from '../../src/types/paymongo';
+import ConfigManager from '../../src/services/config/manager.js';
+import { PayMongoConfig } from '../../src/types/paymongo.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { validateConfig } from '../../src/types/schemas.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -118,6 +119,42 @@ describe('ConfigManager', () => {
 
       // Should handle error gracefully
       await expect(configManager.load()).rejects.toThrow();
+    });
+
+    it('should accept rate limiting config through schema validation', () => {
+      const config: PayMongoConfig = {
+        version: '1.0',
+        projectName: 'Rate Limited Project',
+        environment: 'test',
+        apiKeys: {},
+        webhooks: {
+          url: 'http://localhost:3000/webhook',
+          events: ['payment.paid'],
+        },
+        webhookSecrets: {},
+        dev: {
+          port: 3000,
+          autoRegisterWebhook: true,
+          verifyWebhookSignatures: false,
+        },
+        rateLimiting: {
+          enabled: true,
+          maxRequests: 100,
+          windowMs: 60000,
+          environmentMultiplier: 0.5,
+          endpoints: {
+            '/webhooks': {
+              maxRequests: 20,
+              windowMs: 60000,
+            },
+          },
+        },
+      };
+
+      const result = validateConfig(config);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.rateLimiting?.endpoints?.['/webhooks']?.maxRequests).toBe(20);
     });
   });
 

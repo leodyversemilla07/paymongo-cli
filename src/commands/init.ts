@@ -167,7 +167,7 @@ export async function initAction(options: InitOptions) {
       dev: {
         port: answers.port,
         autoRegisterWebhook: true,
-        verifyWebhookSignatures: false, // Default to false for development ease
+        verifyWebhookSignatures: true,
       },
     };
 

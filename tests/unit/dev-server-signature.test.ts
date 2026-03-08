@@ -47,9 +47,9 @@ describe('DevServer signature verification', () => {
     expect(callVerify(server, 'bad-format')).toBe(false);
   });
 
-  it('returns true when no secrets configured (verification enabled)', () => {
+  it('returns false when no secrets configured (verification enabled)', () => {
     const server = new DevServer(3000, config);
-    expect(callVerify(server, 't=123,te=abc')).toBe(true);
+    expect(callVerify(server, 't=123,te=abc')).toBe(false);
   });
 
   it('returns true for valid signature with matching webhook secret', () => {
