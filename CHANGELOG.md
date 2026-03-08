@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.11] - 2026-03-08
+
+### Changed
+
+- **README Positioning** - Reframed the project around its core developer use case: local webhook testing, payment intent workflows, and PayMongo integration debugging.
+- **Quick Start** - Added a `payments attach` example to the README to reflect the current Payment Intent workflow exposed by the CLI.
+- **Repository Metadata** - Updated the GitHub repository description to match the CLI's actual product positioning and primary use cases.
+
 ## [1.4.10] - 2026-03-08
 
 ### Changed

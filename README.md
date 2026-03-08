@@ -1,8 +1,8 @@
 # PayMongo CLI
 
-> **A developer-first CLI for PayMongo integration with local webhook forwarding.**
+> **A developer CLI for PayMongo local webhook testing, payment intent workflows, and integration debugging.**
 
-PayMongo CLI is the official-feel command-line tool designed to streamline your development process with PayMongo. It solves the biggest pain point in payment integration: **testing webhooks locally**.
+PayMongo CLI is a terminal-first tool for developers integrating PayMongo. It is built to shorten the feedback loop around **local webhook testing**, **payment intent workflows**, and **integration debugging** without living in the dashboard.
 
 [![npm version](https://img.shields.io/npm/v/paymongo-cli.svg)](https://www.npmjs.com/package/paymongo-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -13,11 +13,11 @@ PayMongo CLI is the official-feel command-line tool designed to streamline your 
 ## Key Features
 
 - **Local Webhook Forwarding**: Seamlessly receive PayMongo webhooks on your localhost using integrated `ngrok` tunneling.
+- **Webhook Triggering and Replay**: Simulate and inspect PayMongo webhook events during development.
+- **Payment Intent Workflows**: Create intents, attach payment methods, capture authorized payments, and create refunds from the terminal.
 - **Zero-Config Setup**: Get started in seconds with `paymongo init`.
-- **Payment Testing**: Create and monitor payment intents and payments directly from your terminal.
 - **Real-time Monitoring**: Watch webhook events as they happen with formatted terminal logs.
 - **Privacy-First Analytics**: Optional local webhook event tracking to improve your development workflow (opt-in only).
-- **Team Collaboration**: Share API key bundles with teammates for test/live environments.
 - **Bulk Operations**: Import/export payments and webhooks for easy migration between environments.
 - **Rate Limiting Protection**: Built-in API abuse prevention with configurable limits and automatic backoff.
 - **Secure Management**: Local credential encryption for stored login sessions.
@@ -77,6 +77,14 @@ In another terminal, simulate a successful payment:
 
 ```bash
 paymongo trigger --event payment.paid
+```
+
+### 4. Attach a Payment Method to an Intent
+
+Attach a real payment method, or use the built-in simulation flow during development:
+
+```bash
+paymongo payments attach pi_123 --simulate --method gcash
 ```
 
 ---
@@ -170,7 +178,6 @@ Analytics data helps you:
 | `paymongo config`            | View and modify CLI configuration.                      |
 | `paymongo config analytics`  | Configure webhook analytics settings.                   |
 | `paymongo config rate-limit` | Configure rate limiting settings.                       |
-| `paymongo team`              | Share API key bundles with your team.                   |
 | `paymongo trigger`           | Simulate webhook events locally for testing.            |
 
 > Use `paymongo <command> --help` for detailed information on any command.
@@ -187,9 +194,15 @@ Analytics data helps you:
 
 ---
 
-## Built for Filipino Developers
+## Use Case
 
-PayMongo CLI is crafted to empower Filipino developers building the next generation of fintech solutions.
+PayMongo CLI is intended for developers working on PayMongo-powered applications in local, QA, and staging environments. It is most useful when you need to:
+
+- receive PayMongo webhooks on localhost
+- validate webhook signature handling
+- test payment intent attachment and capture flows
+- inspect payments and refunds without leaving the terminal
+- debug PayMongo integrations faster than a dashboard-only workflow
 
 ## License
 
