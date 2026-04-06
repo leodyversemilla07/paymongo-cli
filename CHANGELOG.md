@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.13] - 2026-04-06
+
+### Added
+
+- **Analytics Config Commands** - Added `paymongo config analytics enable`, `disable`, and `status` to manage local webhook analytics directly from the CLI.
+- **Shared Command Runtime** - Introduced shared command runtime helpers for config loading, API client creation, auth validation, and consistent command failure handling.
+- **Dev Session Service** - Added a dedicated dev session service to own dev-mode startup, shutdown, webhook registration, and tunnel orchestration outside the command layer.
+
+### Changed
+
+- **Test Runner** - Replaced Jest with Vitest and migrated the CLI test suite to the new runner.
+- **Linting and Formatting** - Replaced ESLint and Prettier with Biome for linting, formatting, and import organization.
+- **Dev Command Architecture** - Refactored `paymongo dev` so the command is a thinner CLI adapter around centralized session orchestration.
+- **Global Runtime Wiring** - Wired the global `--no-rate-limit` flag through the shared runtime so API client behavior matches the CLI option.
+
+### Fixed
+
+- **Documentation Drift** - Aligned the README and command surface around analytics configuration and current tooling.
+- **Detached Dev Startup** - Updated detached dev mode to reuse the active CLI entrypoint instead of depending on a hardcoded compiled path.
+- **CLI Test Stability** - Tightened test lifecycle handling and ESM module isolation to keep the Vitest suite reliable.
+
 ## [1.4.12] - 2026-03-08
 
 ### Added
