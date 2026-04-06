@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { beforeEach, describe, expect, it, vi as jest } from 'vitest';
 
 const mockFs = {
   mkdir: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
@@ -7,17 +7,18 @@ const mockFs = {
   unlink: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
 };
 
-jest.unstable_mockModule('fs/promises', () => ({
+jest.mock('fs/promises', () => ({
   default: mockFs,
 }));
 
 // Mock child_process for killProcess tests
 const mockExecSync = jest.fn();
-jest.unstable_mockModule('child_process', () => ({
+jest.mock('child_process', () => ({
   execSync: mockExecSync,
 }));
 
 const { DevProcessManager } = await import('../../src/services/dev/process-manager.js');
+
 import type { DevProcessState } from '../../src/services/dev/process-manager.js';
 
 const sampleState: DevProcessState = {
@@ -41,13 +42,12 @@ describe('DevProcessManager', () => {
     it('should create state directory and write state file', async () => {
       await DevProcessManager.saveState(sampleState);
 
-      expect(mockFs.mkdir).toHaveBeenCalledWith(
-        expect.stringContaining('.paymongo-cli'),
-        { recursive: true },
-      );
+      expect(mockFs.mkdir).toHaveBeenCalledWith(expect.stringContaining('.paymongo-cli'), {
+        recursive: true,
+      });
       expect(mockFs.writeFile).toHaveBeenCalledWith(
         expect.stringContaining('dev-server.json'),
-        JSON.stringify(sampleState, null, 2),
+        JSON.stringify(sampleState, null, 2)
       );
     });
   });
@@ -61,7 +61,7 @@ describe('DevProcessManager', () => {
       expect(result).toEqual(sampleState);
       expect(mockFs.readFile).toHaveBeenCalledWith(
         expect.stringContaining('dev-server.json'),
-        'utf-8',
+        'utf-8'
       );
     });
 
@@ -90,9 +90,7 @@ describe('DevProcessManager', () => {
 
       await DevProcessManager.clearState();
 
-      expect(mockFs.unlink).toHaveBeenCalledWith(
-        expect.stringContaining('dev-server.json'),
-      );
+      expect(mockFs.unlink).toHaveBeenCalledWith(expect.stringContaining('dev-server.json'));
     });
 
     it('should not throw when file does not exist', async () => {
@@ -125,10 +123,7 @@ describe('DevProcessManager', () => {
 
       DevProcessManager.killProcess(12345);
 
-      expect(mockExecSync).toHaveBeenCalledWith(
-        'taskkill /pid 12345 /f /t',
-        { stdio: 'ignore' },
-      );
+      expect(mockExecSync).toHaveBeenCalledWith('taskkill /pid 12345 /f /t', { stdio: 'ignore' });
 
       Object.defineProperty(process, 'platform', { value: originalPlatform });
     });
@@ -148,10 +143,9 @@ describe('DevProcessManager', () => {
     it('should ensure directory exists and return log file path', async () => {
       const logFile = await DevProcessManager.getLogFile();
 
-      expect(mockFs.mkdir).toHaveBeenCalledWith(
-        expect.stringContaining('.paymongo-cli'),
-        { recursive: true },
-      );
+      expect(mockFs.mkdir).toHaveBeenCalledWith(expect.stringContaining('.paymongo-cli'), {
+        recursive: true,
+      });
       expect(logFile).toContain('dev-server.log');
     });
   });
@@ -201,10 +195,7 @@ describe('DevProcessManager', () => {
     it('should write empty string to log file', async () => {
       await DevProcessManager.clearLogs();
 
-      expect(mockFs.writeFile).toHaveBeenCalledWith(
-        expect.stringContaining('dev-server.log'),
-        '',
-      );
+      expect(mockFs.writeFile).toHaveBeenCalledWith(expect.stringContaining('dev-server.log'), '');
     });
   });
 

@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi as jest } from 'vitest';
 
 // Mock modules before importing payments command
 const mockConfigManagerLoad = jest.fn<() => Promise<any>>();
@@ -60,27 +60,27 @@ const mockChalkBold = jest.fn((text: string) => `bold:${text}`);
 const mockChalkCyan = jest.fn((text: string) => `cyan:${text}`);
 const mockChalkWhite = jest.fn((text: string) => `white:${text}`);
 
-jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
+jest.mock('../../src/services/config/manager.js', () => ({
   default: jest.fn().mockImplementation(() => mockConfigManager),
 }));
 
-jest.unstable_mockModule('../../src/services/api/client.js', () => ({
+jest.mock('../../src/services/api/client.js', () => ({
   default: mockApiClient,
 }));
 
-jest.unstable_mockModule('../../src/services/payments/simulator.js', () => ({
+jest.mock('../../src/services/payments/simulator.js', () => ({
   PaymentSimulator: mockPaymentSimulator,
 }));
 
-jest.unstable_mockModule('../../src/utils/bulk.js', () => ({
+jest.mock('../../src/utils/bulk.js', () => ({
   BulkOperations: mockBulkOperations,
 }));
 
-jest.unstable_mockModule('../../src/utils/spinner.js', () => ({
+jest.mock('../../src/utils/spinner.js', () => ({
   default: mockSpinner,
 }));
 
-jest.unstable_mockModule('chalk', () => ({
+jest.mock('chalk', () => ({
   default: {
     red: mockChalkRed,
     yellow: mockChalkYellow,
@@ -99,27 +99,27 @@ let mockConsoleError: any;
 // Mock process.exit
 let mockProcessExit: any;
 
-jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
+jest.mock('../../src/services/config/manager.js', () => ({
   default: jest.fn().mockImplementation(() => mockConfigManager),
 }));
 
-jest.unstable_mockModule('../../src/services/api/client.js', () => ({
+jest.mock('../../src/services/api/client.js', () => ({
   default: mockApiClient,
 }));
 
-jest.unstable_mockModule('../../src/services/payments/simulator.js', () => ({
+jest.mock('../../src/services/payments/simulator.js', () => ({
   PaymentSimulator: mockPaymentSimulator,
 }));
 
-jest.unstable_mockModule('../../src/utils/bulk.js', () => ({
+jest.mock('../../src/utils/bulk.js', () => ({
   BulkOperations: mockBulkOperations,
 }));
 
-jest.unstable_mockModule('../../src/utils/spinner.js', () => ({
+jest.mock('../../src/utils/spinner.js', () => ({
   default: mockSpinner,
 }));
 
-jest.unstable_mockModule('chalk', () => ({
+jest.mock('chalk', () => ({
   default: {
     red: mockChalkRed,
     yellow: mockChalkYellow,
@@ -150,12 +150,6 @@ describe('Payments Command', () => {
     mockConsoleLog = jest.spyOn(console, 'log');
     mockConsoleError = jest.spyOn(console, 'error');
     mockProcessExit = jest.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-  });
-
-  afterEach(() => {
-    mockConsoleLog.mockRestore();
-    mockConsoleError.mockRestore();
-    mockProcessExit.mockRestore();
   });
 
   afterEach(() => {
@@ -419,7 +413,9 @@ describe('Payments Command', () => {
       const mockConfig = { environment: 'test' };
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
 
-      await expect(createIntentAction({ amount: 'invalid', currency: 'PHP' })).rejects.toThrow('Command failed');
+      await expect(createIntentAction({ amount: 'invalid', currency: 'PHP' })).rejects.toThrow(
+        'Command failed'
+      );
 
       expect(mockConsoleError).toHaveBeenCalledWith(
         'red:❌ Failed to create payment intent:',
@@ -461,7 +457,9 @@ describe('Payments Command', () => {
       );
       expect(mockSpinnerStart).toHaveBeenCalledWith('Loading configuration...');
       expect(mockSpinnerSucceed).toHaveBeenCalledWith('Configuration loaded');
-      expect(mockSpinnerStart).toHaveBeenCalledWith('Attaching payment method to payment intent...');
+      expect(mockSpinnerStart).toHaveBeenCalledWith(
+        'Attaching payment method to payment intent...'
+      );
       expect(mockSpinnerSucceed).toHaveBeenCalledWith('Payment method attached');
     });
 
@@ -609,7 +607,9 @@ describe('Payments Command', () => {
       const mockConfig = { environment: 'test' };
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
 
-      await expect(refundAction('pay_456', { reason: 'invalid_reason' })).rejects.toThrow('Command failed');
+      await expect(refundAction('pay_456', { reason: 'invalid_reason' })).rejects.toThrow(
+        'Command failed'
+      );
 
       expect(mockConsoleError).toHaveBeenCalledWith(
         'red:❌ Failed to create refund:',

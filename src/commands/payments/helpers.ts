@@ -1,19 +1,20 @@
 import chalk from 'chalk';
-import ApiClient from '../../services/api/client.js';
-import ConfigManager from '../../services/config/manager.js';
-import Spinner from '../../utils/spinner.js';
+import type ConfigManager from '../../services/config/manager.js';
 import { PaymentSimulator } from '../../services/payments/simulator.js';
-import { CommandError } from '../../utils/errors.js';
-import { PayMongoConfig } from '../../types/paymongo.js';
+import type { PayMongoConfig } from '../../types/paymongo.js';
+import type Spinner from '../../utils/spinner.js';
+import {
+  createCommandContext,
+  createApiClient as createSharedApiClient,
+  failCommand,
+  loadCommandConfig,
+} from '../shared/runtime.js';
 
 export function createPaymentsContext(): {
   spinner: Spinner;
   configManager: ConfigManager;
 } {
-  return {
-    spinner: new Spinner(),
-    configManager: new ConfigManager(),
-  };
+  return createCommandContext();
 }
 
 export function getStatusColor(status: string) {
@@ -40,22 +41,11 @@ export async function loadPaymentsConfig(
   spinner: Spinner,
   configManager: ConfigManager
 ): Promise<PayMongoConfig | null> {
-  spinner.start('Loading configuration...');
-  const config = await configManager.load();
-
-  if (!config) {
-    spinner.fail('No configuration found');
-    console.log(chalk.yellow('No PayMongo configuration found.'));
-    console.log(chalk.gray("Run 'paymongo init' to set up your project first."));
-    return null;
-  }
-
-  spinner.succeed('Configuration loaded');
-  return config;
+  return loadCommandConfig(spinner, configManager);
 }
 
-export function createApiClient(config: PayMongoConfig): ApiClient {
-  return new ApiClient({ config });
+export function createApiClient(config: PayMongoConfig) {
+  return createSharedApiClient(config);
 }
 
 export function createPaymentSimulator(): PaymentSimulator {
@@ -63,10 +53,7 @@ export function createPaymentSimulator(): PaymentSimulator {
 }
 
 export function handlePaymentsError(prefix: string, spinner: Spinner, error: unknown): never {
-  spinner.stop();
-  const err = error as Error;
-  console.error(chalk.red(prefix), err.message);
-  throw new CommandError();
+  return failCommand(prefix, error, spinner);
 }
 
 export function parseBoundedInt(
@@ -76,7 +63,7 @@ export function parseBoundedInt(
   validate: (parsed: number) => boolean
 ): number {
   const parsed = parseInt(value || fallback, 10);
-  if (isNaN(parsed) || !validate(parsed)) {
+  if (Number.isNaN(parsed) || !validate(parsed)) {
     throw new Error(errorMessage);
   }
 

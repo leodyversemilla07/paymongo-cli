@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { beforeEach, describe, expect, it, vi as jest } from 'vitest';
 
 // Create mock cache
 const mockCache = {
@@ -27,15 +27,15 @@ const MockRateLimiter = jest.fn((_config, _rateLimitConfig) => mockRateLimiter);
 const mockRequest = jest.fn<any>();
 
 // Mock modules before importing ApiClient
-jest.unstable_mockModule('undici', () => ({
+jest.mock('undici', () => ({
   request: mockRequest,
 }));
 
-jest.unstable_mockModule('../../src/utils/cache.js', () => ({
+jest.mock('../../src/utils/cache.js', () => ({
   default: MockCache,
 }));
 
-jest.unstable_mockModule('../../src/services/api/rate-limiter.js', () => ({
+jest.mock('../../src/services/api/rate-limiter.js', () => ({
   default: MockRateLimiter,
 }));
 
@@ -78,6 +78,7 @@ describe('ApiClient', () => {
     mockRateLimiter.recordCall.mockImplementation(() => {});
     mockRequest.mockReset();
     MockRateLimiter.mockClear();
+    delete process.env.PAYMONGO_DISABLE_RATE_LIMIT;
 
     apiClient = new ApiClient({ config: validConfig });
   });
@@ -85,6 +86,24 @@ describe('ApiClient', () => {
   describe('constructor', () => {
     it('should create ApiClient successfully', () => {
       expect(() => new ApiClient({ config: validConfig })).not.toThrow();
+    });
+
+    it('should not initialize rate limiting when globally disabled', () => {
+      process.env.PAYMONGO_DISABLE_RATE_LIMIT = '1';
+      MockRateLimiter.mockClear();
+
+      new ApiClient({
+        config: {
+          ...validConfig,
+          rateLimiting: {
+            enabled: true,
+            maxRequests: 100,
+            windowMs: 60000,
+          },
+        },
+      });
+
+      expect(MockRateLimiter).not.toHaveBeenCalled();
     });
   });
 
@@ -112,7 +131,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 401,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ errors: [{ detail: 'Invalid API key' }] }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ errors: [{ detail: 'Invalid API key' }] }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       await expect(apiClient.validateApiKey()).rejects.toThrow('Invalid API key or unauthorized');
@@ -131,7 +153,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockWebhook }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockWebhook }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       const result = await apiClient.createWebhook(webhookUrl, events);
@@ -164,7 +189,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockWebhooks }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockWebhooks }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       const result = await apiClient.listWebhooks();
@@ -185,7 +213,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockWebhook }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockWebhook }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       const result = await apiClient.getWebhook(webhookId);
@@ -207,7 +238,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockUpdatedWebhook }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockUpdatedWebhook }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       const result = await apiClient.updateWebhook(webhookId, updates);
@@ -235,7 +269,8 @@ describe('ApiClient', () => {
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
-          json: () => Promise.resolve({ data: { id: webhookId, attributes: { status: 'disabled' } } }),
+          json: () =>
+            Promise.resolve({ data: { id: webhookId, attributes: { status: 'disabled' } } }),
           text: () => Promise.resolve(''),
         },
       });
@@ -257,7 +292,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockPayment }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockPayment }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       const result = await apiClient.getPayment(paymentId);
@@ -280,7 +318,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockPayments }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockPayments }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       const result = await apiClient.listPayments();
@@ -296,7 +337,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockPayments }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockPayments }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       await apiClient.listPayments(25);
@@ -315,7 +359,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockPaymentIntent }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockPaymentIntent }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       const result = await apiClient.createPaymentIntent(10000);
@@ -342,7 +389,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockPaymentIntent }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockPaymentIntent }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       await apiClient.createPaymentIntent(50000, 'USD', 'Test payment', ['card']);
@@ -376,7 +426,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockConfirmedIntent }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockConfirmedIntent }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       const result = await apiClient.attachPaymentIntent(paymentIntentId, paymentMethodId);
@@ -401,7 +454,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockConfirmedIntent }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockConfirmedIntent }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       await apiClient.attachPaymentIntent(paymentIntentId, paymentMethodId, returnUrl);
@@ -431,7 +487,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockCapturedIntent }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockCapturedIntent }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       const result = await apiClient.capturePaymentIntent(paymentIntentId);
@@ -452,7 +511,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockRefund }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockRefund }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       const result = await apiClient.createRefund(paymentId);
@@ -477,7 +539,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockRefund }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockRefund }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       await apiClient.createRefund(paymentId, 5000);
@@ -502,7 +567,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockRefund }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockRefund }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       await apiClient.createRefund(paymentId, undefined, 'fraudulent');
@@ -527,7 +595,10 @@ describe('ApiClient', () => {
       mockRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
-        body: { json: () => Promise.resolve({ data: mockRefund }), text: () => Promise.resolve('') },
+        body: {
+          json: () => Promise.resolve({ data: mockRefund }),
+          text: () => Promise.resolve(''),
+        },
       });
 
       await apiClient.createRefund(paymentId, 7500, 'requested_by_customer');

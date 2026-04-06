@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi as jest } from 'vitest';
 
 // Import Logger after mocking
 const { default: Logger } = await import('../../src/utils/logger.js');
@@ -44,30 +44,45 @@ describe('Logger', () => {
   describe('error', () => {
     it('should log error messages with ERROR prefix', () => {
       logger.error('Error message');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('ERROR:'), 'Error message');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('ERROR:'),
+        'Error message'
+      );
     });
 
     it('should log error with metadata', () => {
       logger.error('Error message', { code: 'ERR001' });
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('ERROR:'), 'Error message {"code":"ERR001"}');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('ERROR:'),
+        'Error message {"code":"ERR001"}'
+      );
     });
 
     it('should log error with Error object', () => {
       const error = new Error('Test error');
       logger.error('Error message', error);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('ERROR:'), 'Error message Test error');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('ERROR:'),
+        'Error message Test error'
+      );
     });
   });
 
   describe('warn', () => {
     it('should log warning messages with WARN prefix', () => {
       logger.warn('Warning message');
-      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('WARN:'), 'Warning message');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('WARN:'),
+        'Warning message'
+      );
     });
 
     it('should log warning with metadata', () => {
       logger.warn('Warning message', { reason: 'deprecated' });
-      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('WARN:'), 'Warning message {"reason":"deprecated"}');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('WARN:'),
+        'Warning message {"reason":"deprecated"}'
+      );
     });
   });
 
@@ -79,7 +94,10 @@ describe('Logger', () => {
 
     it('should log info with metadata', () => {
       logger.info('Info message', { userId: 123 });
-      expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('INFO:'), 'Info message {"userId":123}');
+      expect(consoleInfoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('INFO:'),
+        'Info message {"userId":123}'
+      );
     });
   });
 
@@ -98,7 +116,10 @@ describe('Logger', () => {
   describe('success', () => {
     it('should print success message with checkmark', () => {
       logger.success('Operation successful');
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('✓'), 'Operation successful');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('✓'),
+        'Operation successful'
+      );
     });
   });
 
@@ -127,7 +148,10 @@ describe('Logger', () => {
       expect(consoleDebugSpy).not.toHaveBeenCalled();
       expect(consoleInfoSpy).not.toHaveBeenCalled();
       expect(consoleWarnSpy).not.toHaveBeenCalled();
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('ERROR:'), 'Error message');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('ERROR:'),
+        'Error message'
+      );
     });
 
     it('should log all levels when debug level set', () => {
@@ -137,10 +161,16 @@ describe('Logger', () => {
       debugLogger.warn('Warn message');
       debugLogger.error('Error message');
 
-      expect(consoleDebugSpy).toHaveBeenCalledWith(expect.stringContaining('DEBUG:'), 'Debug message');
+      expect(consoleDebugSpy).toHaveBeenCalledWith(
+        expect.stringContaining('DEBUG:'),
+        'Debug message'
+      );
       expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('INFO:'), 'Info message');
       expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('WARN:'), 'Warn message');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('ERROR:'), 'Error message');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('ERROR:'),
+        'Error message'
+      );
     });
   });
 });

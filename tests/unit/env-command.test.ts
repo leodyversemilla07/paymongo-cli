@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi as jest } from 'vitest';
 import type { PayMongoConfig } from '../../src/types/paymongo.js';
 
 // Mock modules before importing
@@ -10,20 +10,20 @@ const mockSpinnerSucceed = jest.fn<(text?: string) => void>();
 const mockSpinnerFail = jest.fn<(text?: string) => void>();
 const mockSpinnerStop = jest.fn<() => void>();
 
-jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
+jest.mock('../../src/services/config/manager.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     load: mockConfigManagerLoad,
     save: mockConfigManagerSave,
   })),
 }));
 
-jest.unstable_mockModule('../../src/services/api/client.js', () => ({
+jest.mock('../../src/services/api/client.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     validateApiKey: mockApiClientValidateApiKey,
   })),
 }));
 
-jest.unstable_mockModule('../../src/utils/spinner.js', () => ({
+jest.mock('../../src/utils/spinner.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     start: mockSpinnerStart,
     succeed: mockSpinnerSucceed,
@@ -124,7 +124,9 @@ describe('Env Command', () => {
 
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
 
-      await expect(envCommand.parseAsync(['node', 'test', 'switch', 'invalid'])).rejects.toThrow('Command failed');
+      await expect(envCommand.parseAsync(['node', 'test', 'switch', 'invalid'])).rejects.toThrow(
+        'Command failed'
+      );
 
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Invalid environment'));
     });
@@ -144,7 +146,9 @@ describe('Env Command', () => {
 
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
 
-      await expect(envCommand.parseAsync(['node', 'test', 'switch', 'live'])).rejects.toThrow('Command failed');
+      await expect(envCommand.parseAsync(['node', 'test', 'switch', 'live'])).rejects.toThrow(
+        'Command failed'
+      );
 
       expect(mockSpinnerFail).toHaveBeenCalledWith('Missing API keys for live environment');
     });
@@ -198,7 +202,9 @@ describe('Env Command', () => {
       mockConfigManagerLoad.mockResolvedValue(mockConfig);
       mockApiClientValidateApiKey.mockRejectedValue(new Error('API key validation failed'));
 
-      await expect(envCommand.parseAsync(['node', 'test', 'switch', 'live'])).rejects.toThrow('Command failed');
+      await expect(envCommand.parseAsync(['node', 'test', 'switch', 'live'])).rejects.toThrow(
+        'Command failed'
+      );
 
       expect(mockSpinnerFail).toHaveBeenCalledWith('API key validation failed');
     });

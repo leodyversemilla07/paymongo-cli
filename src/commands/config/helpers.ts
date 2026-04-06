@@ -1,9 +1,8 @@
-import chalk from 'chalk';
+import type ConfigManager from '../../services/config/manager.js';
+import type { PayMongoConfig } from '../../types/paymongo.js';
 import { validateConfig as zodValidateConfig } from '../../types/schemas.js';
-import { PayMongoConfig } from '../../types/paymongo.js';
-import ConfigManager from '../../services/config/manager.js';
-import Spinner from '../../utils/spinner.js';
-import { CommandError } from '../../utils/errors.js';
+import type Spinner from '../../utils/spinner.js';
+import { createCommandContext, failCommand, loadCommandConfig } from '../shared/runtime.js';
 
 export const CONFIG_KEY_MAPPINGS: Record<string, string> = {
   'project.name': 'projectName',
@@ -12,23 +11,14 @@ export const CONFIG_KEY_MAPPINGS: Record<string, string> = {
   'dev.port': 'dev.port',
   'dev.autoRegister': 'dev.autoRegisterWebhook',
   'dev.verifySignatures': 'dev.verifyWebhookSignatures',
+  'analytics.enabled': 'analytics.enabled',
   'rateLimit.enabled': 'rateLimiting.enabled',
   'rateLimit.maxRequests': 'rateLimiting.maxRequests',
   'rateLimit.windowMs': 'rateLimiting.windowMs',
 };
 
 export function createConfigContext(): { spinner: Spinner; configManager: ConfigManager } {
-  return {
-    spinner: new Spinner(),
-    configManager: new ConfigManager(),
-  };
-}
-
-export function showNoConfigMessage(
-  message: string = "Run 'paymongo init' to set up your project first."
-): void {
-  console.log(chalk.yellow('No PayMongo configuration found.'));
-  console.log(chalk.gray(message));
+  return createCommandContext();
 }
 
 export async function loadRequiredConfig(
@@ -36,22 +26,11 @@ export async function loadRequiredConfig(
   configManager: ConfigManager,
   loadingText: string = 'Loading configuration...'
 ): Promise<PayMongoConfig | null> {
-  spinner.start(loadingText);
-  const config = await configManager.load();
-  if (!config) {
-    spinner.fail('No configuration found');
-    showNoConfigMessage();
-    return null;
-  }
-
-  spinner.succeed('Configuration loaded');
-  return config;
+  return loadCommandConfig(spinner, configManager, loadingText);
 }
 
 export function handleCommandFailure(prefix: string, error: unknown): never {
-  const err = error as Error;
-  console.error(chalk.red(prefix), err.message);
-  throw new CommandError();
+  return failCommand(prefix, error);
 }
 
 export function validateImportedConfig(config: unknown): asserts config is PayMongoConfig {
@@ -171,7 +150,7 @@ export function coerceConfigValue(value: string): boolean | number | string {
   if (value === 'false') {
     return false;
   }
-  if (!isNaN(Number(value))) {
+  if (!Number.isNaN(Number(value))) {
     return Number(value);
   }
   return value;
@@ -190,4 +169,16 @@ export function ensureRateLimitingConfig(
   }
 
   return config.rateLimiting;
+}
+
+export function ensureAnalyticsConfig(
+  config: PayMongoConfig
+): NonNullable<PayMongoConfig['analytics']> {
+  if (!config.analytics) {
+    config.analytics = {
+      enabled: false,
+    };
+  }
+
+  return config.analytics;
 }

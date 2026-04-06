@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi as jest } from 'vitest';
 
 // Mock modules before importing login command
 const mockSelect = jest.fn<() => Promise<string>>();
@@ -28,16 +28,16 @@ const mockConfigManagerSave = jest.fn<(config: any) => Promise<void>>();
 const mockConfigManagerDelete = jest.fn<() => Promise<void>>();
 const mockConfigManagerGetDefaultConfig = jest.fn<() => any>();
 
-jest.unstable_mockModule('@inquirer/prompts', () => ({
+jest.mock('@inquirer/prompts', () => ({
   select: mockSelect,
   password: mockPassword,
 }));
 
-jest.unstable_mockModule('../../src/utils/validator.js', () => ({
+jest.mock('../../src/utils/validator.js', () => ({
   validateApiKey: mockValidateApiKey,
 }));
 
-jest.unstable_mockModule('node:os', () => {
+jest.mock('node:os', () => {
   const osModule = {
     homedir: mockOsHomedir,
     hostname: mockOsHostname,
@@ -50,7 +50,7 @@ jest.unstable_mockModule('node:os', () => {
   };
 });
 
-jest.unstable_mockModule('node:path', () => {
+jest.mock('node:path', () => {
   const pathModule = {
     join: mockPathJoin,
     dirname: mockPathDirname,
@@ -61,7 +61,7 @@ jest.unstable_mockModule('node:path', () => {
   };
 });
 
-jest.unstable_mockModule('fs', () => ({
+jest.mock('fs', () => ({
   existsSync: mockFsExistsSync,
   mkdirSync: mockFsMkdirSync,
   writeFileSync: mockFsWriteFileSync,
@@ -69,7 +69,7 @@ jest.unstable_mockModule('fs', () => ({
   unlinkSync: mockFsUnlinkSync,
 }));
 
-jest.unstable_mockModule('crypto', () => ({
+jest.mock('crypto', () => ({
   createHash: jest.fn(() => ({
     update: jest.fn(() => ({
       digest: jest.fn(() => 'mock-encryption-key-32-chars-long'),
@@ -81,7 +81,7 @@ jest.unstable_mockModule('crypto', () => ({
   createDecipheriv: mockCryptoCreateDecipheriv,
 }));
 
-jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
+jest.mock('../../src/services/config/manager.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     load: mockConfigManagerLoad,
     save: mockConfigManagerSave,
@@ -90,17 +90,17 @@ jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
   })),
 }));
 
-jest.unstable_mockModule('../../src/services/api/client.js', () => ({
+jest.mock('../../src/services/api/client.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     validateApiKey: mockApiClientValidate,
   })),
 }));
 
 // Import after mocking
-await import('fs');
-await import('os');
+await import('node:fs');
+await import('node:os');
 await import('node:path');
-await import('crypto');
+await import('node:crypto');
 await import('@inquirer/prompts');
 await import('../../src/utils/validator.js');
 const { default: ConfigManager } = await import('../../src/services/config/manager.js');

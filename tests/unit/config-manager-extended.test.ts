@@ -1,8 +1,8 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import ConfigManager from '../../src/services/config/manager.js';
-import { PayMongoConfig } from '../../src/types/paymongo.js';
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import type { PayMongoConfig } from '../../src/types/paymongo.js';
 import { validateConfig } from '../../src/types/schemas.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -64,7 +64,7 @@ describe('ConfigManager', () => {
       }
       attempts++;
       // Wait longer between attempts
-      const delay = Math.min(100 * Math.pow(2, attempts), 1000);
+      const delay = Math.min(100 * 2 ** attempts, 1000);
       if (attempts < maxAttempts) {
         // Use synchronous delay for test cleanup
         const start = Date.now();

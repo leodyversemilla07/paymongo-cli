@@ -1,9 +1,8 @@
-import { Command } from 'commander';
 import chalk from 'chalk';
-import ConfigManager from '../services/config/manager.js';
-import ApiClient from '../services/api/client.js';
+import { Command } from 'commander';
+import { ApiKeyError, CommandError, NetworkError, PayMongoError } from '../utils/errors.js';
 import { validateApiKey, validateWebhookUrl } from '../utils/validator.js';
-import { ApiKeyError, NetworkError, PayMongoError, CommandError } from '../utils/errors.js';
+import { createApiClient, createCommandContext } from './shared/runtime.js';
 
 type CheckStatus = 'pass' | 'warn' | 'fail';
 
@@ -43,7 +42,7 @@ function hasNgrokToken(): boolean {
 }
 
 async function runDoctor(options: DoctorOptions): Promise<DoctorCheck[]> {
-  const configManager = new ConfigManager();
+  const { configManager } = createCommandContext();
   const checks: DoctorCheck[] = [];
 
   const config = await configManager.load();
@@ -53,7 +52,7 @@ async function runDoctor(options: DoctorOptions): Promise<DoctorCheck[]> {
       name: 'Configuration',
       status: 'fail',
       message: 'No .paymongo configuration found.',
-      fix: "Run `paymongo init` to create project configuration.",
+      fix: 'Run `paymongo init` to create project configuration.',
     });
     return checks;
   }
@@ -181,7 +180,7 @@ async function runDoctor(options: DoctorOptions): Promise<DoctorCheck[]> {
   });
 
   if (options.network !== false && envKeys?.secret && validateApiKey(envKeys.secret, 'secret')) {
-    const apiClient = new ApiClient({ config });
+    const apiClient = createApiClient(config);
     try {
       await apiClient.validateApiKey();
       checks.push({

@@ -112,7 +112,13 @@ describe('Webhook Payload Generation', () => {
 
   describe('checkout_session.payment.paid event', () => {
     it('should have checkout session attributes', () => {
-      const expectedAttributes = ['amount', 'currency', 'description', 'status', 'payment_intent_id'];
+      const expectedAttributes = [
+        'amount',
+        'currency',
+        'description',
+        'status',
+        'payment_intent_id',
+      ];
 
       expectedAttributes.forEach((attr) => {
         expect(typeof attr).toBe('string');
@@ -178,7 +184,9 @@ describe('Event Types', () => {
 describe('ID Generation', () => {
   // Test the ID generation algorithm
   function generateId(): string {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    return (
+      Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    );
   }
 
   it('should generate alphanumeric IDs', () => {

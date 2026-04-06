@@ -1,5 +1,9 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import type { PayMongoConfig, WebhookData, WebhookDataWithSecret } from '../../src/types/paymongo.js';
+import { afterEach, beforeEach, describe, expect, it, vi as jest } from 'vitest';
+import type {
+  PayMongoConfig,
+  WebhookData,
+  WebhookDataWithSecret,
+} from '../../src/types/paymongo.js';
 import type { BulkExportData } from '../../src/utils/bulk.js';
 
 // Mock functions with proper type annotations
@@ -7,15 +11,20 @@ const mockConfigManagerLoad = jest.fn<() => Promise<PayMongoConfig | null>>();
 const mockConfigManagerSave = jest.fn<() => Promise<void>>();
 const mockApiClientListWebhooks = jest.fn<() => Promise<WebhookData[]>>();
 const mockApiClientGetWebhook = jest.fn<(id: string) => Promise<WebhookData>>();
-const mockApiClientCreateWebhook = jest.fn<(url: string, events: string[]) => Promise<WebhookDataWithSecret>>();
+const mockApiClientCreateWebhook =
+  jest.fn<(url: string, events: string[]) => Promise<WebhookDataWithSecret>>();
 const mockApiClientDisableWebhook = jest.fn<(id: string) => Promise<void>>();
 const mockApiClientEnableWebhook = jest.fn<(id: string) => Promise<void>>();
 const mockSpinnerStart = jest.fn();
 const mockSpinnerSucceed = jest.fn();
 const mockSpinnerFail = jest.fn();
 const mockSpinnerStop = jest.fn();
-const mockBulkExportWebhooks = jest.fn<(webhooks: WebhookData[], filename: string, environment: string) => Promise<string>>();
-const mockBulkImportWebhooks = jest.fn<(filename: string) => Promise<{ webhooks: WebhookData[]; metadata: BulkExportData['metadata'] }>>();
+const mockBulkExportWebhooks =
+  jest.fn<(webhooks: WebhookData[], filename: string, environment: string) => Promise<string>>();
+const mockBulkImportWebhooks =
+  jest.fn<
+    (filename: string) => Promise<{ webhooks: WebhookData[]; metadata: BulkExportData['metadata'] }>
+  >();
 const mockBulkGenerateFilename = jest.fn<() => string>();
 const mockBulkEnsureJsonExtension = jest.fn<(filename: string) => string>();
 const mockInput = jest.fn<() => Promise<string>>();
@@ -23,14 +32,14 @@ const mockCheckbox = jest.fn<() => Promise<string[]>>();
 const mockConfirm = jest.fn<() => Promise<boolean>>();
 
 // Mock modules
-jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
+jest.mock('../../src/services/config/manager.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     load: mockConfigManagerLoad,
     save: mockConfigManagerSave,
   })),
 }));
 
-jest.unstable_mockModule('../../src/services/api/client.js', () => ({
+jest.mock('../../src/services/api/client.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     listWebhooks: mockApiClientListWebhooks,
     getWebhook: mockApiClientGetWebhook,
@@ -40,7 +49,7 @@ jest.unstable_mockModule('../../src/services/api/client.js', () => ({
   })),
 }));
 
-jest.unstable_mockModule('../../src/utils/bulk.js', () => ({
+jest.mock('../../src/utils/bulk.js', () => ({
   BulkOperations: {
     exportWebhooks: mockBulkExportWebhooks,
     importWebhooks: mockBulkImportWebhooks,
@@ -49,7 +58,7 @@ jest.unstable_mockModule('../../src/utils/bulk.js', () => ({
   },
 }));
 
-jest.unstable_mockModule('../../src/utils/spinner.js', () => ({
+jest.mock('../../src/utils/spinner.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     start: mockSpinnerStart,
     succeed: mockSpinnerSucceed,
@@ -58,13 +67,13 @@ jest.unstable_mockModule('../../src/utils/spinner.js', () => ({
   })),
 }));
 
-jest.unstable_mockModule('@inquirer/prompts', () => ({
+jest.mock('@inquirer/prompts', () => ({
   input: mockInput,
   checkbox: mockCheckbox,
   confirm: mockConfirm,
 }));
 
-jest.unstable_mockModule('../../src/utils/validator.js', () => ({
+jest.mock('../../src/utils/validator.js', () => ({
   validateWebhookUrl: jest.fn(() => true),
   validateEventTypes: jest.fn(() => true),
 }));
@@ -248,9 +257,7 @@ describe('Webhooks Command', () => {
       await importAction('test.json', { dryRun: true });
 
       expect(mockApiClientCreateWebhook).not.toHaveBeenCalled();
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Dry run mode')
-      );
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Dry run mode'));
     });
 
     it('should cancel import when user declines', async () => {
@@ -322,10 +329,12 @@ describe('Webhooks Command', () => {
     it('should handle API errors', async () => {
       mockApiClientCreateWebhook.mockRejectedValue(new Error('API Error'));
 
-      await expect(createAction({
-        url: 'https://example.com/webhook',
-        events: 'payment.paid',
-      })).rejects.toThrow('Command failed');
+      await expect(
+        createAction({
+          url: 'https://example.com/webhook',
+          events: 'payment.paid',
+        })
+      ).rejects.toThrow('Command failed');
 
       expect(mockSpinnerStop).toHaveBeenCalled();
       expect(console.error).toHaveBeenCalledWith(

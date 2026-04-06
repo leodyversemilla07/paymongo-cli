@@ -1,7 +1,7 @@
-import fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
-import { WebhookEventPayload } from '../types/paymongo.js';
+import fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import type { WebhookEventPayload } from '../types/paymongo.js';
 
 export interface StoredWebhookEvent {
   id: string;

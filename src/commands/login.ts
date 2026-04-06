@@ -1,14 +1,14 @@
-import { Command } from 'commander';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as crypto from 'crypto';
-import * as os from 'os';
+import * as crypto from 'node:crypto';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import chalk from 'chalk';
-import ConfigManager from '../services/config/manager.js';
-import ApiClient from '../services/api/client.js';
+import { Command } from 'commander';
+import type { PayMongoConfig } from '../types/paymongo.js';
+import { ApiKeyError, CommandError, NetworkError, PayMongoError } from '../utils/errors.js';
 import { validateApiKey } from '../utils/validator.js';
-import { ApiKeyError, NetworkError, PayMongoError, CommandError } from '../utils/errors.js';
-import Spinner from '../utils/spinner.js';
+import { createCredentialValidationConfig } from './shared/auth.js';
+import { createApiClient, createCommandContext } from './shared/runtime.js';
 
 interface LoginAnswers {
   environment: 'test' | 'live';
@@ -137,8 +137,7 @@ command
   .option('-e, --env <environment>', 'Environment (test or live)', 'test')
   .option('--logout', 'Clear stored credentials')
   .action(async (options) => {
-    const spinner = new Spinner();
-    const configManager = new ConfigManager();
+    const { spinner, configManager } = createCommandContext();
     const credentialManager = new CredentialManager();
 
     try {
@@ -218,22 +217,13 @@ command
       // Validate API key
       spinner.start('Validating API key...');
 
-      const tempConfig = {
-        version: '1.0',
-        projectName: 'temp',
+      const tempConfig = createCredentialValidationConfig({
         environment: answers.environment,
-        apiKeys: {
-          [answers.environment]: {
-            public: answers.publicKey || '',
-            secret: answers.secretKey,
-          },
-        },
-        webhooks: { url: '', events: [] },
-        webhookSecrets: {},
-        dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: true },
-      };
+        publicKey: answers.publicKey || '',
+        secretKey: answers.secretKey,
+      });
 
-      const apiClient = new ApiClient({ config: tempConfig });
+      const apiClient = createApiClient(tempConfig);
 
       try {
         await apiClient.validateApiKey();
@@ -280,7 +270,7 @@ command
       spinner.succeed('Credentials stored securely');
 
       // Update current project config if it exists
-      let config;
+      let config: PayMongoConfig | null;
       try {
         config = await configManager.load();
       } catch (_error) {
@@ -303,15 +293,15 @@ command
       }
 
       // Success message
-      console.log('\n' + chalk.green('🔐 PayMongo Login Successful'));
-      console.log('\n' + chalk.bold('Current configuration:'));
+      console.log(`\n${chalk.green('🔐 PayMongo Login Successful')}`);
+      console.log(`\n${chalk.bold('Current configuration:')}`);
       console.log(`  Environment: ${answers.environment}`);
       console.log(`  Secret Key: ${'*'.repeat(20)}...${answers.secretKey.slice(-4)}`);
       if (answers.publicKey) {
         console.log(`  Public Key: ${'*'.repeat(20)}...${answers.publicKey.slice(-4)}`);
       }
 
-      console.log('\n' + chalk.gray("Use 'paymongo config show' to view settings"));
+      console.log(`\n${chalk.gray("Use 'paymongo config show' to view settings")}`);
       console.log(chalk.gray("Use 'paymongo login --logout' to clear credentials"));
     } catch (error) {
       spinner.stop();
@@ -352,4 +342,4 @@ command
     }
   });
 
-export { command, CredentialManager };
+export { CredentialManager, command };

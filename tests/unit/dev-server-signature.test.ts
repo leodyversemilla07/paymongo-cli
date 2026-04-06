@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { DevServer } from '../../src/services/dev/server.js';
 import type { PayMongoConfig } from '../../src/types/paymongo.js';
 

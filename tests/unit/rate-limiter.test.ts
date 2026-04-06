@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { beforeEach, describe, expect, it, vi as jest } from 'vitest';
 
 const { RateLimiter } = await import('../../src/services/api/rate-limiter.js');
 

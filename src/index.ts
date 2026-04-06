@@ -1,12 +1,18 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
+import { createRequire } from 'node:module';
 import chalk from 'chalk';
-import { createRequire } from 'module';
+import { Command } from 'commander';
 import { CommandError } from './utils/errors.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
+const uncaughtExceptionHandlerKey = Symbol.for('paymongo.cli.uncaughtExceptionHandler');
+const unhandledRejectionHandlerKey = Symbol.for('paymongo.cli.unhandledRejectionHandler');
+const globalHandlers = globalThis as typeof globalThis & {
+  [uncaughtExceptionHandlerKey]?: (error: Error) => void;
+  [unhandledRejectionHandlerKey]?: (reason: unknown) => void;
+};
 
 const program = new Command();
 
@@ -16,6 +22,16 @@ program
   .version(version)
   .option('--no-rate-limit', 'Disable rate limiting for this command')
   .showHelpAfterError('(add --help for additional information)');
+
+program.hook('preAction', (actionCommand) => {
+  const options = (actionCommand as Command).optsWithGlobals();
+
+  if (options.rateLimit === false) {
+    process.env.PAYMONGO_DISABLE_RATE_LIMIT = '1';
+  } else {
+    delete process.env.PAYMONGO_DISABLE_RATE_LIMIT;
+  }
+});
 
 // Lazy load and register commands
 program.addCommand(await import('./commands/init.js').then((m) => m.default));
@@ -85,24 +101,29 @@ For more information, visit: https://github.com/leodyversemilla07/paymongo-cli
 `
 );
 
-// Global error handler
-process.on('uncaughtException', (error) => {
-  if (error instanceof CommandError) {
+if (!globalHandlers[uncaughtExceptionHandlerKey]) {
+  globalHandlers[uncaughtExceptionHandlerKey] = (error: Error) => {
+    if (error instanceof CommandError) {
+      process.exit(1);
+    }
+    console.error(chalk.red('An unexpected error occurred:'), error.message);
     process.exit(1);
-  }
-  console.error(chalk.red('An unexpected error occurred:'), error.message);
-  process.exit(1);
-});
+  };
+  process.on('uncaughtException', globalHandlers[uncaughtExceptionHandlerKey]);
+}
 
-process.on('unhandledRejection', (reason) => {
-  if (reason instanceof CommandError) {
+if (!globalHandlers[unhandledRejectionHandlerKey]) {
+  globalHandlers[unhandledRejectionHandlerKey] = (reason: unknown) => {
+    if (reason instanceof CommandError) {
+      process.exit(1);
+    }
+    console.error(
+      chalk.red('An unexpected error occurred:'),
+      reason instanceof Error ? reason.message : String(reason)
+    );
     process.exit(1);
-  }
-  console.error(
-    chalk.red('An unexpected error occurred:'),
-    reason instanceof Error ? reason.message : String(reason)
-  );
-  process.exit(1);
-});
+  };
+  process.on('unhandledRejection', globalHandlers[unhandledRejectionHandlerKey]);
+}
 
 program.parse();

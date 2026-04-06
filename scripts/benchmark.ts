@@ -5,7 +5,7 @@
  * Tests the effectiveness of lazy loading and caching optimizations
  */
 
-import { execSync } from 'child_process';
+import { execSync } from 'node:child_process';
 
 const CLI_PATH = 'node dist/index.js';
 
@@ -25,18 +25,18 @@ function parseTimeOutput(output: string): { real: number; user: number; sys: num
   for (const line of lines) {
     if (line.startsWith('real')) {
       const match = line.match(/real\s+(\d+)m([\d.]+)s/);
-      if (match && match[1] && match[2]) {
-        real = parseInt(match[1]) * 60 + parseFloat(match[2]);
+      if (match?.[1] && match[2]) {
+        real = parseInt(match[1], 10) * 60 + parseFloat(match[2]);
       }
     } else if (line.startsWith('user')) {
       const match = line.match(/user\s+(\d+)m([\d.]+)s/);
-      if (match && match[1] && match[2]) {
-        user = parseInt(match[1]) * 60 + parseFloat(match[2]);
+      if (match?.[1] && match[2]) {
+        user = parseInt(match[1], 10) * 60 + parseFloat(match[2]);
       }
     } else if (line.startsWith('sys')) {
       const match = line.match(/sys\s+(\d+)m([\d.]+)s/);
-      if (match && match[1] && match[2]) {
-        sys = parseInt(match[1]) * 60 + parseFloat(match[2]);
+      if (match?.[1] && match[2]) {
+        sys = parseInt(match[1], 10) * 60 + parseFloat(match[2]);
       }
     }
   }

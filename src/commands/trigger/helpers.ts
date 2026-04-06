@@ -1,10 +1,11 @@
-import crypto from 'crypto';
-import ConfigManager from '../../services/config/manager.js';
-import Spinner from '../../utils/spinner.js';
-import Logger from '../../utils/logger.js';
-import WebhookEventStore, { StoredWebhookEvent } from '../../utils/webhook-store.js';
+import crypto from 'node:crypto';
+import type ConfigManager from '../../services/config/manager.js';
 import { CLI_VERSION } from '../../utils/constants.js';
 import { CommandError } from '../../utils/errors.js';
+import Logger from '../../utils/logger.js';
+import type Spinner from '../../utils/spinner.js';
+import WebhookEventStore, { type StoredWebhookEvent } from '../../utils/webhook-store.js';
+import { createCommandContext } from '../shared/runtime.js';
 
 export interface WebhookPayload {
   data: {
@@ -26,9 +27,10 @@ export function createTriggerContext(): {
   logger: Logger;
   store: WebhookEventStore;
 } {
+  const { spinner, configManager } = createCommandContext();
   return {
-    spinner: new Spinner(),
-    configManager: new ConfigManager(),
+    spinner,
+    configManager,
     logger: new Logger(),
     store: new WebhookEventStore(),
   };
@@ -81,7 +83,11 @@ export function buildSignatureHeader(
     .createHmac('sha256', secret)
     .update(`${timestamp}.${body}`)
     .digest('hex');
-  const parts = [`t=${timestamp}`, livemode ? 'te=' : `te=${signature}`, livemode ? `li=${signature}` : 'li='];
+  const parts = [
+    `t=${timestamp}`,
+    livemode ? 'te=' : `te=${signature}`,
+    livemode ? `li=${signature}` : 'li=',
+  ];
 
   return parts.join(',');
 }
@@ -98,9 +104,7 @@ export async function sendWebhookRequest(
   const body = JSON.stringify(payload);
   const livemode =
     'data' in payload &&
-    Boolean(
-      (payload.data as { attributes?: { livemode?: boolean } }).attributes?.livemode
-    );
+    Boolean((payload.data as { attributes?: { livemode?: boolean } }).attributes?.livemode);
   const signatureHeader = buildSignatureHeader(config, webhookUrl, body, livemode);
 
   return request(webhookUrl, {
@@ -272,7 +276,7 @@ export function generateWebhookPayload(eventType: string): WebhookPayload {
 
 export async function printJsonResponse(response: Awaited<ReturnType<typeof sendWebhookRequest>>) {
   const contentType = response.headers['content-type'];
-  if (contentType && contentType.includes('application/json')) {
+  if (contentType?.includes('application/json')) {
     return response.body.json();
   }
   return null;

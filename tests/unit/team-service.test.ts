@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { TeamService } from '../../src/services/team/service.js';
+import { beforeEach, describe, expect, it, vi as jest } from 'vitest';
 import type { KeyBundle } from '../../src/services/team/service.js';
+import { TeamService } from '../../src/services/team/service.js';
 import { PayMongoError } from '../../src/utils/errors.js';
 
 const mockConfig = {
@@ -49,9 +49,7 @@ describe('TeamService', () => {
       mockConfig.load.mockResolvedValue(null);
 
       await expect(teamService.createKeyBundle(['test'])).rejects.toThrow(PayMongoError);
-      await expect(teamService.createKeyBundle(['test'])).rejects.toThrow(
-        'No configuration found'
-      );
+      await expect(teamService.createKeyBundle(['test'])).rejects.toThrow('No configuration found');
     });
 
     it('throws NO_KEYS_FOUND when env has no keys', async () => {
@@ -74,7 +72,7 @@ describe('TeamService', () => {
 
       const bundle = await teamService.createKeyBundle(['test']);
 
-      const savedConfig = mockConfig.save.mock.calls[0]![0] as any;
+      const savedConfig = mockConfig.save.mock.calls[0]?.[0] as any;
       expect(savedConfig.team.sharedKeyBundles).toHaveLength(1);
       expect(savedConfig.team.sharedKeyBundles[0].id).toBe(bundle.id);
       expect(savedConfig.team.sharedKeyBundles[0].environments).toEqual(['test']);
@@ -101,7 +99,7 @@ describe('TeamService', () => {
 
       await teamService.importKeyBundle(validBundle, 'Alice');
 
-      const savedConfig = mockConfig.save.mock.calls[0]![0] as any;
+      const savedConfig = mockConfig.save.mock.calls[0]?.[0] as any;
       expect(savedConfig.team.members).toHaveLength(1);
       expect(savedConfig.team.members[0].name).toBe('Alice');
       expect(savedConfig.team.members[0].sharedKeys).toContain('test');
@@ -140,11 +138,9 @@ describe('TeamService', () => {
 
       await teamService.importKeyBundle(validBundle, 'Bob');
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('TEST keys already exist')
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('TEST keys already exist'));
       // Original keys should remain unchanged
-      const savedConfig = mockConfig.save.mock.calls[0]![0] as any;
+      const savedConfig = mockConfig.save.mock.calls[0]?.[0] as any;
       expect(savedConfig.apiKeys.test).toEqual({ public: 'pk_test_xxx', secret: 'sk_test_xxx' });
 
       consoleSpy.mockRestore();
@@ -157,7 +153,7 @@ describe('TeamService', () => {
 
       await teamService.importKeyBundle(validBundle, 'Bob', { force: true });
 
-      const savedConfig = mockConfig.save.mock.calls[0]![0] as any;
+      const savedConfig = mockConfig.save.mock.calls[0]?.[0] as any;
       expect(savedConfig.apiKeys.test).toEqual({ public: 'pk_test_new', secret: 'sk_test_new' });
     });
 
@@ -170,7 +166,7 @@ describe('TeamService', () => {
 
       await teamService.importKeyBundle(validBundle, 'Alice');
 
-      const savedConfig = mockConfig.save.mock.calls[0]![0] as any;
+      const savedConfig = mockConfig.save.mock.calls[0]?.[0] as any;
       // Should not create a duplicate member
       expect(savedConfig.team.members).toHaveLength(1);
       expect(savedConfig.team.members[0].sharedKeys).toContain('test');
@@ -189,8 +185,8 @@ describe('TeamService', () => {
       const members = await teamService.listMembers();
 
       expect(members).toHaveLength(2);
-      expect(members[0]!.name).toBe('Alice');
-      expect(members[1]!.name).toBe('Bob');
+      expect(members[0]?.name).toBe('Alice');
+      expect(members[1]?.name).toBe('Bob');
     });
 
     it('returns empty array when no config', async () => {
@@ -268,7 +264,7 @@ describe('TeamService', () => {
 
       await teamService.removeMember('Alice');
 
-      const savedConfig = mockConfig.save.mock.calls[0]![0] as any;
+      const savedConfig = mockConfig.save.mock.calls[0]?.[0] as any;
       expect(savedConfig.team.members).toHaveLength(1);
       expect(savedConfig.team.members[0].name).toBe('Bob');
     });
@@ -308,7 +304,7 @@ describe('TeamService', () => {
 
       await teamService.renameTeam('New Team Name');
 
-      const savedConfig = mockConfig.save.mock.calls[0]![0] as any;
+      const savedConfig = mockConfig.save.mock.calls[0]?.[0] as any;
       expect(savedConfig.team.name).toBe('New Team Name');
     });
 

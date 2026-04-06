@@ -96,15 +96,15 @@ command
   );
 
 export {
+  attachAction,
+  captureAction,
+  confirmAction,
+  createIntentAction,
   exportAction,
   importAction,
   listAction,
-  showAction,
-  createIntentAction,
-  attachAction,
-  confirmAction,
-  captureAction,
   refundAction,
+  showAction,
 };
 
 export default command;

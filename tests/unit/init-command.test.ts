@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi as jest } from 'vitest';
 import type { PayMongoConfig } from '../../src/types/paymongo.js';
 
 // Mock modules before importing init command
@@ -11,32 +11,32 @@ const mockSpinnerFail = jest.fn<(text?: string) => void>();
 const mockSpinnerStop = jest.fn<() => void>();
 
 // Mock external dependencies
-jest.unstable_mockModule('fs', () => ({
+jest.mock('fs', () => ({
   existsSync: jest.fn<(path: string) => boolean>(),
   writeFileSync: jest.fn<(path: string, content: string) => void>(),
   readFileSync: jest.fn<(path: string, encoding?: string) => string>(),
   mkdirSync: jest.fn(),
 }));
 
-jest.unstable_mockModule('path', () => ({
+jest.mock('path', () => ({
   join: jest.fn((...args: string[]) => args.join('/')),
   basename: jest.fn((path: string) => path.split('/').pop() || ''),
 }));
 
-jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
+jest.mock('../../src/services/config/manager.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     exists: mockConfigManagerExists,
     save: mockConfigManagerSave,
   })),
 }));
 
-jest.unstable_mockModule('../../src/services/api/client.js', () => ({
+jest.mock('../../src/services/api/client.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     validateApiKey: mockApiClientValidateApiKey,
   })),
 }));
 
-jest.unstable_mockModule('../../src/utils/spinner.js', () => ({
+jest.mock('../../src/utils/spinner.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     start: mockSpinnerStart,
     succeed: mockSpinnerSucceed,
@@ -47,11 +47,11 @@ jest.unstable_mockModule('../../src/utils/spinner.js', () => ({
 
 const mockValidateApiKey = jest.fn<(key: string, type: 'public' | 'secret') => boolean>();
 
-jest.unstable_mockModule('../../src/utils/validator.js', () => ({
+jest.mock('../../src/utils/validator.js', () => ({
   validateApiKey: mockValidateApiKey,
 }));
 
-jest.unstable_mockModule('@inquirer/prompts', () => ({
+jest.mock('@inquirer/prompts', () => ({
   confirm: jest.fn<(options: any) => Promise<boolean>>(),
   input: jest.fn<(options: any) => Promise<string>>(),
   select: jest.fn<(options: any) => Promise<string>>(),
@@ -76,8 +76,8 @@ Object.defineProperty(process, 'exit', {
 
 // Import after mocking
 const { initAction } = await import('../../src/commands/init.js');
-const fs = await import('fs');
-await import('path');
+const fs = await import('node:fs');
+await import('node:path');
 await import('../../src/utils/validator.js');
 const prompts = await import('@inquirer/prompts');
 
@@ -110,7 +110,7 @@ describe('Init Command', () => {
     (fs.writeFileSync as jest.MockedFunction<typeof fs.writeFileSync>).mockImplementation(() => {});
     (fs.readFileSync as jest.MockedFunction<typeof fs.readFileSync>).mockReturnValue('');
 
-    // Path is already mocked via jest.unstable_mockModule
+    // Path is already mocked via jest.mock
   });
 
   afterEach(() => {
@@ -165,13 +165,15 @@ describe('Init Command', () => {
     it('should exit with error when API key validation fails', async () => {
       mockApiClientValidateApiKey.mockRejectedValue(new Error('Invalid API key'));
 
-      await expect(initAction({
-        nonInteractive: true,
-        key: 'sk_test_123',
-        env: 'test' as const,
-        port: '3000',
-        events: 'payment.paid,payment.failed',
-      })).rejects.toThrow('Command failed');
+      await expect(
+        initAction({
+          nonInteractive: true,
+          key: 'sk_test_123',
+          env: 'test' as const,
+          port: '3000',
+          events: 'payment.paid,payment.failed',
+        })
+      ).rejects.toThrow('Command failed');
 
       expect(mockSpinnerFail).toHaveBeenCalledWith('API key validation failed');
     });
@@ -179,13 +181,15 @@ describe('Init Command', () => {
     it('should exit with error when API key validation fails', async () => {
       mockApiClientValidateApiKey.mockRejectedValue(new Error('Invalid API key'));
 
-      await expect(initAction({
-        nonInteractive: true,
-        key: 'sk_test_123',
-        env: 'test' as const,
-        port: '3000',
-        events: 'payment.paid,payment.failed',
-      })).rejects.toThrow('Command failed');
+      await expect(
+        initAction({
+          nonInteractive: true,
+          key: 'sk_test_123',
+          env: 'test' as const,
+          port: '3000',
+          events: 'payment.paid,payment.failed',
+        })
+      ).rejects.toThrow('Command failed');
 
       expect(mockSpinnerFail).toHaveBeenCalledWith('API key validation failed');
     });
@@ -195,13 +199,15 @@ describe('Init Command', () => {
         throw new Error('Permission denied');
       });
 
-      await expect(initAction({
-        nonInteractive: true,
-        key: 'sk_test_123',
-        env: 'test',
-        port: '3000',
-        events: 'payment.paid,payment.failed',
-      })).rejects.toThrow('Command failed');
+      await expect(
+        initAction({
+          nonInteractive: true,
+          key: 'sk_test_123',
+          env: 'test',
+          port: '3000',
+          events: 'payment.paid,payment.failed',
+        })
+      ).rejects.toThrow('Command failed');
 
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('File system error'),
@@ -342,17 +348,17 @@ describe('Init Command', () => {
       const error = new ApiKeyError('Invalid API key', 'secret');
       mockApiClientValidateApiKey.mockRejectedValue(error);
 
-      await expect(initAction({
-        nonInteractive: true,
-        key: 'sk_test_123',
-        env: 'test',
-        port: '3000',
-        events: 'payment.paid,payment.failed',
-      })).rejects.toThrow('Command failed');
+      await expect(
+        initAction({
+          nonInteractive: true,
+          key: 'sk_test_123',
+          env: 'test',
+          port: '3000',
+          events: 'payment.paid,payment.failed',
+        })
+      ).rejects.toThrow('Command failed');
 
-      expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('Invalid API keys')
-      );
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Invalid API keys'));
     });
 
     it('should handle network errors with specific guidance', async () => {
@@ -360,29 +366,31 @@ describe('Init Command', () => {
       const error = new NetworkError('Network connection failed');
       mockApiClientValidateApiKey.mockRejectedValue(error);
 
-      await expect(initAction({
-        nonInteractive: true,
-        key: 'sk_test_123',
-        env: 'test',
-        port: '3000',
-        events: 'payment.paid,payment.failed',
-      })).rejects.toThrow('Command failed');
+      await expect(
+        initAction({
+          nonInteractive: true,
+          key: 'sk_test_123',
+          env: 'test',
+          port: '3000',
+          events: 'payment.paid,payment.failed',
+        })
+      ).rejects.toThrow('Command failed');
 
-      expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('Network error')
-      );
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Network error'));
     });
 
     it('should handle file system permission errors', async () => {
       mockConfigManagerSave.mockRejectedValue(new Error('Permission denied'));
 
-      await expect(initAction({
-        nonInteractive: true,
-        key: 'sk_test_123',
-        env: 'test',
-        port: '3000',
-        events: 'payment.paid,payment.failed',
-      })).rejects.toThrow('Command failed');
+      await expect(
+        initAction({
+          nonInteractive: true,
+          key: 'sk_test_123',
+          env: 'test',
+          port: '3000',
+          events: 'payment.paid,payment.failed',
+        })
+      ).rejects.toThrow('Command failed');
 
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('File system error'),

@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi as jest } from 'vitest';
 import type { PayMongoConfig } from '../../src/types/paymongo.js';
 
 // Type for request handler
@@ -61,20 +61,20 @@ const mockSpinnerStop = jest.fn();
 const mockAnalyticsRecordEvent = jest.fn();
 
 // Mock modules before importing dev command
-jest.unstable_mockModule('../../src/services/analytics/service.js', () => ({
+jest.mock('../../src/services/analytics/service.js', () => ({
   AnalyticsService: jest.fn().mockImplementation(() => ({
     recordEvent: mockAnalyticsRecordEvent,
   })),
 }));
 
 // Mock @inquirer/prompts
-jest.unstable_mockModule('@inquirer/prompts', () => ({
+jest.mock('@inquirer/prompts', () => ({
   select: mockSelect,
   password: mockPassword,
 }));
 
 // Mock fs
-jest.unstable_mockModule('fs', () => ({
+jest.mock('fs', () => ({
   existsSync: mockFsExistsSync,
   mkdirSync: mockFsMkdirSync,
   writeFileSync: mockFsWriteFileSync,
@@ -86,7 +86,7 @@ jest.unstable_mockModule('fs', () => ({
 }));
 
 // Mock os
-jest.unstable_mockModule('node:os', () => {
+jest.mock('node:os', () => {
   const osModule = {
     homedir: mockOsHomedir,
     hostname: jest.fn(() => 'test-host'),
@@ -100,7 +100,7 @@ jest.unstable_mockModule('node:os', () => {
 });
 
 // Mock crypto
-jest.unstable_mockModule('crypto', () => ({
+jest.mock('crypto', () => ({
   createHmac: jest.fn(() => ({
     update: jest.fn(() => ({
       digest: jest.fn(() => 'mock-expected-signature'),
@@ -110,25 +110,25 @@ jest.unstable_mockModule('crypto', () => ({
 }));
 
 // Mock http
-jest.unstable_mockModule('http', () => ({
+jest.mock('http', () => ({
   createServer: mockHttpCreateServer,
 }));
 
 // Mock child_process
-jest.unstable_mockModule('child_process', () => ({
+jest.mock('child_process', () => ({
   spawn: mockSpawn,
   execSync: jest.fn(),
 }));
 
 // Mock @ngrok/ngrok
-jest.unstable_mockModule('@ngrok/ngrok', () => ({
+jest.mock('@ngrok/ngrok', () => ({
   default: {
     forward: mockNgrokForward,
   },
 }));
 
 // Mock ConfigManager
-jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
+jest.mock('../../src/services/config/manager.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     load: mockConfigManagerLoad,
     save: mockConfigManagerSave,
@@ -136,7 +136,7 @@ jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
 }));
 
 // Mock ApiClient
-jest.unstable_mockModule('../../src/services/api/client.js', () => ({
+jest.mock('../../src/services/api/client.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     validateApiKey: mockApiClientValidate,
     createWebhook: mockApiClientCreateWebhook,
@@ -145,7 +145,7 @@ jest.unstable_mockModule('../../src/services/api/client.js', () => ({
 }));
 
 // Mock DevProcessManager
-jest.unstable_mockModule('../../src/services/dev/process-manager.js', () => ({
+jest.mock('../../src/services/dev/process-manager.js', () => ({
   DevProcessManager: {
     saveState: mockDevProcessManagerSaveState,
     loadState: mockDevProcessManagerLoadState,
@@ -160,7 +160,7 @@ jest.unstable_mockModule('../../src/services/dev/process-manager.js', () => ({
 }));
 
 // Mock Spinner
-jest.unstable_mockModule('../../src/utils/spinner.js', () => ({
+jest.mock('../../src/utils/spinner.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     start: mockSpinnerStart,
     succeed: mockSpinnerSucceed,
@@ -176,6 +176,7 @@ const { DevServer } = await import('../../src/commands/dev.js');
 describe('Dev Command', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    process.argv = ['/usr/bin/node', '/test/bin/paymongo.js'];
 
     // Default mocks
     mockOsHomedir.mockReturnValue('/home/user');
@@ -223,9 +224,9 @@ describe('Dev Command', () => {
 
     // Mock HTTP server
     const mockServer: MockServer = {
-      listen: jest.fn((port: number, callback?: () => void) => callback && callback()),
+      listen: jest.fn((_port: number, callback?: () => void) => callback?.()),
       on: jest.fn(),
-      close: jest.fn((callback?: () => void) => callback && callback()),
+      close: jest.fn((callback?: () => void) => callback?.()),
     };
     mockHttpCreateServer.mockReturnValue(mockServer);
 
@@ -309,7 +310,7 @@ describe('Dev Command', () => {
       });
 
       const mockServer: MockServer = {
-        listen: jest.fn((port: number, callback?: () => void) => {
+        listen: jest.fn((_port: number, callback?: () => void) => {
           if (callback) callback();
         }),
         on: jest.fn(),
@@ -414,7 +415,7 @@ describe('Dev Command', () => {
       });
 
       const mockServer: MockServer = {
-        listen: jest.fn((port: number, callback?: () => void) => {
+        listen: jest.fn((_port: number, callback?: () => void) => {
           if (callback) callback();
         }),
         on: jest.fn(),
@@ -483,7 +484,7 @@ describe('Dev Command', () => {
       });
 
       const mockServer: MockServer = {
-        listen: jest.fn((port: number, callback?: () => void) => {
+        listen: jest.fn((_port: number, callback?: () => void) => {
           if (callback) callback();
         }),
         on: jest.fn(),
@@ -548,7 +549,7 @@ describe('Dev Command', () => {
       });
 
       const mockServer: MockServer = {
-        listen: jest.fn((port: number, callback?: () => void) => {
+        listen: jest.fn((_port: number, callback?: () => void) => {
           if (callback) callback();
         }),
         on: jest.fn(),
@@ -569,6 +570,38 @@ describe('Dev Command', () => {
           status: 'paid',
         },
       });
+    });
+  });
+
+  describe('detached mode', () => {
+    it('should reuse the current CLI entrypoint when spawning the background process', async () => {
+      const config = {
+        version: '1.0',
+        projectName: 'test-project',
+        environment: 'test' as const,
+        apiKeys: { test: { secret: 'sk_test_key', public: 'pk_test_key' } },
+        webhooks: { url: '', events: [] },
+        webhookSecrets: {},
+        dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
+      };
+
+      mockConfigManagerLoad.mockResolvedValue(config);
+
+      const { command } = await import('../../src/commands/dev.js');
+      await command.parseAsync(['--detach'], { from: 'user' });
+
+      expect(mockSpawn).toHaveBeenCalledWith(
+        process.execPath,
+        [
+          '/test/bin/paymongo.js',
+          'dev',
+          '--port',
+          '3000',
+          '--events',
+          'payment.paid,payment.failed',
+        ],
+        expect.any(Object)
+      );
     });
   });
 });

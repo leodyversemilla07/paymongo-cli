@@ -1,4 +1,4 @@
-import { PayMongoConfig } from '../../types/paymongo.js';
+import type { PayMongoConfig } from '../../types/paymongo.js';
 
 export interface RateLimitPolicy {
   /** Maximum requests per time window */

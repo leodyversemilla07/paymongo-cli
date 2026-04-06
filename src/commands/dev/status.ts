@@ -1,5 +1,5 @@
-import { Command } from 'commander';
 import chalk from 'chalk';
+import { Command } from 'commander';
 import { DevProcessManager } from '../../services/dev/process-manager.js';
 
 /**

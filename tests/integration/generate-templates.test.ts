@@ -3,22 +3,21 @@
  * Verifies all templates generate valid output
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
-
-// Import templates
-import { getWebhookHandlerTemplate as getJsWebhookHandler } from '../../src/commands/generate/templates/webhook-handler/javascript.js';
-import { getWebhookHandlerTemplate as getTsWebhookHandler } from '../../src/commands/generate/templates/webhook-handler/typescript.js';
-import { getPaymentIntentTemplate as getJsPaymentIntent } from '../../src/commands/generate/templates/payment-intent/javascript.js';
-import { getPaymentIntentTemplate as getTsPaymentIntent } from '../../src/commands/generate/templates/payment-intent/typescript.js';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   getCheckoutPageTemplate,
   getHtmlTemplate,
   getReactTemplate,
   getVueTemplate,
 } from '../../src/commands/generate/templates/checkout-page/index.js';
+import { getPaymentIntentTemplate as getJsPaymentIntent } from '../../src/commands/generate/templates/payment-intent/javascript.js';
+import { getPaymentIntentTemplate as getTsPaymentIntent } from '../../src/commands/generate/templates/payment-intent/typescript.js';
+// Import templates
+import { getWebhookHandlerTemplate as getJsWebhookHandler } from '../../src/commands/generate/templates/webhook-handler/javascript.js';
+import { getWebhookHandlerTemplate as getTsWebhookHandler } from '../../src/commands/generate/templates/webhook-handler/typescript.js';
 
 describe('Generate Templates Integration', () => {
   const testDir = path.join(os.tmpdir(), 'paymongo-cli-template-tests');

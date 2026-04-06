@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { promises as fs } from 'fs';
-import os from 'os';
-import path from 'path';
+import { promises as fs } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { PaymentDataFull, WebhookData } from '../../src/types/paymongo.js';
 import { BulkOperations } from '../../src/utils/bulk.js';
 import { PayMongoError } from '../../src/utils/errors.js';
-import type { WebhookData, PaymentDataFull } from '../../src/types/paymongo.js';
 
 describe('BulkOperations', () => {
   let tmpDir: string;
@@ -166,7 +166,13 @@ describe('BulkOperations', () => {
           version: '1.0',
           environment: 'test',
         },
-        data: [{ id: 'hook_xxx', type: 'payment', attributes: { url: 'https://example.com', events: ['payment.paid'] } }],
+        data: [
+          {
+            id: 'hook_xxx',
+            type: 'payment',
+            attributes: { url: 'https://example.com', events: ['payment.paid'] },
+          },
+        ],
       };
       await fs.writeFile(filepath, JSON.stringify(data), 'utf-8');
 

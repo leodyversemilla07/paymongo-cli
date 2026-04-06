@@ -4,7 +4,7 @@ import { createConfigContext, ensureRateLimitingConfig, loadRequiredConfig } fro
 
 function parsePositiveInt(value: string, message: string): number {
   const parsed = parseInt(value, 10);
-  if (isNaN(parsed) || parsed < 1) {
+  if (Number.isNaN(parsed) || parsed < 1) {
     console.error(chalk.red(message));
     throw new CommandError();
   }
@@ -130,10 +130,10 @@ export async function rateLimitStatusAction() {
       return;
     }
 
-    console.log('\n' + chalk.bold('Rate Limiting Status'));
+    console.log(`\n${chalk.bold('Rate Limiting Status')}`);
     console.log('');
 
-    if (!config.rateLimiting || !config.rateLimiting.enabled) {
+    if (!config.rateLimiting?.enabled) {
       console.log(chalk.yellow('Status: Disabled'));
       console.log(chalk.gray('Rate limiting is not currently active'));
       console.log('');

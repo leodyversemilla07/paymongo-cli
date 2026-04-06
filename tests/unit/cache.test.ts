@@ -1,6 +1,6 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import Cache from '../../src/utils/cache';
 
 describe('Cache', () => {
@@ -17,7 +17,7 @@ describe('Cache', () => {
 
     // Create temp directory
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'paymongo-cache-test-'));
-    
+
     // Set HOME to temp directory
     process.env.HOME = tempDir;
     process.env.USERPROFILE = tempDir;
@@ -167,14 +167,14 @@ describe('Cache', () => {
       const largeData = 'x'.repeat(500); // 500 bytes per entry
 
       await smallCache.set('old-key-1', largeData);
-      
+
       // Wait a bit to ensure different timestamps
       await new Promise((resolve) => setTimeout(resolve, 10));
-      
+
       await smallCache.set('old-key-2', largeData);
-      
+
       await new Promise((resolve) => setTimeout(resolve, 10));
-      
+
       await smallCache.set('new-key', largeData);
 
       // The cleanup should have removed older entries

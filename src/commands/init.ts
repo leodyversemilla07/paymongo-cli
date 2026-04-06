@@ -1,12 +1,11 @@
-import { Command } from 'commander';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import chalk from 'chalk';
-import ConfigManager from '../services/config/manager.js';
-import ApiClient from '../services/api/client.js';
+import { Command } from 'commander';
+import { ApiKeyError, CommandError, NetworkError, PayMongoError } from '../utils/errors.js';
 import { validateApiKey } from '../utils/validator.js';
-import Spinner from '../utils/spinner.js';
-import { ApiKeyError, NetworkError, PayMongoError, CommandError } from '../utils/errors.js';
+import { createCredentialValidationConfig } from './shared/auth.js';
+import { createApiClient, createCommandContext } from './shared/runtime.js';
 
 interface InitAnswers {
   projectName: string;
@@ -30,8 +29,7 @@ interface InitOptions {
 }
 
 export async function initAction(options: InitOptions) {
-  const spinner = new Spinner();
-  const configManager = new ConfigManager();
+  const { spinner, configManager } = createCommandContext();
 
   try {
     // Check if config already exists
@@ -149,29 +147,17 @@ export async function initAction(options: InitOptions) {
     // Validate API keys
     spinner.start('Validating API keys...');
 
-    const tempConfig = {
-      version: '1.0',
+    const tempConfig = createCredentialValidationConfig({
       projectName: answers.projectName,
       environment: answers.environment,
-      apiKeys: {
-        [answers.environment]: {
-          public: answers.publicKey,
-          secret: answers.secretKey,
-        },
-      },
-      webhooks: {
-        url: answers.webhookUrl || `http://localhost:${answers.port}/webhook`,
-        events: answers.events,
-      },
-      webhookSecrets: {},
-      dev: {
-        port: answers.port,
-        autoRegisterWebhook: true,
-        verifyWebhookSignatures: true,
-      },
-    };
+      publicKey: answers.publicKey,
+      secretKey: answers.secretKey,
+      webhookUrl: answers.webhookUrl || `http://localhost:${answers.port}/webhook`,
+      events: answers.events,
+      port: answers.port,
+    });
 
-    const apiClient = new ApiClient({ config: tempConfig });
+    const apiClient = createApiClient(tempConfig);
 
     try {
       await apiClient.validateApiKey();
@@ -247,25 +233,23 @@ PAYMONGO_ENVIRONMENT=${answers.environment}
         lines.push('.paymongo');
       }
 
-      gitignoreContent += lines.join('\n') + '\n';
+      gitignoreContent += `${lines.join('\n')}\n`;
       fs.writeFileSync(gitignorePath, gitignoreContent);
       console.log(chalk.green('✓ Added .env and .paymongo to .gitignore'));
     }
 
     // Success message
-    console.log('\n' + chalk.green('🎉 PayMongo project initialized!'));
-    console.log('\n' + chalk.bold('Configuration saved to .paymongo'));
+    console.log(`\n${chalk.green('🎉 PayMongo project initialized!')}`);
+    console.log(`\n${chalk.bold('Configuration saved to .paymongo')}`);
     console.log(chalk.bold('Environment variables saved to .env'));
-    console.log('\n' + chalk.bold('Next steps:'));
-    console.log('  1. Run ' + chalk.cyan('paymongo dev') + ' to start development server');
+    console.log(`\n${chalk.bold('Next steps:')}`);
+    console.log(`  1. Run ${chalk.cyan('paymongo dev')} to start development server`);
     console.log(
       '  2. Configure your webhook handler at ' +
         chalk.cyan(`http://localhost:${answers.port}/webhook`)
     );
-    console.log(
-      '  3. Visit ' + chalk.cyan('https://dashboard.paymongo.com') + ' to view transactions'
-    );
-    console.log('\n' + chalk.yellow('Happy building! 🚀'));
+    console.log(`  3. Visit ${chalk.cyan('https://dashboard.paymongo.com')} to view transactions`);
+    console.log(`\n${chalk.yellow('Happy building! 🚀')}`);
   } catch (error) {
     spinner.stop();
     const err = error as Error;

@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi as jest } from 'vitest';
 
 // Mock modules before importing config command
 const mockConfigManagerLoad = jest.fn<() => Promise<any>>();
@@ -12,7 +12,7 @@ const mockSpinnerSucceed = jest.fn<(text?: string) => void>();
 const mockSpinnerFail = jest.fn<(text?: string) => void>();
 const mockSpinnerStop = jest.fn<() => void>();
 
-jest.unstable_mockModule('chalk', () => ({
+jest.mock('chalk', () => ({
   default: {
     bold: jest.fn((text: string) => text),
     green: jest.fn((text: string) => text),
@@ -28,19 +28,19 @@ jest.unstable_mockModule('chalk', () => ({
 }));
 
 // Mock external dependencies
-jest.unstable_mockModule('fs', () => ({
+jest.mock('fs', () => ({
   existsSync: jest.fn<(path: string) => boolean>(),
   writeFileSync: jest.fn<(path: string, content: string) => void>(),
   readFileSync: jest.fn<(path: string, encoding?: string) => string>(),
   mkdirSync: jest.fn<(path: string, options?: any) => string | undefined>(),
 }));
 
-jest.unstable_mockModule('path', () => ({
+jest.mock('path', () => ({
   join: jest.fn((...args: string[]) => args.join('/')),
   resolve: jest.fn((path: string) => path),
 }));
 
-jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
+jest.mock('../../src/services/config/manager.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     load: mockConfigManagerLoad,
     save: mockConfigManagerSave,
@@ -50,7 +50,7 @@ jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
   })),
 }));
 
-jest.unstable_mockModule('../../src/utils/spinner.js', () => ({
+jest.mock('../../src/utils/spinner.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     start: mockSpinnerStart,
     succeed: mockSpinnerSucceed,
@@ -76,8 +76,8 @@ Object.defineProperty(process, 'cwd', {
 });
 
 // Import after mocking
-const fs = await import('fs');
-const path = await import('path');
+const fs = await import('node:fs');
+const path = await import('node:path');
 await import('chalk');
 await import('../../src/services/config/manager.js');
 await import('../../src/utils/spinner.js');
@@ -228,9 +228,9 @@ describe('Config Command', () => {
       const secretKeyCall = logCalls.find((call) => call[0]?.includes('Secret (live):'));
 
       expect(publicKeyCall).toBeDefined();
-      expect(publicKeyCall![1]).toBe('pk_live_ve***');
+      expect(publicKeyCall?.[1]).toBe('pk_live_ve***');
       expect(secretKeyCall).toBeDefined();
-      expect(secretKeyCall![1]).toBe('sk_live_ve***');
+      expect(secretKeyCall?.[1]).toBe('sk_live_ve***');
     });
 
     it('should display rate limiting information when enabled', async () => {
@@ -427,9 +427,7 @@ describe('Config Command', () => {
 
       const { setAction } = await import('../../src/commands/config.js');
 
-      await expect(setAction('projectName', 'new-name')).rejects.toThrow(
-        'Command failed'
-      );
+      await expect(setAction('projectName', 'new-name')).rejects.toThrow('Command failed');
 
       expect(mockSpinnerStop).toHaveBeenCalled();
       expect(console.error).toHaveBeenCalledWith(
@@ -866,9 +864,7 @@ describe('Config Command', () => {
       it('should reject invalid number of requests', async () => {
         const { rateLimitSetMaxRequestsAction } = await import('../../src/commands/config.js');
 
-        await expect(rateLimitSetMaxRequestsAction('0')).rejects.toThrow(
-          'Command failed'
-        );
+        await expect(rateLimitSetMaxRequestsAction('0')).rejects.toThrow('Command failed');
 
         expect(console.error).toHaveBeenCalledWith(
           expect.stringContaining('❌ Invalid number of requests')
@@ -878,9 +874,7 @@ describe('Config Command', () => {
       it('should reject non-numeric input', async () => {
         const { rateLimitSetMaxRequestsAction } = await import('../../src/commands/config.js');
 
-        await expect(rateLimitSetMaxRequestsAction('abc')).rejects.toThrow(
-          'Command failed'
-        );
+        await expect(rateLimitSetMaxRequestsAction('abc')).rejects.toThrow('Command failed');
 
         expect(console.error).toHaveBeenCalledWith(
           expect.stringContaining('❌ Invalid number of requests')
@@ -984,6 +978,73 @@ describe('Config Command', () => {
           expect.stringContaining('Rate limiting is not currently active')
         );
       });
+    });
+  });
+
+  describe('analytics subcommand', () => {
+    it('should enable analytics', async () => {
+      const existingConfig = {
+        version: '1.0',
+        projectName: 'test',
+        environment: 'test',
+        apiKeys: {},
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
+        dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
+      };
+
+      mockConfigManagerLoad.mockResolvedValue(existingConfig);
+
+      const { analyticsEnableAction } = await import('../../src/commands/config.js');
+      await analyticsEnableAction();
+
+      expect(mockConfigManagerSave).toHaveBeenCalledWith({
+        ...existingConfig,
+        analytics: { enabled: true },
+      });
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('✓ Analytics enabled'));
+    });
+
+    it('should disable analytics', async () => {
+      const existingConfig = {
+        version: '1.0',
+        projectName: 'test',
+        environment: 'test',
+        apiKeys: {},
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
+        dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
+        analytics: { enabled: true },
+      };
+
+      mockConfigManagerLoad.mockResolvedValue(existingConfig);
+
+      const { analyticsDisableAction } = await import('../../src/commands/config.js');
+      await analyticsDisableAction();
+
+      expect(mockConfigManagerSave).toHaveBeenCalledWith({
+        ...existingConfig,
+        analytics: { enabled: false },
+      });
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('✓ Analytics disabled'));
+    });
+
+    it('should show analytics status when enabled', async () => {
+      const existingConfig = {
+        version: '1.0',
+        projectName: 'test',
+        environment: 'test',
+        apiKeys: {},
+        webhooks: { url: 'https://example.com/webhook', events: ['payment.paid'] },
+        dev: { port: 3000, autoRegisterWebhook: true, verifyWebhookSignatures: false },
+        analytics: { enabled: true },
+      };
+
+      mockConfigManagerLoad.mockResolvedValue(existingConfig);
+
+      const { analyticsStatusAction } = await import('../../src/commands/config.js');
+      await analyticsStatusAction();
+
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Analytics Status'));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Status: Enabled'));
     });
   });
 });

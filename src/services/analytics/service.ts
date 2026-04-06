@@ -1,8 +1,8 @@
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import type { PayMongoConfig } from '../../types/paymongo.js';
 import Logger from '../../utils/logger.js';
-import { PayMongoConfig } from '../../types/paymongo.js';
 
 export interface WebhookEventData {
   type?: string;

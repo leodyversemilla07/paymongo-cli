@@ -1,7 +1,7 @@
-import { Command } from 'commander';
 import chalk from 'chalk';
-import Spinner from '../../utils/spinner.js';
+import { Command } from 'commander';
 import { DevProcessManager } from '../../services/dev/process-manager.js';
+import Spinner from '../../utils/spinner.js';
 
 /**
  * Dev stop subcommand - Stop the background dev server

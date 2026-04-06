@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { beforeEach, describe, expect, it, vi as jest } from 'vitest';
 
 // Define mock ora instance interface
 interface MockOraInstance {
@@ -32,7 +32,7 @@ mockOraInstance.info.mockReturnValue(mockOraInstance);
 
 // Mock ora module
 const mockOra = jest.fn(() => mockOraInstance);
-jest.unstable_mockModule('ora', () => ({
+jest.mock('ora', () => ({
   default: mockOra,
 }));
 

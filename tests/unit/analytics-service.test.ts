@@ -1,6 +1,6 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { AnalyticsService } from '../../src/services/analytics/service';
 
 describe('AnalyticsService', () => {
@@ -134,7 +134,11 @@ describe('AnalyticsService', () => {
     it('should calculate correct success rate', async () => {
       await analyticsService.recordEvent({ type: 'payment.paid', success: true });
       await analyticsService.recordEvent({ type: 'payment.paid', success: true });
-      await analyticsService.recordEvent({ type: 'payment.failed', success: false, error: 'Error' });
+      await analyticsService.recordEvent({
+        type: 'payment.failed',
+        success: false,
+        error: 'Error',
+      });
       await analyticsService.recordEvent({ type: 'payment.paid', success: true });
 
       const analytics = analyticsService.getAnalytics();
@@ -144,7 +148,11 @@ describe('AnalyticsService', () => {
     it('should count events by type', async () => {
       await analyticsService.recordEvent({ type: 'payment.paid', success: true });
       await analyticsService.recordEvent({ type: 'payment.paid', success: true });
-      await analyticsService.recordEvent({ type: 'payment.failed', success: false, error: 'Error' });
+      await analyticsService.recordEvent({
+        type: 'payment.failed',
+        success: false,
+        error: 'Error',
+      });
       await analyticsService.recordEvent({ type: 'source.chargeable', success: true });
 
       const analytics = analyticsService.getAnalytics();
@@ -154,9 +162,21 @@ describe('AnalyticsService', () => {
     });
 
     it('should count errors by type', async () => {
-      await analyticsService.recordEvent({ type: 'payment.paid', success: false, error: 'Error 1' });
-      await analyticsService.recordEvent({ type: 'payment.paid', success: false, error: 'Error 2' });
-      await analyticsService.recordEvent({ type: 'payment.failed', success: false, error: 'Error 3' });
+      await analyticsService.recordEvent({
+        type: 'payment.paid',
+        success: false,
+        error: 'Error 1',
+      });
+      await analyticsService.recordEvent({
+        type: 'payment.paid',
+        success: false,
+        error: 'Error 2',
+      });
+      await analyticsService.recordEvent({
+        type: 'payment.failed',
+        success: false,
+        error: 'Error 3',
+      });
       await analyticsService.recordEvent({ type: 'payment.paid', success: true }); // Success - no error
 
       const analytics = analyticsService.getAnalytics();
@@ -165,9 +185,21 @@ describe('AnalyticsService', () => {
     });
 
     it('should calculate average response time', async () => {
-      await analyticsService.recordEvent({ type: 'payment.paid', success: true, responseTime: 100 });
-      await analyticsService.recordEvent({ type: 'payment.paid', success: true, responseTime: 200 });
-      await analyticsService.recordEvent({ type: 'payment.paid', success: true, responseTime: 300 });
+      await analyticsService.recordEvent({
+        type: 'payment.paid',
+        success: true,
+        responseTime: 100,
+      });
+      await analyticsService.recordEvent({
+        type: 'payment.paid',
+        success: true,
+        responseTime: 200,
+      });
+      await analyticsService.recordEvent({
+        type: 'payment.paid',
+        success: true,
+        responseTime: 300,
+      });
 
       const analytics = analyticsService.getAnalytics();
       expect(analytics.averageResponseTime).toBe(200);
@@ -233,7 +265,11 @@ describe('AnalyticsService', () => {
   describe('persistence', () => {
     it('should persist events to file', async () => {
       await analyticsService.recordEvent({ type: 'payment.paid', success: true });
-      await analyticsService.recordEvent({ type: 'payment.failed', success: false, error: 'Test error' });
+      await analyticsService.recordEvent({
+        type: 'payment.failed',
+        success: false,
+        error: 'Test error',
+      });
 
       // Create new instance to verify persistence
       const newService = new AnalyticsService(config);

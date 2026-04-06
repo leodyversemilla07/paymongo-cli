@@ -1,7 +1,8 @@
-import Table from 'cli-table3';
 import chalk from 'chalk';
+import Table from 'cli-table3';
+import type { SimulationOptions } from '../../services/payments/simulator.js';
+import type { PaymentDataFull } from '../../types/paymongo.js';
 import { BulkOperations } from '../../utils/bulk.js';
-import { PaymentDataFull } from '../../types/paymongo.js';
 import {
   createApiClient,
   createPaymentSimulator,
@@ -11,7 +12,6 @@ import {
   loadPaymentsConfig,
   parseBoundedInt,
 } from './helpers.js';
-import { SimulationOptions } from '../../services/payments/simulator.js';
 
 export async function exportAction(options: { file?: string; limit?: string }) {
   const { spinner, configManager } = createPaymentsContext();
@@ -46,7 +46,7 @@ export async function exportAction(options: { file?: string; limit?: string }) {
     await BulkOperations.exportPayments(payments, filename, config.environment);
     spinner.succeed('Export completed');
 
-    console.log('\n' + chalk.green('✅ Payments exported successfully!'));
+    console.log(`\n${chalk.green('✅ Payments exported successfully!')}`);
     console.log('');
     console.log(`${chalk.bold('File:')} ${filename}`);
     console.log(`${chalk.bold('Payments:')} ${payments.length}`);
@@ -70,20 +70,20 @@ export async function importAction(filename: string, options: { json?: boolean }
       return;
     }
 
-    console.log('\n' + chalk.green('✅ Payments imported successfully!'));
+    console.log(`\n${chalk.green('✅ Payments imported successfully!')}`);
     console.log('');
     console.log(`${chalk.bold('Source:')} ${filename}`);
     console.log(`${chalk.bold('Payments:')} ${payments.length}`);
     console.log(`${chalk.bold('Exported from:')} ${metadata.environment} environment`);
     console.log(`${chalk.bold('Export date:')} ${new Date(metadata.exported_at).toLocaleString()}`);
 
-    console.log('\n' + chalk.yellow('⚠️  Important Notes:'));
+    console.log(`\n${chalk.yellow('⚠️  Important Notes:')}`);
     console.log(chalk.gray('• Payment data imported for reference only'));
     console.log(chalk.gray('• Actual payments cannot be recreated through the API'));
     console.log(chalk.gray('• Use this for data analysis, migration planning, or testing'));
 
     if (payments.length > 0) {
-      console.log('\n' + chalk.bold('Sample Payment IDs:'));
+      console.log(`\n${chalk.bold('Sample Payment IDs:')}`);
       payments.slice(0, 5).forEach((payment: PaymentDataFull, index: number) => {
         const amount = (payment.attributes.amount / 100).toFixed(2);
         console.log(`  ${index + 1}. ${payment.id} - ₱${amount} ${payment.attributes.currency}`);
@@ -149,11 +149,11 @@ export async function listAction(options: { limit?: string; json?: boolean }) {
         chalk.yellow(amount),
         getStatusColor(status)(status),
         chalk.gray(created),
-        chalk.white(description.length > 25 ? description.substring(0, 22) + '...' : description),
+        chalk.white(description.length > 25 ? `${description.substring(0, 22)}...` : description),
       ]);
     });
 
-    console.log('\n' + chalk.bold('Recent Payments'));
+    console.log(`\n${chalk.bold('Recent Payments')}`);
     console.log(chalk.gray('─'.repeat(95)));
     console.log(table.toString());
     console.log(chalk.gray(`Total: ${payments.length} payments`));
@@ -186,7 +186,7 @@ export async function showAction(id: string, options: { json?: boolean }) {
     const fees = attrs.fees ? (attrs.fees / 100).toFixed(2) : '0.00';
     const netAmount = attrs.net_amount ? (attrs.net_amount / 100).toFixed(2) : '0.00';
 
-    console.log('\n' + chalk.bold('Payment Details'));
+    console.log(`\n${chalk.bold('Payment Details')}`);
     console.log(chalk.gray('─'.repeat(50)));
     console.log(`${chalk.bold('ID:')} ${payment.id}`);
     console.log(`${chalk.bold('Amount:')} ₱${amount} ${attrs.currency}`);
@@ -253,7 +253,7 @@ export async function createIntentAction(options: {
     }
 
     const attrs = paymentIntent.attributes;
-    console.log('\n' + chalk.bold('Payment Intent Created'));
+    console.log(`\n${chalk.bold('Payment Intent Created')}`);
     console.log(chalk.gray('─'.repeat(50)));
     console.log(`${chalk.bold('ID:')} ${paymentIntent.id}`);
     console.log(`${chalk.bold('Amount:')} ₱${(attrs.amount / 100).toFixed(2)} ${attrs.currency}`);
@@ -312,11 +312,11 @@ export async function attachAction(
       }
 
       const delayMs = options.delay ? parseInt(options.delay, 10) : undefined;
-      if (options.delay && (delayMs === undefined || isNaN(delayMs) || delayMs <= 0)) {
+      if (options.delay && (delayMs === undefined || Number.isNaN(delayMs) || delayMs <= 0)) {
         throw new Error('Simulation delay must be a positive number in milliseconds');
       }
 
-      console.log('\n' + chalk.bold('🧪 Payment Simulation Mode'));
+      console.log(`\n${chalk.bold('🧪 Payment Simulation Mode')}`);
       console.log(chalk.gray('─'.repeat(50)));
       console.log(`${chalk.bold('Method:')} ${options.method.toUpperCase()}`);
       console.log(`${chalk.bold('Outcome:')} ${options.outcome}`);
@@ -342,7 +342,7 @@ export async function attachAction(
       }
 
       const attrs = result.paymentIntent.attributes;
-      console.log('\n' + chalk.bold('Payment Intent Confirmed (Simulated)'));
+      console.log(`\n${chalk.bold('Payment Intent Confirmed (Simulated)')}`);
       console.log(chalk.gray('─'.repeat(50)));
       console.log(`${chalk.bold('ID:')} ${result.paymentIntent.id}`);
       console.log(`${chalk.bold('Amount:')} ₱${(attrs.amount / 100).toFixed(2)} ${attrs.currency}`);
@@ -376,7 +376,7 @@ export async function attachAction(
     }
 
     const attrs = result.attributes;
-    console.log('\n' + chalk.bold('Payment Method Attached'));
+    console.log(`\n${chalk.bold('Payment Method Attached')}`);
     console.log(chalk.gray('─'.repeat(50)));
     console.log(`${chalk.bold('ID:')} ${result.id}`);
     console.log(`${chalk.bold('Amount:')} ₱${(attrs.amount / 100).toFixed(2)} ${attrs.currency}`);
@@ -412,7 +412,7 @@ export async function captureAction(intentId: string, options: { json?: boolean 
     }
 
     const attrs = result.attributes;
-    console.log('\n' + chalk.bold('Payment Intent Captured'));
+    console.log(`\n${chalk.bold('Payment Intent Captured')}`);
     console.log(chalk.gray('─'.repeat(50)));
     console.log(`${chalk.bold('ID:')} ${result.id}`);
     console.log(`${chalk.bold('Amount:')} ₱${(attrs.amount / 100).toFixed(2)} ${attrs.currency}`);
@@ -466,7 +466,7 @@ export async function refundAction(
     }
 
     const attrs = refund.attributes;
-    console.log('\n' + chalk.bold('Refund Created'));
+    console.log(`\n${chalk.bold('Refund Created')}`);
     console.log(chalk.gray('─'.repeat(50)));
     console.log(`${chalk.bold('ID:')} ${refund.id}`);
     console.log(`${chalk.bold('Payment ID:')} ${attrs.payment_id}`);

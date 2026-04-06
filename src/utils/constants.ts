@@ -22,7 +22,8 @@ export const ENV_FILE_NAME = '.env';
 // CLI Constants
 export const CLI_NAME = 'paymongo';
 
-import { createRequire } from 'module';
+import { createRequire } from 'node:module';
+
 const _require = createRequire(import.meta.url);
 const _pkg = _require('../../package.json') as { version: string };
 export const CLI_VERSION = _pkg.version;

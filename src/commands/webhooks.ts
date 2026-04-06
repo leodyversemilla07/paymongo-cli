@@ -63,13 +63,13 @@ const command = new Command('webhooks')
   );
 
 export {
-  exportAction,
-  importAction,
   createAction,
-  listAction,
+  deleteAction,
   disableAction,
   enableAction,
-  deleteAction,
+  exportAction,
+  importAction,
+  listAction,
   showAction,
 };
 

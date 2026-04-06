@@ -1,10 +1,10 @@
+import chalk from 'chalk';
 import Table from 'cli-table3';
 import { Command } from 'commander';
-import Spinner from '../../utils/spinner.js';
-import chalk from 'chalk';
 import { ConfigManager } from '../../services/config/manager.js';
 import { TeamService } from '../../services/team/service.js';
 import { CommandError } from '../../utils/errors.js';
+import Spinner from '../../utils/spinner.js';
 
 const command = new Command('team')
   .description('Team collaboration with API key sharing')
@@ -56,7 +56,7 @@ command
       if (options.copy) {
         // Try to copy to clipboard if available
         try {
-          const { execSync } = await import('child_process');
+          const { execSync } = await import('node:child_process');
           const bundleJson = teamService.serializeBundle(bundle);
 
           // Try different clipboard commands

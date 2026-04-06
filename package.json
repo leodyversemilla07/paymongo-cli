@@ -12,23 +12,17 @@
     "build:incremental": "tsc --incremental",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
-    "test": "cross-env NODE_NO_WARNINGS=1 node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:watch": "cross-env NODE_NO_WARNINGS=1 node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
-    "lint": "cross-env NODE_OPTIONS='--max-old-space-size=4096' eslint src/**/*.ts tests/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "lint:src": "cross-env NODE_OPTIONS='--max-old-space-size=4096' eslint src/**/*.ts",
-    "lint:tests": "cross-env NODE_OPTIONS='--max-old-space-size=4096' eslint tests/**/*.ts",
-    "format": "prettier --write src/**/*.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "lint:src": "biome check src",
+    "lint:tests": "biome check tests",
+    "format": "biome format --write .",
     "benchmark": "npx tsx scripts/benchmark.ts",
     "prepare": "npm run build"
   },
-  "keywords": [
-    "paymongo",
-    "cli",
-    "payments",
-    "webhooks",
-    "development"
-  ],
+  "keywords": ["paymongo", "cli", "payments", "webhooks", "development"],
   "author": "Leodyver Semilla",
   "license": "MIT",
   "repository": {
@@ -54,20 +48,12 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
-    "@types/jest": "^30.0.0",
+    "@biomejs/biome": "2.4.10",
     "@types/node": "^25.0.10",
-    "cross-env": "^10.1.0",
-    "eslint": "^9.0.0",
-    "globals": "^17.1.0",
-    "jest": "^30.2.0",
-    "jiti": "^2.6.1",
-    "prettier": "^3.1.1",
-    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
-    "typescript-eslint": "^8.0.0"
+    "vitest": "^4.1.2"
   },
   "publishConfig": {
     "access": "public"

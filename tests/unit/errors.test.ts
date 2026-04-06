@@ -1,9 +1,9 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi as jest } from 'vitest';
 import {
-  PayMongoError,
-  ConfigError,
   ApiKeyError,
+  ConfigError,
   NetworkError,
+  PayMongoError,
   ValidationError,
   WebhookError,
   withRetry,
@@ -140,11 +140,11 @@ describe('withRetry', () => {
       .mockRejectedValueOnce(new NetworkError('Network error'))
       .mockResolvedValueOnce('success');
 
-    const resultPromise = withRetry(operation, { maxRetries: 3, delayMs: 100 });
-    
+    const resultPromise = withRetry(operation, { maxRetries: 3, delayMs: 100, silent: true });
+
     // Fast-forward through the delay
     await jest.advanceTimersByTimeAsync(100);
-    
+
     const result = await resultPromise;
 
     expect(result).toBe('success');
@@ -181,9 +181,9 @@ describe('withRetry', () => {
       .mockRejectedValueOnce(new NetworkError('Connection failed'))
       .mockResolvedValueOnce('success');
 
-    const resultPromise = withRetry(operation, { delayMs: 100 });
+    const resultPromise = withRetry(operation, { delayMs: 100, silent: true });
     await jest.advanceTimersByTimeAsync(100);
-    
+
     const result = await resultPromise;
 
     expect(result).toBe('success');
@@ -197,9 +197,9 @@ describe('withRetry', () => {
       .mockRejectedValueOnce(error)
       .mockResolvedValueOnce('success');
 
-    const resultPromise = withRetry(operation, { delayMs: 100 });
+    const resultPromise = withRetry(operation, { delayMs: 100, silent: true });
     await jest.advanceTimersByTimeAsync(100);
-    
+
     const result = await resultPromise;
 
     expect(result).toBe('success');
@@ -213,9 +213,9 @@ describe('withRetry', () => {
       .mockRejectedValueOnce(error)
       .mockResolvedValueOnce('success');
 
-    const resultPromise = withRetry(operation, { delayMs: 100 });
+    const resultPromise = withRetry(operation, { delayMs: 100, silent: true });
     await jest.advanceTimersByTimeAsync(100);
-    
+
     const result = await resultPromise;
 
     expect(result).toBe('success');
@@ -233,10 +233,11 @@ describe('withRetry', () => {
 
     const resultPromise = withRetry(operation, {
       delayMs: 100,
+      silent: true,
       retryCondition: customCondition,
     });
     await jest.advanceTimersByTimeAsync(100);
-    
+
     const result = await resultPromise;
 
     expect(result).toBe('success');
@@ -249,9 +250,9 @@ describe('withRetry', () => {
 
     const customCondition = () => false;
 
-    await expect(
-      withRetry(operation, { retryCondition: customCondition })
-    ).rejects.toThrow('Non-retryable');
+    await expect(withRetry(operation, { retryCondition: customCondition })).rejects.toThrow(
+      'Non-retryable'
+    );
     expect(operation).toHaveBeenCalledTimes(1);
   });
 
@@ -266,6 +267,7 @@ describe('withRetry', () => {
       maxRetries: 3,
       delayMs: 100,
       backoffMultiplier: 2,
+      silent: true,
     });
 
     // First delay: 100ms
@@ -274,7 +276,7 @@ describe('withRetry', () => {
 
     // Second delay: 200ms (100 * 2)
     await jest.advanceTimersByTimeAsync(200);
-    
+
     const result = await resultPromise;
     expect(result).toBe('success');
     expect(operation).toHaveBeenCalledTimes(3);

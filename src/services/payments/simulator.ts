@@ -1,4 +1,4 @@
-import { PaymentIntentData } from '../../types/paymongo.js';
+import type { PaymentIntentData } from '../../types/paymongo.js';
 import { PayMongoError } from '../../utils/errors.js';
 
 export interface SimulationOptions {

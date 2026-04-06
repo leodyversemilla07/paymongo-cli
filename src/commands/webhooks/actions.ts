@@ -1,5 +1,5 @@
-import Table from 'cli-table3';
 import chalk from 'chalk';
+import Table from 'cli-table3';
 import { BulkOperations } from '../../utils/bulk.js';
 import { CommandError } from '../../utils/errors.js';
 import { validateEventTypes, validateWebhookUrl } from '../../utils/validator.js';
@@ -37,7 +37,7 @@ export async function exportAction(options: { file?: string }) {
     await BulkOperations.exportWebhooks(webhooks, filename, config.environment);
     spinner.succeed('Export completed');
 
-    console.log('\n' + chalk.green('✅ Webhooks exported successfully!'));
+    console.log(`\n${chalk.green('✅ Webhooks exported successfully!')}`);
     console.log('');
     console.log(`${chalk.bold('File:')} ${filename}`);
     console.log(`${chalk.bold('Webhooks:')} ${webhooks.length}`);
@@ -77,7 +77,7 @@ export async function importAction(
       return;
     }
 
-    console.log('\n' + chalk.green('✅ Webhooks loaded successfully!'));
+    console.log(`\n${chalk.green('✅ Webhooks loaded successfully!')}`);
     console.log('');
     console.log(`${chalk.bold('Source:')} ${filename}`);
     console.log(`${chalk.bold('Webhooks:')} ${webhooks.length}`);
@@ -89,7 +89,7 @@ export async function importAction(
       return;
     }
 
-    console.log('\n' + chalk.bold('Webhooks to import:'));
+    console.log(`\n${chalk.bold('Webhooks to import:')}`);
     console.log(chalk.gray('─'.repeat(80)));
 
     webhooks.forEach((webhook, index) => {
@@ -153,7 +153,7 @@ export async function importAction(
     const successful = results.filter((result) => result.success).length;
     const failed = results.filter((result) => !result.success).length;
 
-    console.log('\n' + chalk.bold('Import Results:'));
+    console.log(`\n${chalk.bold('Import Results:')}`);
     console.log(chalk.gray('─'.repeat(50)));
     console.log(`${chalk.green('Successful:')} ${successful}`);
     if (failed > 0) {
@@ -161,7 +161,7 @@ export async function importAction(
     }
 
     if (successful > 0) {
-      console.log('\n' + chalk.green('✅ Successfully created webhooks:'));
+      console.log(`\n${chalk.green('✅ Successfully created webhooks:')}`);
       results
         .filter(
           (result): result is Extract<(typeof results)[number], { success: true }> => result.success
@@ -172,7 +172,7 @@ export async function importAction(
     }
 
     if (failed > 0) {
-      console.log('\n' + chalk.red('❌ Failed webhooks:'));
+      console.log(`\n${chalk.red('❌ Failed webhooks:')}`);
       results
         .filter(
           (result): result is Extract<(typeof results)[number], { success: false }> =>
@@ -273,7 +273,7 @@ export async function createAction(options: { url?: string; events?: string }) {
       await configManager.save(config);
     }
 
-    console.log('\n' + chalk.green('✓ Webhook created successfully!'));
+    console.log(`\n${chalk.green('✓ Webhook created successfully!')}`);
     console.log('');
     console.log(chalk.bold('ID:'), webhook.id);
     console.log(chalk.bold('URL:'), webhook.attributes.url);
@@ -354,7 +354,7 @@ export async function listAction(options: { json?: boolean; status?: string; eve
       return;
     }
 
-    console.log('\n' + chalk.bold('Webhooks'));
+    console.log(`\n${chalk.bold('Webhooks')}`);
     console.log(chalk.gray('─'.repeat(95)));
     const table = new Table({
       head: [chalk.bold('ID'), chalk.bold('URL'), chalk.bold('Status'), chalk.bold('Events')],
@@ -369,7 +369,7 @@ export async function listAction(options: { json?: boolean; status?: string; eve
       const id = webhook.id.substring(0, 12) + (webhook.id.length > 12 ? '...' : '');
       const url =
         webhook.attributes.url.length > 30
-          ? webhook.attributes.url.substring(0, 27) + '...'
+          ? `${webhook.attributes.url.substring(0, 27)}...`
           : webhook.attributes.url;
       const events =
         webhook.attributes.events.length > 1
@@ -514,7 +514,7 @@ export async function showAction(id: string) {
     const webhook = await createApiClient(config).getWebhook(id);
     spinner.succeed('Webhook details loaded');
 
-    console.log('\n' + chalk.bold('Webhook Details'));
+    console.log(`\n${chalk.bold('Webhook Details')}`);
     console.log('═'.repeat(50));
     console.log(chalk.bold('ID:'), webhook.id);
     console.log(chalk.bold('URL:'), webhook.attributes.url);

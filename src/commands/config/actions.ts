@@ -1,7 +1,7 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import chalk from 'chalk';
-import * as fs from 'fs';
-import * as path from 'path';
-import { PayMongoConfig } from '../../types/paymongo.js';
+import type { PayMongoConfig } from '../../types/paymongo.js';
 import { CommandError } from '../../utils/errors.js';
 import {
   checkConfigConflicts,
@@ -34,7 +34,7 @@ export async function showAction(options: { json?: boolean }) {
       return;
     }
 
-    console.log('\n' + chalk.bold('Configuration (.paymongo)'));
+    console.log(`\n${chalk.bold('Configuration (.paymongo)')}`);
     console.log('');
     console.log(chalk.bold('Project:'), config.projectName);
     console.log(chalk.bold('Environment:'), config.environment);
@@ -55,6 +55,11 @@ export async function showAction(options: { json?: boolean }) {
       config.dev.verifyWebhookSignatures ? 'Yes' : 'No'
     );
     console.log('');
+
+    if (config.analytics) {
+      console.log(chalk.bold('Analytics:'), config.analytics.enabled ? 'Enabled' : 'Disabled');
+      console.log('');
+    }
 
     if (config.rateLimiting) {
       console.log(chalk.bold('Rate Limiting:'));
@@ -243,7 +248,9 @@ export async function importAction(filePath: string, options: { force?: boolean 
     if (validationErrors.length > 0) {
       spinner.fail('Invalid configuration');
       console.error(chalk.red('❌ Configuration validation failed:'));
-      validationErrors.forEach((err) => console.error(chalk.gray(`  • ${err}`)));
+      validationErrors.forEach((err) => {
+        console.error(chalk.gray(`  • ${err}`));
+      });
       throw new CommandError();
     }
     spinner.succeed('Configuration validated');
@@ -256,7 +263,9 @@ export async function importAction(filePath: string, options: { force?: boolean 
       if (conflicts.length > 0) {
         spinner.stop();
         console.log(chalk.yellow('⚠️  Configuration conflicts detected:'));
-        conflicts.forEach((conflict) => console.log(chalk.gray(`  • ${conflict}`)));
+        conflicts.forEach((conflict) => {
+          console.log(chalk.gray(`  • ${conflict}`));
+        });
         console.log('');
         console.log(chalk.bold('Use --force to overwrite existing configuration'));
         throw new CommandError();

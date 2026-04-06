@@ -1,6 +1,6 @@
-import { ConfigManager } from '../config/manager.js';
+import crypto from 'node:crypto';
 import { PayMongoError } from '../../utils/errors.js';
-import crypto from 'crypto';
+import type { ConfigManager } from '../config/manager.js';
 
 export interface TeamMember {
   name: string;

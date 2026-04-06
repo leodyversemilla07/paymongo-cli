@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi as jest } from 'vitest';
 
 // Mock modules before importing generate command
 const mockWriteFile = jest.fn<(path: string, content: string) => Promise<void>>();
@@ -8,25 +8,25 @@ const mockSpinnerStart = jest.fn<(text?: string) => void>();
 const mockSpinnerSucceed = jest.fn<(text?: string) => void>();
 const mockSpinnerFail = jest.fn<(text?: string) => void>();
 
-jest.unstable_mockModule('fs/promises', () => ({
+jest.mock('fs/promises', () => ({
   default: {
     writeFile: mockWriteFile,
   },
 }));
 
-jest.unstable_mockModule('@inquirer/prompts', () => ({
+jest.mock('@inquirer/prompts', () => ({
   input: mockInput,
   select: jest.fn(),
   confirm: jest.fn(),
 }));
 
-jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
+jest.mock('../../src/services/config/manager.js', () => ({
   default: {
     load: mockConfigManagerLoad,
   },
 }));
 
-jest.unstable_mockModule('../../src/utils/spinner.js', () => ({
+jest.mock('../../src/utils/spinner.js', () => ({
   default: {
     start: mockSpinnerStart,
     succeed: mockSpinnerSucceed,
@@ -83,7 +83,9 @@ describe('Generate Command', () => {
     it('should have checkout-page subcommand', () => {
       const checkoutCmd = generate.commands.find((cmd) => cmd.name() === 'checkout-page');
       expect(checkoutCmd).toBeDefined();
-      expect(checkoutCmd?.description()).toBe('Generate a basic checkout page with PayMongo integration');
+      expect(checkoutCmd?.description()).toBe(
+        'Generate a basic checkout page with PayMongo integration'
+      );
     });
   });
 

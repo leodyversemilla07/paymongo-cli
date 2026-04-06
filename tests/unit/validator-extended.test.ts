@@ -1,11 +1,11 @@
+import type { PayMongoConfig } from '../../src/types/paymongo';
 import {
+  ValidationError,
   validateApiKey,
-  validateWebhookUrl,
   validateConfig,
   validateEventTypes,
-  ValidationError,
+  validateWebhookUrl,
 } from '../../src/utils/validator';
-import { PayMongoConfig } from '../../src/types/paymongo';
 
 describe('Validator Utils - Extended', () => {
   describe('validateConfig', () => {
@@ -68,7 +68,9 @@ describe('Validator Utils - Extended', () => {
         },
       };
       expect(() => validateConfig(config)).toThrow(ValidationError);
-      expect(() => validateConfig(config)).toThrow('Secret API key for test environment is required');
+      expect(() => validateConfig(config)).toThrow(
+        'Secret API key for test environment is required'
+      );
     });
 
     it('should throw ValidationError for invalid public API key format', () => {
@@ -232,7 +234,9 @@ describe('Validator Utils - Extended', () => {
 
     it('should list all invalid events in error message', () => {
       const events = ['invalid.one', 'invalid.two', 'payment.paid'];
-      expect(() => validateEventTypes(events)).toThrow('Invalid event types: invalid.one, invalid.two');
+      expect(() => validateEventTypes(events)).toThrow(
+        'Invalid event types: invalid.one, invalid.two'
+      );
     });
 
     it('should throw ValidationError for completely invalid events array', () => {

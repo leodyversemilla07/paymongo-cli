@@ -1,9 +1,12 @@
-import { Command } from 'commander';
 import chalk from 'chalk';
-import ConfigManager from '../services/config/manager.js';
-import ApiClient from '../services/api/client.js';
-import Spinner from '../utils/spinner.js';
-import { ApiKeyError, NetworkError, PayMongoError, CommandError } from '../utils/errors.js';
+import { Command } from 'commander';
+import { ApiKeyError, CommandError, NetworkError, PayMongoError } from '../utils/errors.js';
+import {
+  createApiClient,
+  createCommandContext,
+  loadCommandConfig,
+  showNoConfigMessage,
+} from './shared/runtime.js';
 
 const command = new Command('env');
 
@@ -15,8 +18,7 @@ command
       .arguments('<environment>')
       .option('-f, --force', 'Skip API key validation')
       .action(async (environment, options) => {
-        const spinner = new Spinner();
-        const configManager = new ConfigManager();
+        const { spinner, configManager } = createCommandContext();
 
         try {
           // Validate environment
@@ -25,17 +27,10 @@ command
             throw new CommandError();
           }
 
-          spinner.start('Loading configuration...');
-          const config = await configManager.load();
-
+          const config = await loadCommandConfig(spinner, configManager);
           if (!config) {
-            spinner.fail('No configuration found');
-            console.log(chalk.yellow('No PayMongo configuration found.'));
-            console.log(chalk.gray("Run 'paymongo init' to set up your project first."));
             return;
           }
-
-          spinner.succeed('Configuration loaded');
 
           // Check if API keys exist for the target environment
           const envConfig = config.apiKeys[environment as 'test' | 'live'];
@@ -59,7 +54,7 @@ command
           if (!options.force) {
             spinner.start('Validating API keys...');
             const testConfig = { ...config, environment: environment as 'test' | 'live' };
-            const apiClient = new ApiClient({ config: testConfig });
+            const apiClient = createApiClient(testConfig);
 
             try {
               await apiClient.validateApiKey();
@@ -128,14 +123,13 @@ command
   )
   .addCommand(
     new Command('current').description('Show current environment').action(async () => {
-      const configManager = new ConfigManager();
+      const { configManager } = createCommandContext();
 
       try {
         const config = await configManager.load();
 
         if (!config) {
-          console.log(chalk.yellow('No PayMongo configuration found.'));
-          console.log(chalk.gray("Run 'paymongo init' to set up your project first."));
+          showNoConfigMessage();
           return;
         }
 
@@ -145,10 +139,10 @@ command
         console.log(chalk.bold('Current Environment:'));
         console.log(`Environment: ${chalk.cyan(env.toUpperCase())}`);
         console.log(
-          `Public Key: ${envConfig?.public ? chalk.gray(envConfig.public.substring(0, 10) + '...') : chalk.red('Not set')}`
+          `Public Key: ${envConfig?.public ? chalk.gray(`${envConfig.public.substring(0, 10)}...`) : chalk.red('Not set')}`
         );
         console.log(
-          `Secret Key: ${envConfig?.secret ? chalk.gray(envConfig.secret.substring(0, 10) + '...') : chalk.red('Not set')}`
+          `Secret Key: ${envConfig?.secret ? chalk.gray(`${envConfig.secret.substring(0, 10)}...`) : chalk.red('Not set')}`
         );
 
         if (env === 'live') {

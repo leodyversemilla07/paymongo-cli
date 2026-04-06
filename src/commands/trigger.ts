@@ -1,6 +1,6 @@
+import chalk from 'chalk';
 import { Command } from 'commander';
 import WebhookEventStore from '../utils/webhook-store.js';
-import chalk from 'chalk';
 import { replayWebhookEvent, sendWebhookEvent } from './trigger/actions.js';
 
 const command = new Command('trigger');
@@ -49,6 +49,6 @@ command
     }
   });
 
-export { sendWebhookEvent, replayWebhookEvent };
+export { replayWebhookEvent, sendWebhookEvent };
 
 export default command;

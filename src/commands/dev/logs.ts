@@ -1,6 +1,6 @@
-import { Command } from 'commander';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 import chalk from 'chalk';
+import { Command } from 'commander';
 import { DevProcessManager } from '../../services/dev/process-manager.js';
 
 /**
@@ -19,7 +19,7 @@ const logsCommand = new Command('logs')
     }
 
     const logFile = await DevProcessManager.getLogFile();
-    const lines = await DevProcessManager.readLogs(parseInt(options.lines));
+    const lines = await DevProcessManager.readLogs(parseInt(options.lines, 10));
 
     if (lines.length === 0) {
       console.log(chalk.yellow('No logs available.'));
@@ -31,13 +31,20 @@ const logsCommand = new Command('logs')
     console.log(chalk.gray(`(Last ${lines.length} lines from ${logFile})`));
     console.log(chalk.gray('─'.repeat(60)));
     console.log('');
-    lines.forEach((line) => console.log(line));
+    lines.forEach((line) => {
+      console.log(line);
+    });
 
     if (options.follow) {
       console.log('');
       console.log(chalk.gray('Following logs... Press Ctrl+C to stop'));
 
       let lastSize = fs.statSync(logFile).size;
+      const stopWatching = () => {
+        fs.unwatchFile(logFile);
+        process.removeListener('SIGINT', stopWatching);
+        process.removeListener('SIGTERM', stopWatching);
+      };
 
       fs.watchFile(logFile, { interval: 500 }, () => {
         const newSize = fs.statSync(logFile).size;
@@ -50,6 +57,8 @@ const logsCommand = new Command('logs')
           lastSize = newSize;
         }
       });
+      process.on('SIGINT', stopWatching);
+      process.on('SIGTERM', stopWatching);
 
       // Keep process running
       await new Promise(() => {});

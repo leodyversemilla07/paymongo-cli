@@ -1,15 +1,15 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi as jest } from 'vitest';
 
 const mockConfigManagerLoad = jest.fn<() => Promise<any>>();
 const mockApiClientValidateApiKey = jest.fn<() => Promise<void>>();
 
-jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
+jest.mock('../../src/services/config/manager.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     load: mockConfigManagerLoad,
   })),
 }));
 
-jest.unstable_mockModule('../../src/services/api/client.js', () => ({
+jest.mock('../../src/services/api/client.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     validateApiKey: mockApiClientValidateApiKey,
   })),
@@ -44,7 +44,9 @@ describe('Doctor Command', () => {
 
     await expect(doctorAction({})).rejects.toThrow('Command failed');
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('PayMongo CLI Doctor'));
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('No .paymongo configuration found.'));
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('No .paymongo configuration found.')
+    );
   });
 
   it('passes local checks and skips network when requested', async () => {

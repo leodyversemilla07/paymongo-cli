@@ -1,9 +1,9 @@
-import * as http from 'http';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
+import * as http from 'node:http';
 import chalk from 'chalk';
-import { PayMongoConfig, WebhookEventPayload } from '../../types/paymongo.js';
-import { AnalyticsService } from '../analytics/service.js';
+import type { PayMongoConfig, WebhookEventPayload } from '../../types/paymongo.js';
 import Logger from '../../utils/logger.js';
+import { AnalyticsService } from '../analytics/service.js';
 
 /**
  * Development server for receiving PayMongo webhooks locally.
@@ -209,10 +209,7 @@ export class DevServer {
           isValid = true;
           break;
         }
-      } catch (_error) {
-        // Continue trying other secrets
-        continue;
-      }
+      } catch (_error) {}
     }
 
     if (isValid) {

@@ -1,7 +1,7 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as crypto from 'crypto';
-import { homedir } from 'os';
+import * as crypto from 'node:crypto';
+import * as fs from 'node:fs/promises';
+import { homedir } from 'node:os';
+import * as path from 'node:path';
 
 export interface CacheOptions {
   ttl?: number; // Time to live in milliseconds
@@ -47,7 +47,7 @@ export class Cache {
   }
 
   private getCachePath(key: string): string {
-    return path.join(this.cacheDir, this.getCacheKey(key) + '.json');
+    return path.join(this.cacheDir, `${this.getCacheKey(key)}.json`);
   }
 
   private async isExpired(filePath: string): Promise<boolean> {

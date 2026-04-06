@@ -1,28 +1,28 @@
 import { request } from 'undici';
-import { NetworkError, ApiKeyError, PayMongoError, withRetry } from '../../utils/errors.js';
-import Cache from '../../utils/cache.js';
-import RateLimiter, { RateLimitConfig } from './rate-limiter.js';
-import {
-  CLI_VERSION,
-  REQUEST_TIMEOUT,
-  CACHE_TTL,
-  RATE_LIMIT_WINDOW_MS,
-  RATE_LIMIT_DEFAULT_MAX,
-  RATE_LIMIT_WEBHOOKS_MAX,
-  RATE_LIMIT_PAYMENTS_MAX,
-  RATE_LIMIT_REFUNDS_MAX,
-  RATE_LIMIT_ENV_MULTIPLIER,
-  PAYMONGO_API_BASE,
-} from '../../utils/constants.js';
-import {
+import type {
+  ApiResponse,
   PayMongoConfig,
-  WebhookData,
-  WebhookDataWithSecret,
   PaymentDataFull,
   PaymentIntentData,
   RefundData,
-  ApiResponse,
+  WebhookData,
+  WebhookDataWithSecret,
 } from '../../types/paymongo.js';
+import Cache from '../../utils/cache.js';
+import {
+  CACHE_TTL,
+  CLI_VERSION,
+  PAYMONGO_API_BASE,
+  RATE_LIMIT_DEFAULT_MAX,
+  RATE_LIMIT_ENV_MULTIPLIER,
+  RATE_LIMIT_PAYMENTS_MAX,
+  RATE_LIMIT_REFUNDS_MAX,
+  RATE_LIMIT_WEBHOOKS_MAX,
+  RATE_LIMIT_WINDOW_MS,
+  REQUEST_TIMEOUT,
+} from '../../utils/constants.js';
+import { ApiKeyError, NetworkError, PayMongoError, withRetry } from '../../utils/errors.js';
+import RateLimiter, { type RateLimitConfig } from './rate-limiter.js';
 
 // Error type with code property for network errors
 interface ErrorWithCode extends Error {
@@ -79,8 +79,11 @@ export class ApiClient {
     this.cache = new Cache({ ttl: CACHE_TTL });
 
     // Initialize rate limiter if enabled
+    const globalRateLimitDisabled = process.env.PAYMONGO_DISABLE_RATE_LIMIT === '1';
     const rateLimitEnabled =
-      options.enableRateLimiting !== false && this.config.rateLimiting?.enabled !== false;
+      options.enableRateLimiting !== false &&
+      !globalRateLimitDisabled &&
+      this.config.rateLimiting?.enabled !== false;
     if (rateLimitEnabled) {
       const rateLimitConfig = options.rateLimitConfig || this.getDefaultRateLimitConfig();
       // Override with config file settings if they exist
@@ -206,6 +209,7 @@ export class ApiClient {
     // Create AbortController for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    timeoutId.unref?.();
 
     try {
       const response = await request(url.toString(), {
@@ -226,7 +230,7 @@ export class ApiClient {
       // Parse JSON response
       let data: unknown;
       const contentType = response.headers['content-type'];
-      if (contentType && contentType.includes('application/json')) {
+      if (contentType?.includes('application/json')) {
         data = await response.body.json();
       } else {
         data = await response.body.text();

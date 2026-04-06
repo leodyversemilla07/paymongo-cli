@@ -1,7 +1,7 @@
-import Table from 'cli-table3';
 import chalk from 'chalk';
+import Table from 'cli-table3';
 import { CommandError } from '../../utils/errors.js';
-import { StoredWebhookEvent } from '../../utils/webhook-store.js';
+import type { StoredWebhookEvent } from '../../utils/webhook-store.js';
 import {
   AVAILABLE_TRIGGER_EVENTS,
   createTriggerContext,
@@ -293,7 +293,7 @@ export async function replayWebhookEvent(
       console.log(chalk.gray('─'.repeat(60)));
       matchingEvents.slice(0, 5).forEach((event: StoredWebhookEvent, index: number) => {
         console.log(
-          `${chalk.cyan((index + 1).toString() + '.')} ${chalk.yellow(event.id)} - ${chalk.gray(
+          `${chalk.cyan(`${(index + 1).toString()}.`)} ${chalk.yellow(event.id)} - ${chalk.gray(
             new Date(event.timestamp * 1000).toLocaleString()
           )}`
         );

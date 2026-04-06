@@ -1,9 +1,9 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { cosmiconfig } from 'cosmiconfig';
-import { ConfigManagerOptions, PayMongoConfig } from '../../types/paymongo.js';
-import { ConfigError, ValidationError } from '../../utils/errors.js';
+import type { ConfigManagerOptions, PayMongoConfig } from '../../types/paymongo.js';
 import { validateConfig as zodValidateConfig } from '../../types/schemas.js';
+import { ConfigError, ValidationError } from '../../utils/errors.js';
 
 const CONFIG_FILE_NAME = '.paymongo';
 

@@ -1,16 +1,16 @@
-import { Command } from 'commander';
+import fs from 'node:fs/promises';
 import chalk from 'chalk';
-import fs from 'fs/promises';
+import { Command } from 'commander';
 import ConfigManager from '../services/config/manager.js';
 import Spinner from '../utils/spinner.js';
 
 // Import templates from modular template files
 import {
-  getJavaScriptWebhookHandler,
-  getTypeScriptWebhookHandler,
-  getJavaScriptPaymentIntent,
-  getTypeScriptPaymentIntent,
   getCheckoutPageTemplate,
+  getJavaScriptPaymentIntent,
+  getJavaScriptWebhookHandler,
+  getTypeScriptPaymentIntent,
+  getTypeScriptWebhookHandler,
 } from './generate/templates/index.js';
 
 const command = new Command('generate');
@@ -185,7 +185,7 @@ async function generateWebhookHandler(options: {
     await fs.writeFile(outputFile, code, 'utf-8');
     spinner.succeed(`Webhook handler generated: ${outputFile}`);
 
-    console.log('\n' + chalk.green('✅ Webhook handler generated successfully!'));
+    console.log(`\n${chalk.green('✅ Webhook handler generated successfully!')}`);
     console.log(chalk.gray(`Events handled: ${events.join(', ')}`));
     console.log(chalk.gray(`Language: ${options.language}`));
     console.log(chalk.gray(`Framework: ${options.framework}`));
@@ -234,7 +234,7 @@ async function generatePaymentIntent(options: {
     await fs.writeFile(outputFile, code, 'utf-8');
     spinner.succeed(`Payment intent code generated: ${outputFile}`);
 
-    console.log('\n' + chalk.green('✅ Payment intent code generated successfully!'));
+    console.log(`\n${chalk.green('✅ Payment intent code generated successfully!')}`);
     console.log(chalk.gray(`Payment methods: ${methods.join(', ')}`));
     console.log(chalk.gray(`Language: ${options.language}`));
   } catch (error) {
@@ -267,7 +267,7 @@ async function generateCheckoutPage(options: { language: string; output?: string
     await fs.writeFile(outputFile, code, 'utf-8');
     spinner.succeed(`Checkout page generated: ${outputFile}`);
 
-    console.log('\n' + chalk.green('✅ Checkout page generated successfully!'));
+    console.log(`\n${chalk.green('✅ Checkout page generated successfully!')}`);
     console.log(chalk.gray(`Framework: ${options.language}`));
   } catch (error) {
     spinner.fail('Generation failed');

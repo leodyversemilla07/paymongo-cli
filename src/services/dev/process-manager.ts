@@ -1,7 +1,7 @@
-import fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
-import { execSync } from 'child_process';
+import { execSync } from 'node:child_process';
+import fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 
 export interface DevProcessState {
   pid: number;

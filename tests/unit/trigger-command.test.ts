@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, vi as jest } from 'vitest';
 import type { PayMongoConfig } from '../../src/types/paymongo.js';
 
 // Mock modules before importing
@@ -12,13 +12,13 @@ const mockWebhookStoreClearEvents = jest.fn<() => Promise<void>>();
 const mockWebhookStoreGetEvents = jest.fn<() => Promise<unknown[]>>();
 const mockWebhookStoreGetEventById = jest.fn<() => Promise<unknown | null>>();
 
-jest.unstable_mockModule('../../src/services/config/manager.js', () => ({
+jest.mock('../../src/services/config/manager.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     load: mockConfigManagerLoad,
   })),
 }));
 
-jest.unstable_mockModule('../../src/utils/spinner.js', () => ({
+jest.mock('../../src/utils/spinner.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     start: mockSpinnerStart,
     succeed: mockSpinnerSucceed,
@@ -27,7 +27,7 @@ jest.unstable_mockModule('../../src/utils/spinner.js', () => ({
   })),
 }));
 
-jest.unstable_mockModule('../../src/utils/logger.js', () => ({
+jest.mock('../../src/utils/logger.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     info: jest.fn(),
     error: jest.fn(),
@@ -35,7 +35,7 @@ jest.unstable_mockModule('../../src/utils/logger.js', () => ({
   })),
 }));
 
-jest.unstable_mockModule('../../src/utils/webhook-store.js', () => ({
+jest.mock('../../src/utils/webhook-store.js', () => ({
   default: jest.fn().mockImplementation(() => ({
     saveEvent: mockWebhookStoreSaveEvent,
     clearEvents: mockWebhookStoreClearEvents,
@@ -45,7 +45,7 @@ jest.unstable_mockModule('../../src/utils/webhook-store.js', () => ({
 }));
 
 // Mock @inquirer/prompts
-jest.unstable_mockModule('@inquirer/prompts', () => ({
+jest.mock('@inquirer/prompts', () => ({
   select: jest.fn(),
   input: jest.fn(),
   confirm: jest.fn(),

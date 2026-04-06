@@ -7,6 +7,11 @@ import {
   showAction,
 } from './config/actions.js';
 import {
+  analyticsDisableAction,
+  analyticsEnableAction,
+  analyticsStatusAction,
+} from './config/analytics.js';
+import {
   rateLimitDisableAction,
   rateLimitEnableAction,
   rateLimitSetMaxRequestsAction,
@@ -48,6 +53,19 @@ command
       .action(importAction)
   )
   .addCommand(
+    new Command('analytics')
+      .description('Configure local webhook analytics')
+      .addCommand(
+        new Command('enable').description('Enable analytics').action(analyticsEnableAction)
+      )
+      .addCommand(
+        new Command('disable').description('Disable analytics').action(analyticsDisableAction)
+      )
+      .addCommand(
+        new Command('status').description('Show analytics status').action(analyticsStatusAction)
+      )
+  )
+  .addCommand(
     new Command('rate-limit')
       .description('Configure rate limiting settings')
       .addCommand(
@@ -76,16 +94,19 @@ command
   );
 
 export {
-  showAction,
-  setAction,
+  analyticsDisableAction,
+  analyticsEnableAction,
+  analyticsStatusAction,
   backupAction,
-  resetAction,
   importAction,
-  rateLimitEnableAction,
   rateLimitDisableAction,
+  rateLimitEnableAction,
   rateLimitSetMaxRequestsAction,
   rateLimitSetWindowAction,
   rateLimitStatusAction,
+  resetAction,
+  setAction,
+  showAction,
 };
 
 export default command;

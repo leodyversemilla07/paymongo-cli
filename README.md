@@ -121,9 +121,9 @@ paymongo config rate-limit disable
 
 Use `--no-rate-limit` with any command to temporarily disable rate limiting:
 
-````bash
+```bash
 paymongo payments list --no-rate-limit
----
+```
 
 ## Analytics (Optional)
 
@@ -147,7 +147,7 @@ paymongo config analytics status
 
 # Disable analytics (default)
 paymongo config analytics disable
-````
+```
 
 ### Analytics Features
 

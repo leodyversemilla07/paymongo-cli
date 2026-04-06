@@ -1,6 +1,6 @@
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { backupAction, importAction } from '../../src/commands/config.js';
 
 describe('CLI Config Commands Integration', () => {
@@ -37,7 +37,7 @@ describe('CLI Config Commands Integration', () => {
       }
 
       attempts++;
-      const delay = Math.min(100 * Math.pow(2, attempts), 1000);
+      const delay = Math.min(100 * 2 ** attempts, 1000);
       if (attempts < maxAttempts) {
         const start = Date.now();
         while (Date.now() - start < delay) {

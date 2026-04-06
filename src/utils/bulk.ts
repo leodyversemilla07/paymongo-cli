@@ -1,6 +1,6 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import { WebhookData, PaymentDataFull } from '../types/paymongo.js';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import type { PaymentDataFull, WebhookData } from '../types/paymongo.js';
 import { PayMongoError } from './errors.js';
 
 export interface BulkExportData<T = unknown> {
@@ -36,7 +36,7 @@ export class BulkOperations {
       metadata: {
         exported_at: new Date().toISOString(),
         exported_by: 'paymongo-cli',
-        version: this.EXPORT_VERSION,
+        version: BulkOperations.EXPORT_VERSION,
         environment,
       },
       data: webhooks,
@@ -59,7 +59,7 @@ export class BulkOperations {
       metadata: {
         exported_at: new Date().toISOString(),
         exported_by: 'paymongo-cli',
-        version: this.EXPORT_VERSION,
+        version: BulkOperations.EXPORT_VERSION,
         environment,
       },
       data: payments,
@@ -95,7 +95,7 @@ export class BulkOperations {
       throw new PayMongoError(`Invalid JSON in ${filename}`, 'INVALID_JSON', 400);
     }
 
-    this.validateImportData(data, 'webhooks');
+    BulkOperations.validateImportData(data, 'webhooks');
 
     return {
       webhooks: (data as Record<string, unknown>).data as WebhookData[],
@@ -128,7 +128,7 @@ export class BulkOperations {
       throw new PayMongoError(`Invalid JSON in ${filename}`, 'INVALID_JSON', 400);
     }
 
-    this.validateImportData(data, 'payments');
+    BulkOperations.validateImportData(data, 'payments');
 
     return {
       payments: (data as Record<string, unknown>).data as PaymentDataFull[],
@@ -168,9 +168,9 @@ export class BulkOperations {
       );
     }
 
-    if (metadata.version !== this.EXPORT_VERSION) {
+    if (metadata.version !== BulkOperations.EXPORT_VERSION) {
       throw new PayMongoError(
-        `Unsupported export version: ${metadata.version}. Current version: ${this.EXPORT_VERSION}`,
+        `Unsupported export version: ${metadata.version}. Current version: ${BulkOperations.EXPORT_VERSION}`,
         'UNSUPPORTED_VERSION',
         400
       );
@@ -182,9 +182,9 @@ export class BulkOperations {
 
     // Type-specific validation
     if (type === 'webhooks') {
-      this.validateWebhookData(obj.data);
+      BulkOperations.validateWebhookData(obj.data);
     } else if (type === 'payments') {
-      this.validatePaymentData(obj.data);
+      BulkOperations.validatePaymentData(obj.data);
     }
   }
 
@@ -279,6 +279,6 @@ export class BulkOperations {
     if (path.extname(filename).toLowerCase() === '.json') {
       return filename;
     }
-    return filename + '.json';
+    return `${filename}.json`;
   }
 }

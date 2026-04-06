@@ -1,40 +1,30 @@
 import chalk from 'chalk';
-import ApiClient from '../../services/api/client.js';
-import ConfigManager from '../../services/config/manager.js';
-import Spinner from '../../utils/spinner.js';
-import { CommandError } from '../../utils/errors.js';
-import { PayMongoConfig } from '../../types/paymongo.js';
+import type ConfigManager from '../../services/config/manager.js';
+import type { PayMongoConfig } from '../../types/paymongo.js';
+import type Spinner from '../../utils/spinner.js';
+import {
+  createCommandContext,
+  createApiClient as createSharedApiClient,
+  failCommand,
+  loadCommandConfig,
+} from '../shared/runtime.js';
 
 export function createWebhooksContext(): {
   spinner: Spinner;
   configManager: ConfigManager;
 } {
-  return {
-    spinner: new Spinner(),
-    configManager: new ConfigManager(),
-  };
+  return createCommandContext();
 }
 
 export async function loadWebhooksConfig(
   spinner: Spinner,
   configManager: ConfigManager
 ): Promise<PayMongoConfig | null> {
-  spinner.start('Loading configuration...');
-  const config = await configManager.load();
-
-  if (!config) {
-    spinner.fail('No configuration found');
-    console.log(chalk.yellow('No PayMongo configuration found.'));
-    console.log(chalk.gray("Run 'paymongo init' to set up your project first."));
-    return null;
-  }
-
-  spinner.succeed('Configuration loaded');
-  return config;
+  return loadCommandConfig(spinner, configManager);
 }
 
-export function createApiClient(config: PayMongoConfig): ApiClient {
-  return new ApiClient({ config });
+export function createApiClient(config: PayMongoConfig) {
+  return createSharedApiClient(config);
 }
 
 export function getWebhookStatusColor(status: string) {
@@ -49,8 +39,5 @@ export function getWebhookStatusColor(status: string) {
 }
 
 export function handleWebhooksError(prefix: string, spinner: Spinner, error: unknown): never {
-  spinner.stop();
-  const err = error as Error;
-  console.error(chalk.red(prefix), err.message);
-  throw new CommandError();
+  return failCommand(prefix, error, spinner);
 }
