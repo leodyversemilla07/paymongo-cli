@@ -116,6 +116,7 @@ export class DevServer {
     const timestamp = new Date().toLocaleTimeString();
     const eventType = event.data?.type || 'unknown';
     const eventId = event.data?.id || 'unknown';
+    const isPaymentEvent = eventType.startsWith('payment');
 
     // Record analytics event
     await this.analytics.recordEvent({
@@ -128,7 +129,7 @@ export class DevServer {
     console.log(chalk.gray('────────────────────────────────────────────────────────────'));
     console.log(chalk.blue(`[${timestamp}]`), chalk.bold(eventType.toUpperCase()));
 
-    if (eventType === 'payment') {
+    if (isPaymentEvent) {
       const attributes = event.data.attributes as { amount?: number; status?: string };
       const amount = attributes.amount ?? 0;
       const status = attributes.status ?? 'unknown';
@@ -140,7 +141,7 @@ export class DevServer {
 
     console.log(
       chalk.gray('└─'),
-      `View: https://dashboard.paymongo.com/${eventType === 'payment' ? 'payments' : 'webhooks'}/${eventId}`
+      `View: https://dashboard.paymongo.com/${isPaymentEvent ? 'payments' : 'webhooks'}/${eventId}`
     );
   }
 

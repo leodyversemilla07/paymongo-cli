@@ -1,14 +1,17 @@
 import { z } from 'zod';
+import { validateWebhookUrl } from '../utils/validator.js';
 
 // API Keys schema
 const ApiKeysSchema = z.object({
-  public: z.string().min(1, 'Public key is required'),
+  // Public keys are optional in several CLI flows, so allow an empty string here
+  // and defer format validation to command-level validators when provided.
+  public: z.string(),
   secret: z.string().min(1, 'Secret key is required'),
 });
 
 // Webhooks config schema
 const WebhooksConfigSchema = z.object({
-  url: z.string().url('Invalid webhook URL'),
+  url: z.string().refine(validateWebhookUrl, 'Invalid webhook URL. Must be HTTPS or localhost'),
   events: z.array(z.string()).min(1, 'At least one event is required'),
 });
 

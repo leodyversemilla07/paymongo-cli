@@ -91,21 +91,24 @@ export class DevSessionService {
         localWebhookUrl
       );
 
-      const cleanup = this.createCleanupHandler({
-        config,
-        devServer,
-        tunnel,
-        webhookId,
-      });
+      await new Promise<void>((resolve) => {
+        const cleanup = this.createCleanupHandler(
+          {
+            config,
+            devServer,
+            tunnel,
+            webhookId,
+          },
+          resolve
+        );
 
-      process.once('SIGINT', () => {
-        void cleanup();
+        process.once('SIGINT', () => {
+          void cleanup();
+        });
+        process.once('SIGTERM', () => {
+          void cleanup();
+        });
       });
-      process.once('SIGTERM', () => {
-        void cleanup();
-      });
-
-      await new Promise(() => {});
     } catch (error) {
       this.spinner.stop();
       const err = error as Error;
@@ -366,7 +369,7 @@ export class DevSessionService {
       console.log(chalk.gray('   Signature verification is currently enabled'));
       console.log(
         chalk.gray(
-          '   For manual unsigned testing, run: paymongo config set dev.verifySignatures false'
+          '   For manual unsigned testing, run: paymongo config set dev.verifyWebhookSignatures false'
         )
       );
     }
@@ -447,12 +450,15 @@ export class DevSessionService {
     });
   }
 
-  private createCleanupHandler({
-    config,
-    devServer,
-    tunnel,
-    webhookId,
-  }: CleanupResources): () => Promise<void> {
+  private createCleanupHandler(
+    {
+      config,
+      devServer,
+      tunnel,
+      webhookId,
+    }: CleanupResources,
+    onComplete?: (() => void) | undefined
+  ): () => Promise<void> {
     let cleanedUp = false;
 
     return async () => {
@@ -493,7 +499,7 @@ export class DevSessionService {
         console.log(chalk.yellow('⚠️'), 'Some cleanup tasks may not have completed');
       }
 
-      process.exit(0);
+      onComplete?.();
     };
   }
 

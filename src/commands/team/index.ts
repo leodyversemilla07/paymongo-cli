@@ -140,7 +140,7 @@ command
       console.log(`Imported at: ${new Date().toLocaleString()}`);
       console.log('');
       console.log(chalk.yellow('ℹ️  Next steps:'));
-      console.log('• Run "paymongo config list" to see the imported keys');
+      console.log('• Run "paymongo config show" to see the imported keys');
       console.log('• Test with "paymongo payments list" to verify access');
     } catch (error) {
       spinner.stop();

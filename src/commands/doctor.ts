@@ -165,7 +165,7 @@ async function runDoctor(options: DoctorOptions): Promise<DoctorCheck[]> {
       name: 'Webhook Signatures',
       status: 'warn',
       message: 'Signature verification is disabled.',
-      fix: 'Enable it with `paymongo config set dev.verifySignatures true` for safer local testing.',
+      fix: 'Enable it with `paymongo config set dev.verifyWebhookSignatures true` for safer local testing.',
     });
   }
 

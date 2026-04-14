@@ -79,6 +79,16 @@ export class ConfigManager {
 
   async save(config: PayMongoConfig): Promise<void> {
     try {
+      // Normalize optional fields before validation/persisting
+      if (!config.apiKeys) {
+        config.apiKeys = {};
+      }
+      if (!config.webhookSecrets) {
+        config.webhookSecrets = {};
+      }
+
+      this.validateConfig(config);
+
       // Ensure directory exists
       const dir = path.dirname(this.configPath);
       if (!fs.existsSync(dir)) {
@@ -101,6 +111,9 @@ export class ConfigManager {
         this.configCache.delete(this.configPath);
       }
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
       throw new ConfigError(`Failed to save config: ${(error as Error).message}`, this.configPath);
     }
   }

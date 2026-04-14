@@ -100,7 +100,7 @@ FRAMEWORKS:
 
 EXAMPLES:
   $ paymongo generate checkout-page
-  $ paymongo generate checkout-page --framework react
+  $ paymongo generate checkout-page --language react
   $ paymongo generate checkout-page --language vue --output Checkout.vue
 `
       )

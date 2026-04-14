@@ -4,7 +4,7 @@
 
 PayMongo CLI is a developer-first command-line tool for PayMongo payment integration with local webhook forwarding. It uses **ESM modules** with Commander.js for CLI commands and provides a terminal-first interface.
 
-**Tech Stack**: TypeScript, Node.js 20+, Commander.js, built-in `http`, `undici`, ngrok, Zod, Jest
+**Tech Stack**: TypeScript, Node.js 20+, Commander.js, built-in `http`, `undici`, ngrok, Zod, Vitest
 
 ---
 
@@ -22,11 +22,11 @@ npm link                   # Test CLI globally during development
 ### Quality Assurance
 
 ```bash
-npm run lint               # ESLint check
-npm run lint:fix           # Auto-fix ESLint issues
-npm run format             # Prettier formatting
+npm run lint               # Biome check
+npm run lint:fix           # Auto-fix lint issues with Biome
+npm run format             # Biome formatting
 npm run test               # Run all tests
-npm run test:watch         # Jest watch mode
+npm run test:watch         # Vitest watch mode
 npm run benchmark          # Performance benchmarking
 ```
 
@@ -54,7 +54,7 @@ npm run test -- tests/unit/
 - **Strict mode**: Enabled with all strict checks
 - **Module resolution**: NodeNext (ESM)
 - **Imports**: Use `.js` extension for local imports (required for ESM)
-- **Declarations**: Generate `.d.ts` files for npm publishing
+- **Declarations**: Currently disabled in `tsconfig.json` for build output
 
 ### Import/Export Patterns
 
@@ -329,9 +329,8 @@ Use the provided `.github/PULL_REQUEST_TEMPLATE.md` which includes:
 ### VS Code Extensions
 
 - TypeScript and JavaScript Language Features
-- ESLint
-- Prettier - Code formatter
-- Jest Runner
+- Biome
+- Vitest
 
 ### EditorConfig
 

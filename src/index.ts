@@ -80,17 +80,17 @@ EXAMPLES
 
   Code Generation:
     $ paymongo generate webhook-handler                  # Generate webhook handler boilerplate
-    $ paymongo generate payment-intent --language ts     # Generate TypeScript payment intent code
-    $ paymongo generate checkout-page --framework react  # Generate React checkout component
+    $ paymongo generate payment-intent --language typescript # Generate TypeScript payment intent code
+    $ paymongo generate checkout-page --language react   # Generate React checkout component
 
   Diagnostics:
     $ paymongo doctor                                    # Check config, keys, ngrok, and webhook setup
     $ paymongo doctor --no-network                       # Run offline diagnostics only
 
   Team Collaboration:
-    $ paymongo team create "My Team"                      # Create a new team
-    $ paymongo team share live                           # Share live API keys with team
-    $ paymongo team sync                                 # Sync team updates
+    $ paymongo team rename "My Team"                    # Set or update the team name
+    $ paymongo team share-keys --env live               # Share live API keys with the team
+    $ paymongo team list-members                        # View team members and shared keys
 
   Configuration:
     $ paymongo config                                    # View current configuration

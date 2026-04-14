@@ -107,17 +107,20 @@ export class RateLimiter {
       policy = { ...policy, ...this.rateLimitConfig.endpoints[endpoint] };
     }
 
-    // Apply environment-specific multipliers
     const env = this.config.environment;
     const envOverrides = this.rateLimitConfig.environments[env];
 
+    // Merge environment overrides before applying the live-environment multiplier
+    // so custom multipliers are honored.
     if (envOverrides) {
       policy = { ...policy, ...envOverrides };
     }
 
-    // Apply environment multiplier
-    if (policy.environmentMultiplier !== undefined) {
-      policy.maxRequests = Math.floor(policy.maxRequests * policy.environmentMultiplier);
+    // Only apply a multiplier to live traffic unless the environment-specific
+    // overrides explicitly replace the request limit.
+    if (env === 'live' && envOverrides?.maxRequests === undefined) {
+      const multiplier = policy.environmentMultiplier ?? 1;
+      policy.maxRequests = Math.max(1, Math.floor(policy.maxRequests * multiplier));
     }
 
     return policy;

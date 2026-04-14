@@ -48,7 +48,7 @@ import ConfigManager from '../services/config/manager.js';
 
 ## Configuration
 - Project config: `.paymongo` (JSON, managed via `ConfigManager`)
-- Global credentials: `~/.paymongo/credentials.enc` (AES-256-CBC encrypted)
+- Global credentials: `~/.paymongo/credentials.enc` (AES-256-GCM encrypted, with legacy AES-256-CBC migration support)
 - Validation: Zod schemas in `src/types/schemas.ts`
 
 ## Development Workflow
@@ -58,18 +58,20 @@ import ConfigManager from '../services/config/manager.js';
 npm run build          # Compile TypeScript
 npm run dev            # Watch mode compilation
 npm link               # Test CLI globally as 'paymongo'
-npm test               # Jest with ESM (--experimental-vm-modules)
-npm run lint:fix       # ESLint auto-fix
+npm test               # Vitest
+npm run lint:fix       # Biome auto-fix
 ```
 
 ### Testing Strategy
-- **Mocking ESM**: Use `jest.unstable_mockModule()` before dynamic imports
+- **Framework**: Vitest
 - Structure: `tests/unit/`, `tests/integration/`
-- Mock external services (axios, ngrok, filesystem)
+- Mock external services (undici, ngrok, filesystem)
 
 Example test pattern:
 ```typescript
-jest.unstable_mockModule('axios', () => ({ default: mockAxios }));
+import { vi } from 'vitest';
+
+vi.mock('undici', () => ({ request: mockRequest }));
 const { ApiClient } = await import('../../src/services/api/client.js');
 ```
 
