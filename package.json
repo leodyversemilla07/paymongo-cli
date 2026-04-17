@@ -22,13 +22,7 @@
     "benchmark": "npx tsx scripts/benchmark.ts",
     "prepare": "npm run build"
   },
-  "keywords": [
-    "paymongo",
-    "cli",
-    "payments",
-    "webhooks",
-    "development"
-  ],
+  "keywords": ["paymongo", "cli", "payments", "webhooks", "development"],
   "author": "Leodyver Semilla",
   "license": "MIT",
   "repository": {

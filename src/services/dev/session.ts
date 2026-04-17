@@ -451,12 +451,7 @@ export class DevSessionService {
   }
 
   private createCleanupHandler(
-    {
-      config,
-      devServer,
-      tunnel,
-      webhookId,
-    }: CleanupResources,
+    { config, devServer, tunnel, webhookId }: CleanupResources,
     onComplete?: (() => void) | undefined
   ): () => Promise<void> {
     let cleanedUp = false;
