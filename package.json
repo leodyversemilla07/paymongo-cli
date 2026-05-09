@@ -22,7 +22,13 @@
     "benchmark": "npx tsx scripts/benchmark.ts",
     "prepare": "npm run build"
   },
-  "keywords": ["paymongo", "cli", "payments", "webhooks", "development"],
+  "keywords": [
+    "paymongo",
+    "cli",
+    "payments",
+    "webhooks",
+    "development"
+  ],
   "author": "Leodyver Semilla",
   "license": "MIT",
   "repository": {
@@ -44,7 +50,7 @@
     "commander": "^14.0.3",
     "cosmiconfig": "^9.0.0",
     "ora": "^9.4.0",
-    "undici": "^8.2.0",
+    "undici": "^7.21.0",
     "zod": "^4.4.0"
   },
   "devDependencies": {
