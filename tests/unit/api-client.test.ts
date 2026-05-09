@@ -23,12 +23,18 @@ const mockRateLimiter = {
 // Create mock RateLimiter class
 const MockRateLimiter = jest.fn((_config, _rateLimitConfig) => mockRateLimiter);
 
-// Create mock request
-const mockRequest = jest.fn<any>();
+// Create mock request for Pool instance
+const mockPoolRequest = jest.fn<any>();
+
+// Create mock Pool class
+const MockPool = jest.fn((_url: string, _options?: any) => ({
+  request: mockPoolRequest,
+  close: jest.fn<() => Promise<void>>(),
+}));
 
 // Mock modules before importing ApiClient
 jest.mock('undici', () => ({
-  request: mockRequest,
+  Pool: MockPool,
 }));
 
 jest.mock('../../src/utils/cache.js', () => ({
@@ -76,7 +82,7 @@ describe('ApiClient', () => {
     mockCache.clear.mockResolvedValue(undefined);
     mockRateLimiter.checkLimit.mockImplementation(() => ({ allowed: true }));
     mockRateLimiter.recordCall.mockImplementation(() => {});
-    mockRequest.mockReset();
+    mockPoolRequest.mockReset();
     MockRateLimiter.mockClear();
     delete process.env.PAYMONGO_DISABLE_RATE_LIMIT;
 
@@ -109,16 +115,16 @@ describe('ApiClient', () => {
 
   describe('validateApiKey', () => {
     it('should resolve when API key is valid', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: { json: () => Promise.resolve({ data: [] }), text: () => Promise.resolve('') },
       });
 
       await expect(apiClient.validateApiKey()).resolves.toBeUndefined();
-      expect(mockRequest).toHaveBeenCalledWith(
-        'https://api.paymongo.com/v1/webhooks',
+      expect(mockPoolRequest).toHaveBeenCalledWith(
         expect.objectContaining({
+          path: '/v1/webhooks',
           method: 'GET',
           headers: expect.objectContaining({
             Authorization: expect.stringContaining('Basic'),
@@ -128,7 +134,7 @@ describe('ApiClient', () => {
     });
 
     it('should throw when API key is invalid', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 401,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -150,7 +156,7 @@ describe('ApiClient', () => {
     };
 
     it('should create webhook with correct payload', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -161,9 +167,9 @@ describe('ApiClient', () => {
 
       const result = await apiClient.createWebhook(webhookUrl, events);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        'https://api.paymongo.com/v1/webhooks',
+      expect(mockPoolRequest).toHaveBeenCalledWith(
         expect.objectContaining({
+          path: '/v1/webhooks',
           method: 'POST',
           body: JSON.stringify({
             data: {
@@ -186,7 +192,7 @@ describe('ApiClient', () => {
     ];
 
     it('should fetch webhooks from API', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -197,9 +203,8 @@ describe('ApiClient', () => {
 
       const result = await apiClient.listWebhooks();
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        'https://api.paymongo.com/v1/webhooks',
-        expect.objectContaining({ method: 'GET' })
+      expect(mockPoolRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/v1/webhooks', method: 'GET' })
       );
       expect(result).toEqual(mockWebhooks);
     });
@@ -210,7 +215,7 @@ describe('ApiClient', () => {
     const mockWebhook = { id: webhookId, attributes: { url: 'https://example.com' } };
 
     it('should fetch webhook from API', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -221,9 +226,8 @@ describe('ApiClient', () => {
 
       const result = await apiClient.getWebhook(webhookId);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        `https://api.paymongo.com/v1/webhooks/${webhookId}`,
-        expect.objectContaining({ method: 'GET' })
+      expect(mockPoolRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ path: `/v1/webhooks/${webhookId}`, method: 'GET' })
       );
       expect(result).toEqual(mockWebhook);
     });
@@ -235,7 +239,7 @@ describe('ApiClient', () => {
     const mockUpdatedWebhook = { id: webhookId, attributes: updates };
 
     it('should update webhook with correct payload', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -246,9 +250,9 @@ describe('ApiClient', () => {
 
       const result = await apiClient.updateWebhook(webhookId, updates);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        `https://api.paymongo.com/v1/webhooks/${webhookId}`,
+      expect(mockPoolRequest).toHaveBeenCalledWith(
         expect.objectContaining({
+          path: `/v1/webhooks/${webhookId}`,
           method: 'PUT',
           body: JSON.stringify({
             data: {
@@ -265,7 +269,7 @@ describe('ApiClient', () => {
     const webhookId = 'hook_123';
 
     it('should disable webhook', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -277,9 +281,8 @@ describe('ApiClient', () => {
 
       await apiClient.disableWebhook(webhookId);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        `https://api.paymongo.com/v1/webhooks/${webhookId}/disable`,
-        expect.objectContaining({ method: 'POST' })
+      expect(mockPoolRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ path: `/v1/webhooks/${webhookId}/disable`, method: 'POST' })
       );
     });
   });
@@ -289,7 +292,7 @@ describe('ApiClient', () => {
     const mockPayment = { id: paymentId, attributes: { amount: 10000 } };
 
     it('should fetch payment by ID', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -300,9 +303,8 @@ describe('ApiClient', () => {
 
       const result = await apiClient.getPayment(paymentId);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        `https://api.paymongo.com/v1/payments/${paymentId}`,
-        expect.objectContaining({ method: 'GET' })
+      expect(mockPoolRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ path: `/v1/payments/${paymentId}`, method: 'GET' })
       );
       expect(result).toEqual(mockPayment);
     });
@@ -315,7 +317,7 @@ describe('ApiClient', () => {
     ];
 
     it('should list payments with default limit', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -326,15 +328,14 @@ describe('ApiClient', () => {
 
       const result = await apiClient.listPayments();
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        'https://api.paymongo.com/v1/payments?limit=10',
-        expect.objectContaining({ method: 'GET' })
+      expect(mockPoolRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/v1/payments?limit=10', method: 'GET' })
       );
       expect(result).toEqual(mockPayments);
     });
 
     it('should list payments with custom limit', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -345,9 +346,8 @@ describe('ApiClient', () => {
 
       await apiClient.listPayments(25);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        'https://api.paymongo.com/v1/payments?limit=25',
-        expect.objectContaining({ method: 'GET' })
+      expect(mockPoolRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/v1/payments?limit=25', method: 'GET' })
       );
     });
   });
@@ -356,7 +356,7 @@ describe('ApiClient', () => {
     const mockPaymentIntent = { id: 'pi_123', attributes: { amount: 10000 } };
 
     it('should create payment intent with required parameters', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -367,9 +367,9 @@ describe('ApiClient', () => {
 
       const result = await apiClient.createPaymentIntent(10000);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        'https://api.paymongo.com/v1/payment_intents',
+      expect(mockPoolRequest).toHaveBeenCalledWith(
         expect.objectContaining({
+          path: '/v1/payment_intents',
           method: 'POST',
           body: JSON.stringify({
             data: {
@@ -386,7 +386,7 @@ describe('ApiClient', () => {
     });
 
     it('should create payment intent with all parameters', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -397,9 +397,9 @@ describe('ApiClient', () => {
 
       await apiClient.createPaymentIntent(50000, 'USD', 'Test payment', ['card']);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        'https://api.paymongo.com/v1/payment_intents',
+      expect(mockPoolRequest).toHaveBeenCalledWith(
         expect.objectContaining({
+          path: '/v1/payment_intents',
           method: 'POST',
           body: JSON.stringify({
             data: {
@@ -423,7 +423,7 @@ describe('ApiClient', () => {
     const mockConfirmedIntent = { id: paymentIntentId, attributes: { status: 'succeeded' } };
 
     it('should attach payment method to payment intent', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -434,9 +434,9 @@ describe('ApiClient', () => {
 
       const result = await apiClient.attachPaymentIntent(paymentIntentId, paymentMethodId);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        `https://api.paymongo.com/v1/payment_intents/${paymentIntentId}/attach`,
+      expect(mockPoolRequest).toHaveBeenCalledWith(
         expect.objectContaining({
+          path: `/v1/payment_intents/${paymentIntentId}/attach`,
           method: 'POST',
           body: JSON.stringify({
             data: {
@@ -451,7 +451,7 @@ describe('ApiClient', () => {
     });
 
     it('should attach payment method with return URL', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -462,9 +462,9 @@ describe('ApiClient', () => {
 
       await apiClient.attachPaymentIntent(paymentIntentId, paymentMethodId, returnUrl);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        `https://api.paymongo.com/v1/payment_intents/${paymentIntentId}/attach`,
+      expect(mockPoolRequest).toHaveBeenCalledWith(
         expect.objectContaining({
+          path: `/v1/payment_intents/${paymentIntentId}/attach`,
           method: 'POST',
           body: JSON.stringify({
             data: {
@@ -484,7 +484,7 @@ describe('ApiClient', () => {
     const mockCapturedIntent = { id: paymentIntentId, attributes: { status: 'succeeded' } };
 
     it('should capture payment intent', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -495,9 +495,11 @@ describe('ApiClient', () => {
 
       const result = await apiClient.capturePaymentIntent(paymentIntentId);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        `https://api.paymongo.com/v1/payment_intents/${paymentIntentId}/capture`,
-        expect.objectContaining({ method: 'POST' })
+      expect(mockPoolRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: `/v1/payment_intents/${paymentIntentId}/capture`,
+          method: 'POST',
+        })
       );
       expect(result).toEqual(mockCapturedIntent);
     });
@@ -508,7 +510,7 @@ describe('ApiClient', () => {
     const mockRefund = { id: 'ref_456', attributes: { amount: 5000 } };
 
     it('should create refund with payment ID only', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -519,9 +521,9 @@ describe('ApiClient', () => {
 
       const result = await apiClient.createRefund(paymentId);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        'https://api.paymongo.com/v1/refunds',
+      expect(mockPoolRequest).toHaveBeenCalledWith(
         expect.objectContaining({
+          path: '/v1/refunds',
           method: 'POST',
           body: JSON.stringify({
             data: {
@@ -536,7 +538,7 @@ describe('ApiClient', () => {
     });
 
     it('should create refund with amount', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -547,9 +549,9 @@ describe('ApiClient', () => {
 
       await apiClient.createRefund(paymentId, 5000);
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        'https://api.paymongo.com/v1/refunds',
+      expect(mockPoolRequest).toHaveBeenCalledWith(
         expect.objectContaining({
+          path: '/v1/refunds',
           method: 'POST',
           body: JSON.stringify({
             data: {
@@ -564,7 +566,7 @@ describe('ApiClient', () => {
     });
 
     it('should create refund with reason', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -575,9 +577,9 @@ describe('ApiClient', () => {
 
       await apiClient.createRefund(paymentId, undefined, 'fraudulent');
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        'https://api.paymongo.com/v1/refunds',
+      expect(mockPoolRequest).toHaveBeenCalledWith(
         expect.objectContaining({
+          path: '/v1/refunds',
           method: 'POST',
           body: JSON.stringify({
             data: {
@@ -592,7 +594,7 @@ describe('ApiClient', () => {
     });
 
     it('should create refund with amount and reason', async () => {
-      mockRequest.mockResolvedValue({
+      mockPoolRequest.mockResolvedValue({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
         body: {
@@ -603,9 +605,9 @@ describe('ApiClient', () => {
 
       await apiClient.createRefund(paymentId, 7500, 'requested_by_customer');
 
-      expect(mockRequest).toHaveBeenCalledWith(
-        'https://api.paymongo.com/v1/refunds',
+      expect(mockPoolRequest).toHaveBeenCalledWith(
         expect.objectContaining({
+          path: '/v1/refunds',
           method: 'POST',
           body: JSON.stringify({
             data: {

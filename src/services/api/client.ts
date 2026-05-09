@@ -1,4 +1,4 @@
-import { request } from 'undici';
+import { Pool } from 'undici';
 import type {
   ApiResponse,
   PayMongoConfig,
@@ -65,6 +65,7 @@ export class ApiClient {
   private timeout: number;
   private cache: Cache;
   private rateLimiter?: RateLimiter;
+  private pool: Pool;
 
   constructor(options: ApiClientOptions) {
     this.config = options.config;
@@ -77,6 +78,12 @@ export class ApiClient {
     };
 
     this.cache = new Cache({ ttl: CACHE_TTL });
+
+    // Create undici pool with connection settings
+    this.pool = new Pool(this.baseUrl, {
+      connections: 10,
+      connectTimeout: this.timeout,
+    });
 
     // Initialize rate limiter if enabled
     const globalRateLimitDisabled = process.env.PAYMONGO_DISABLE_RATE_LIMIT === '1';
@@ -212,7 +219,8 @@ export class ApiClient {
     timeoutId.unref?.();
 
     try {
-      const response = await request(url.toString(), {
+      const response = await this.pool.request({
+        path: url.pathname + url.search,
         method,
         headers,
         body,
