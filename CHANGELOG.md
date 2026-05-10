@@ -7,7 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.4.13] - 2026-04-06
+### Added
+
+- **New API Types** - Added `SourceData`, `PaymentMethodData`, and `PaymentLinkData` types for PayMongo API coverage.
+- **New API Methods** - Added missing API client methods:
+  - `getPaymentIntent()`, `cancelPaymentIntent()` - Payment intent management
+  - `createSource()`, `getSource()` - One-time payment sources
+  - `createPaymentLink()`, `getPaymentLink()`, `listPaymentLinks()` - Payment link management
+  - `createPaymentMethod()`, `getPaymentMethod()` - Payment method operations
+- **New Commands** - Added three new CLI commands:
+  - `paymongo sources` - Create and manage one-time payment sources (GCash, PayMaya, GrabPay)
+  - `paymongo payment-links` - Create hosted checkout payment links
+  - `paymongo intents` - Manage payment intents (create, show, cancel)
+- **Webhook Signature Utility** - New `src/utils/webhook-verifier.ts` module for verifying PayMongo webhook signatures:
+  - `verifyWebhookSignature()` - Main verification function with timing-safe comparison
+  - `verifyWebhook()` - Auto-detects livemode from payload
+  - `generateTestSignature()` - Generate test signatures for local testing
+  - Full TypeScript types and JSDoc documentation
+- **Webhook Verifier Tests** - Added 20 unit tests for the new webhook signature utility.
+
+### Changed
+
+- **README** - Updated with new command documentation, features, and examples.
+
+## [1.4.14] - 2026-05-10
 
 ### Added
 

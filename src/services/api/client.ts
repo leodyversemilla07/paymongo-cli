@@ -4,7 +4,10 @@ import type {
   PayMongoConfig,
   PaymentDataFull,
   PaymentIntentData,
+  PaymentLinkData,
+  PaymentMethodData,
   RefundData,
+  SourceData,
   WebhookData,
   WebhookDataWithSecret,
 } from '../../types/paymongo.js';
@@ -528,6 +531,151 @@ export class ApiClient {
           },
         },
       }).then((response) => (response.data as ApiResponse<RefundData>).data)
+    );
+  }
+
+  // Payment Intent methods
+  async getPaymentIntent(id: string): Promise<PaymentIntentData> {
+    return withRetry(() =>
+      this.makeRequest('GET', `/v1/payment_intents/${id}`).then(
+        (response) => (response.data as ApiResponse<PaymentIntentData>).data
+      )
+    );
+  }
+
+  async cancelPaymentIntent(id: string): Promise<PaymentIntentData> {
+    return withRetry(() =>
+      this.makeRequest('POST', `/v1/payment_intents/${id}/cancel`).then(
+        (response) => (response.data as ApiResponse<PaymentIntentData>).data
+      )
+    );
+  }
+
+  // Source methods (one-time payments)
+  async createSource(
+    amount: number,
+    type: string,
+    currency: string = 'PHP',
+    description?: string,
+    metadata?: Record<string, unknown>
+  ): Promise<SourceData> {
+    const attributes: {
+      amount: number;
+      type: string;
+      currency: string;
+      description?: string;
+      metadata?: Record<string, unknown>;
+    } = { amount, type, currency };
+    if (description) attributes.description = description;
+    if (metadata) attributes.metadata = metadata;
+
+    return withRetry(() =>
+      this.makeRequest('POST', '/v1/sources', {
+        body: {
+          data: {
+            attributes,
+          },
+        },
+      }).then((response) => (response.data as ApiResponse<SourceData>).data)
+    );
+  }
+
+  async getSource(id: string): Promise<SourceData> {
+    return withRetry(() =>
+      this.makeRequest('GET', `/v1/sources/${id}`).then(
+        (response) => (response.data as ApiResponse<SourceData>).data
+      )
+    );
+  }
+
+  // Payment Link methods
+  async createPaymentLink(
+    amount: number,
+    description: string,
+    currency: string = 'PHP',
+    remarks?: string,
+    metadata?: Record<string, unknown>
+  ): Promise<PaymentLinkData> {
+    const attributes: {
+      amount: number;
+      description: string;
+      currency: string;
+      remarks?: string;
+      metadata?: Record<string, unknown>;
+    } = { amount, description, currency };
+    if (remarks) attributes.remarks = remarks;
+    if (metadata) attributes.metadata = metadata;
+
+    return withRetry(() =>
+      this.makeRequest('POST', '/v1/payment_links', {
+        body: {
+          data: {
+            attributes,
+          },
+        },
+      }).then((response) => (response.data as ApiResponse<PaymentLinkData>).data)
+    );
+  }
+
+  async getPaymentLink(id: string): Promise<PaymentLinkData> {
+    return withRetry(() =>
+      this.makeRequest('GET', `/v1/payment_links/${id}`).then(
+        (response) => (response.data as ApiResponse<PaymentLinkData>).data
+      )
+    );
+  }
+
+  async listPaymentLinks(limit: number = 25): Promise<PaymentLinkData[]> {
+    const validLimit = Math.max(1, Math.min(100, limit));
+    return withRetry(() =>
+      this.makeRequest('GET', '/v1/payment_links', {
+        params: { limit: validLimit },
+      }).then((response) => (response.data as ApiResponse<PaymentLinkData[]>).data)
+    );
+  }
+
+  // Payment Method methods
+  async createPaymentMethod(
+    type: string,
+    billing?: {
+      address?: {
+        line1?: string;
+        line2?: string;
+        city?: string;
+        state?: string;
+        postal_code?: string;
+        country_code?: string;
+      };
+      email?: string;
+      name?: string;
+      phone?: string;
+    },
+    metadata?: Record<string, unknown>
+  ): Promise<PaymentMethodData> {
+    const attributes: {
+      type: string;
+      billing?: PaymentMethodData['attributes']['billing'];
+      metadata?: Record<string, unknown>;
+    } = { type };
+    if (billing) attributes.billing = billing;
+    if (metadata) attributes.metadata = metadata;
+
+    return withRetry(() =>
+      this.makeRequest('POST', '/v1/payment_methods', {
+        body: {
+          data: {
+            attributes,
+          },
+        },
+      }).then((response) => (response.data as ApiResponse<PaymentMethodData>).data)
+    );
+  }
+
+  async getPaymentMethod(id: string): Promise<PaymentMethodData> {
+    return withRetry(() =>
+      this.makeRequest('GET', `/v1/payment_methods/${id}`).then(
+        (response) => (response.data as ApiResponse<PaymentMethodData>).data
+      )
     );
   }
 }

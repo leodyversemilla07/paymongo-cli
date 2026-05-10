@@ -15,6 +15,9 @@ PayMongo CLI is a terminal-first tool for developers integrating PayMongo. It is
 - **Local Webhook Forwarding**: Seamlessly receive PayMongo webhooks on your localhost using integrated `ngrok` tunneling.
 - **Webhook Triggering and Replay**: Simulate and inspect PayMongo webhook events during development.
 - **Payment Intent Workflows**: Create intents, attach payment methods, capture authorized payments, and create refunds from the terminal.
+- **Payment Links (Hosted Checkout)**: Create hosted checkout links for easy customer payments.
+- **One-time Payments**: Create sources for GCash, PayMaya, GrabPay, and other payment methods.
+- **Webhook Signature Verification**: Built-in utility for verifying incoming webhook signatures.
 - **Zero-Config Setup**: Get started in seconds with `paymongo init`.
 - **Real-time Monitoring**: Watch webhook events as they happen with formatted terminal logs.
 - **Privacy-First Analytics**: Optional local webhook event tracking to improve your development workflow (opt-in only).
@@ -85,6 +88,87 @@ Attach a real payment method, or use the built-in simulation flow during develop
 
 ```bash
 paymongo payments attach pi_123 --simulate --method gcash
+```
+
+### 5. Create a Payment Link (Hosted Checkout)
+
+Create a hosted checkout link and share it with your customer:
+
+```bash
+paymongo payment-links create -a 5000 -d "Order #123 - Pizza"
+```
+
+### 6. Create a One-time Source (GCash/PayMaya)
+
+Generate a source for alternative payment methods:
+
+```bash
+paymongo sources create --amount 10000 --type gcash
+```
+
+---
+
+## Payment Intents
+
+Payment intents are the recommended way to accept payments. Create, manage, and track payment flows:
+
+```bash
+# Create a payment intent
+paymongo intents create --amount 10000 --description "Premium Subscription"
+
+# Show payment intent details
+paymongo intents show pi_abc123
+
+# Cancel an intent (before payment)
+paymongo intents cancel pi_abc123
+```
+
+## Payment Links (Hosted Checkout)
+
+Payment links provide a hosted checkout page for seamless payment collection:
+
+```bash
+# Create a payment link
+paymongo payment-links create -a 5000 -d "Order #123"
+
+# List all payment links
+paymongo payment-links list
+
+# Show payment link details
+paymongo payment-links show pl_abc123
+```
+
+## One-time Payments (Sources)
+
+Sources allow one-time payments without creating a customer:
+
+```bash
+# Create a GCash source
+paymongo sources create --amount 5000 --type gcash
+
+# Create a PayMaya source
+paymongo sources create --amount 5000 --type paymaya
+
+# Check payment status
+paymongo sources show src_abc123
+```
+
+Supported payment types: `gcash`, `paymaya`, `grabpay`, `card`, `bancomer`
+
+---
+
+## Webhook Signature Verification
+
+PayMongo CLI includes a utility for verifying incoming webhook signatures:
+
+```typescript
+import { verifyWebhookSignature } from 'paymongo-cli/utils/webhook-verifier';
+
+const isValid = verifyWebhookSignature({
+  payload: JSON.stringify(requestBody),
+  signatureHeader: request.headers['paymongo-signature'],
+  secret: 'whsec_xxx',
+});
 ```
 
 ---
@@ -173,13 +257,16 @@ Analytics data helps you:
 | :--------------------------- | :------------------------------------------------------ |
 | `paymongo init`              | Initialize a new project and set up credentials.        |
 | `paymongo dev`               | Start local development server with webhook forwarding. |
-| `paymongo payments`          | Manage payments and payment intents.                    |
-| `paymongo webhooks`          | List, create, and manage PayMongo webhooks with filtering by status and event type.             |
-| `paymongo doctor`            | Run local integration diagnostics for config, keys, ngrok, and webhook setup.                   |
-| `paymongo config`            | View and modify CLI configuration.                      |
-| `paymongo config analytics`  | Configure webhook analytics settings.                   |
-| `paymongo config rate-limit` | Configure rate limiting settings.                       |
+| `paymongo payments`          | Manage payments (list, show, export, import).           |
+| `paymongo intents`           | Manage payment intents (create, show, cancel).         |
+| `paymongo sources`           | Create one-time payment sources (GCash, PayMaya, etc). |
+| `paymongo payment-links`     | Create hosted checkout payment links.                   |
+| `paymongo webhooks`          | List, create, and manage PayMongo webhooks.             |
 | `paymongo trigger`           | Simulate webhook events locally for testing.            |
+| `paymongo doctor`            | Run integration diagnostics.                             |
+| `paymongo config`            | View and modify CLI configuration.                      |
+| `paymongo team`              | Share API keys with team members.                       |
+| `paymongo env`               | Switch between test/live environments.                 |
 
 > Use `paymongo <command> --help` for detailed information on any command.
 

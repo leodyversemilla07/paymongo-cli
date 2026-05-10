@@ -235,3 +235,75 @@ export interface WebhookEventPayload {
 
 // Logger meta types
 export type LogMeta = Error | Record<string, unknown> | string | number | boolean;
+
+// Source Data (for one-time payments)
+export interface SourceData {
+  id: string;
+  type: 'source';
+  attributes: {
+    amount: number;
+    currency: string;
+    type: string; // e.g., 'gcash', 'paymaya', 'card'
+    status: 'awaiting_payment' | 'chargeable' | 'paid' | 'failed' | 'expired';
+    description?: string;
+    livemode: boolean;
+    reference_number?: string;
+    created_at: number;
+    updated_at: number;
+    metadata?: Record<string, unknown>;
+    checkout_url?: string;
+    bancomer_reference_number?: string;
+  };
+}
+
+// Payment Method Data
+export interface PaymentMethodData {
+  id: string;
+  type: 'payment_method';
+  attributes: {
+    type: string; // e.g., 'card', 'gcash', 'paymaya'
+    status: 'active' | 'inactive' | 'expired';
+    billing: {
+      address?: {
+        line1?: string;
+        line2?: string;
+        city?: string;
+        state?: string;
+        postal_code?: string;
+        country_code?: string;
+      };
+      email?: string;
+      name?: string;
+      phone?: string;
+    };
+    created_at: number;
+    updated_at: number;
+    metadata?: Record<string, unknown>;
+  };
+}
+
+// Payment Link Data
+export interface PaymentLinkData {
+  id: string;
+  type: 'payment_link';
+  attributes: {
+    data: {
+      attributes: {
+        amount: number;
+        currency: string;
+        description?: string;
+        remarks?: string;
+        status: 'active' | 'inactive' | 'unpaid' | 'paid';
+        livemode: boolean;
+        checkout_url: string;
+        reference_number: string;
+        created_at: number;
+        updated_at: number;
+        metadata?: Record<string, unknown>;
+      };
+      id: string;
+      type: string;
+    };
+    type: string;
+  };
+}

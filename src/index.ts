@@ -40,6 +40,9 @@ program.addCommand((await import('./commands/login.js')).command);
 program.addCommand(await import('./commands/config.js').then((m) => m.default));
 program.addCommand(await import('./commands/webhooks.js').then((m) => m.default));
 program.addCommand(await import('./commands/payments.js').then((m) => m.default));
+program.addCommand((await import('./commands/sources/index.js')).default);
+program.addCommand((await import('./commands/payment-links/index.js')).default);
+program.addCommand((await import('./commands/intents/index.js')).default);
 program.addCommand(await import('./commands/trigger.js').then((m) => m.default));
 program.addCommand(await import('./commands/generate.js').then((m) => m.default));
 program.addCommand(await import('./commands/doctor.js').then((m) => m.default));
@@ -77,6 +80,20 @@ EXAMPLES
     $ paymongo payments show pay_123                     # Show payment details
     $ paymongo payments create-intent --amount 10000     # Create payment intent for ₱100
     $ paymongo payments attach pi_123 --simulate         # Simulate payment method attachment
+
+  Sources (One-time payments):
+    $ paymongo sources create --amount 5000 --type gcash # Create GCash payment source
+    $ paymongo sources show src_123                       # Show source details
+
+  Payment Links (Hosted Checkout):
+    $ paymongo payment-links create -a 10000 -d "Order #123"  # Create hosted checkout link
+    $ paymongo payment-links list                        # List payment links
+    $ paymongo payment-links show pl_123                  # Show payment link details
+
+  Payment Intents:
+    $ paymongo intents create --amount 10000             # Create payment intent for ₱100
+    $ paymongo intents show pi_123                        # Show payment intent details
+    $ paymongo intents cancel pi_123                     # Cancel a payment intent
 
   Code Generation:
     $ paymongo generate webhook-handler                  # Generate webhook handler boilerplate
