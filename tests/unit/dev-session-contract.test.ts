@@ -40,6 +40,8 @@ const { default: DevSessionService } = await import('../../src/services/dev/sess
 describe('Dev session webhook registration contract', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Clean CI runners and developer shells must use the same mocked auth input.
+    vi.stubEnv('NGROK_AUTHTOKEN', 'fixture-ngrok-token');
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mocks.forward.mockResolvedValue({ url: () => 'https://example.ngrok.app', close: mocks.close });
@@ -50,7 +52,10 @@ describe('Dev session webhook registration contract', () => {
     });
   });
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
 
   function createService() {
     const config: PayMongoConfig = {
