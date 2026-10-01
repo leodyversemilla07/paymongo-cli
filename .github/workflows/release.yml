@@ -2,66 +2,85 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+
   release:
+    needs: validate
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Use Node.js 24 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: npm
+          registry-url: https://registry.npmjs.org
 
-    - name: Use Node.js 20.x
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20.x
-        cache: 'npm'
-        registry-url: 'https://registry.npmjs.org'
+      - name: Validate tag and select publishing channel
+        id: metadata
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node scripts/release-metadata.mjs "$RELEASE_TAG"
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install locked dependencies and build
+        run: npm ci
 
-    - name: Run tests
-      run: npm test
+      - name: Audit dependencies
+        run: npm audit
 
-    - name: Build project
-      run: npm run build
+      - name: Test the installed npm tarball
+        run: npm run test:package
 
-    - name: Publish to npm
-      run: npm publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_DIST_TAG: ${{ steps.metadata.outputs.npm_tag }}
+        run: npm publish --access public --tag "$NPM_DIST_TAG"
 
-    - name: Setup for GitHub Packages
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20.x
-        registry-url: 'https://npm.pkg.github.com'
-        scope: '@leodyversemilla07'
+      - name: Setup for GitHub Packages
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          registry-url: https://npm.pkg.github.com
+          scope: '@leodyversemilla07'
 
-    - name: Publish to GitHub Packages
-      run: |
-        # Change package name to scoped version for GitHub Packages
-        npm pkg set name='@leodyversemilla07/paymongo-cli'
-        npm publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_DIST_TAG: ${{ steps.metadata.outputs.npm_tag }}
+        run: |
+          npm pkg set name='@leodyversemilla07/paymongo-cli'
+          npm publish --tag "$NPM_DIST_TAG"
 
-    - name: Create or update GitHub Release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ github.ref_name }}
-        name: Release ${{ github.ref_name }}
-        body: |
-          ## Changes
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          prerelease: ${{ steps.metadata.outputs.prerelease == 'true' }}
+          draft: false
+          body: |
+            ## Changes
+            See [CHANGELOG.md](https://github.com/leodyversemilla07/paymongo-cli/blob/${{ github.ref_name }}/CHANGELOG.md).
 
-          See [CHANGELOG.md](https://github.com/leodyversemilla07/paymongo-cli/blob/main/CHANGELOG.md) for details.
+            ## Installation
+            ```bash
+            npm install -g paymongo-cli@${{ steps.metadata.outputs.npm_tag }}
+            ```
 
-          ## Installation
-
-          ```bash
-          npm install -g paymongo-cli
-          ```
-        draft: false
-        prerelease: false
+            Community-built CLI. Checkout commands currently target the documented v1 lifecycle.

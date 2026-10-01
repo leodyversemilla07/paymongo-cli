@@ -9,7 +9,7 @@ const mockSelect = jest.fn();
 const mockPassword = jest.fn();
 const mockApiClientValidate = jest.fn<() => Promise<boolean>>();
 const mockApiClientCreateWebhook =
-  jest.fn<() => Promise<{ id: string; attributes: { secret: string } }>>();
+  jest.fn<() => Promise<{ id: string; attributes: { secret_key: string } }>>();
 const mockApiClientDisableWebhook = jest.fn<() => Promise<void>>();
 
 const mockFsExistsSync = jest.fn<() => boolean>();
@@ -103,7 +103,7 @@ jest.mock('node:os', () => {
 jest.mock('crypto', () => ({
   createHmac: jest.fn(() => ({
     update: jest.fn(() => ({
-      digest: jest.fn(() => 'mock-expected-signature'),
+      digest: jest.fn(() => 'a'.repeat(64)),
     })),
   })),
   timingSafeEqual: mockCryptoTimingSafeEqual,
@@ -197,7 +197,7 @@ describe('Dev Command', () => {
     mockApiClientValidate.mockResolvedValue(true);
     mockApiClientCreateWebhook.mockResolvedValue({
       id: 'webhook-123',
-      attributes: { secret: 'webhook-secret' },
+      attributes: { secret_key: 'webhook-secret' },
     });
     mockApiClientDisableWebhook.mockResolvedValue(undefined);
 
@@ -386,7 +386,7 @@ describe('Dev Command', () => {
         method: 'POST',
         url: '/webhook/test-project',
         headers: {
-          'paymongo-signature': 't=1234567890,te=mock-expected-signature,li=',
+          'paymongo-signature': `t=1234567890,te=${'a'.repeat(64)},li=`,
         } as Record<string, string>,
         on: jest.fn<(event: string, callback: (data?: string) => void) => void>(),
       };
@@ -563,7 +563,7 @@ describe('Dev Command', () => {
       requestHandler(mockReq, mockRes);
 
       expect(mockAnalyticsRecordEvent).toHaveBeenCalledWith({
-        type: 'payment',
+        type: 'unknown',
         success: true,
         data: {
           amount: 10000,
@@ -574,6 +574,40 @@ describe('Dev Command', () => {
   });
 
   describe('detached mode', () => {
+    it('preserves forwarding destination and timeout in the child arguments', async () => {
+      const { command } = await import('../../src/commands/dev.js');
+      await command.parseAsync(
+        [
+          '--detach',
+          '--no-register',
+          '--port',
+          '4000',
+          '--forward-to',
+          'http://localhost:3000/hooks',
+          '--forward-timeout',
+          '5000',
+        ],
+        { from: 'user' }
+      );
+      expect(mockSpawn).toHaveBeenCalledWith(
+        process.execPath,
+        [
+          '/test/bin/paymongo.js',
+          'dev',
+          '--port',
+          '4000',
+          '--no-register',
+          '--events',
+          'payment.paid,payment.failed',
+          '--forward-to',
+          'http://localhost:3000/hooks',
+          '--forward-timeout',
+          '5000',
+        ],
+        expect.any(Object)
+      );
+    });
+
     it('should reuse the current CLI entrypoint when spawning the background process', async () => {
       const config = {
         version: '1.0',
@@ -588,7 +622,7 @@ describe('Dev Command', () => {
       mockConfigManagerLoad.mockResolvedValue(config);
 
       const { command } = await import('../../src/commands/dev.js');
-      await command.parseAsync(['--detach'], { from: 'user' });
+      await command.parseAsync(['--detach', '--no-register'], { from: 'user' });
 
       expect(mockSpawn).toHaveBeenCalledWith(
         process.execPath,
@@ -597,6 +631,7 @@ describe('Dev Command', () => {
           'dev',
           '--port',
           '3000',
+          '--no-register',
           '--events',
           'payment.paid,payment.failed',
         ],

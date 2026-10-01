@@ -402,7 +402,13 @@ describe('Payments Command', () => {
       });
 
       expect(mockConfigManagerLoad).toHaveBeenCalledTimes(1);
-      expect(mockApiClientCreatePaymentIntent).toHaveBeenCalledWith(10000, 'PHP', 'Test payment');
+      expect(mockApiClientCreatePaymentIntent).toHaveBeenCalledWith(
+        10000,
+        'PHP',
+        'Test payment',
+        ['card', 'gcash', 'paymaya'],
+        {}
+      );
       expect(mockSpinnerStart).toHaveBeenCalledWith('Loading configuration...');
       expect(mockSpinnerSucceed).toHaveBeenCalledWith('Configuration loaded');
       expect(mockSpinnerStart).toHaveBeenCalledWith('Creating payment intent...');
@@ -419,7 +425,7 @@ describe('Payments Command', () => {
 
       expect(mockConsoleError).toHaveBeenCalledWith(
         'red:❌ Failed to create payment intent:',
-        'Amount must be a positive number in centavos'
+        'Amount must be an integer of at least 100 centavos'
       );
     });
   });
@@ -473,6 +479,60 @@ describe('Payments Command', () => {
         'red:❌ Failed to attach payment method:',
         'Payment method ID is required. Use --payment-method <id>'
       );
+    });
+
+    it('rejects simulation in live mode without API calls', async () => {
+      mockConfigManagerLoad.mockResolvedValue({ environment: 'live' });
+      await expect(attachAction('pi_123', { simulate: true, method: 'gcash' })).rejects.toThrow(
+        'Command failed'
+      );
+      expect(mockPaymentSimulator).not.toHaveBeenCalled();
+      expect(mockApiClientAttachPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('marks simulated JSON explicitly and honors a zero delay', async () => {
+      mockConfigManagerLoad.mockResolvedValue({ environment: 'test' });
+      const result = {
+        paymentIntent: { id: 'pi_123', attributes: { status: 'succeeded' } },
+        delayApplied: 0,
+        simulationType: 'maya_success',
+      };
+      const simulate = jest.fn().mockResolvedValue(result);
+      mockPaymentSimulator.mockImplementation(() => ({ simulatePaymentConfirmation: simulate }));
+      await attachAction('pi_123', { simulate: true, method: 'maya', delay: '0', json: true });
+      expect(simulate).toHaveBeenCalledWith('pi_123', {
+        paymentMethod: 'maya',
+        outcome: 'success',
+        delayMs: 0,
+      });
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        JSON.stringify({ simulated: true, ...result }, null, 2)
+      );
+      expect(mockApiClientAttachPaymentIntent).not.toHaveBeenCalled();
+    });
+
+    it('shows redirect instructions without asserting the payment is complete', async () => {
+      mockConfigManagerLoad.mockResolvedValue({ environment: 'test' });
+      mockApiClientAttachPaymentIntent.mockResolvedValue({
+        id: 'pi_123',
+        attributes: {
+          amount: 10000,
+          currency: 'PHP',
+          status: 'awaiting_next_action',
+          created_at: 123,
+          updated_at: 123,
+          next_action: { type: 'redirect', redirect: { url: 'https://checkout.example.com' } },
+        },
+      });
+      await attachAction('pi_123', {
+        paymentMethod: 'pm_456',
+        returnUrl: 'https://example.com/return',
+      });
+      const output = mockConsoleLog.mock.calls.map((call: unknown[]) => call.join(' ')).join('\n');
+      expect(output).toContain('https://checkout.example.com');
+      expect(output).toContain('Customer action is required');
+      expect(output).toContain('paymongo intents show pi_123');
+      expect(output).not.toContain('show-intent');
     });
 
     it('should handle simulation mode', async () => {
@@ -540,6 +600,27 @@ describe('Payments Command', () => {
   });
 
   describe('capture command', () => {
+    it('passes an explicit partial capture amount', async () => {
+      mockConfigManagerLoad.mockResolvedValue({ environment: 'test' });
+      mockApiClientCapturePaymentIntent.mockResolvedValue({
+        id: 'pi_123',
+        attributes: { status: 'succeeded' },
+      });
+      await captureAction('pi_123', { amount: '25000', json: true });
+      expect(mockApiClientCapturePaymentIntent).toHaveBeenCalledWith('pi_123', 25000);
+    });
+
+    it.each([
+      '0',
+      '-1',
+      '1.5',
+      '25000abc',
+    ])('rejects invalid partial amount %s before API calls', async (amount) => {
+      mockConfigManagerLoad.mockResolvedValue({ environment: 'test' });
+      await expect(captureAction('pi_123', { amount })).rejects.toThrow('Command failed');
+      expect(mockApiClientCapturePaymentIntent).not.toHaveBeenCalled();
+    });
+
     it('should capture payment intent successfully', async () => {
       const mockConfig = { environment: 'test' };
       const mockResult = {
@@ -559,7 +640,7 @@ describe('Payments Command', () => {
       await captureAction('pi_123', { json: false });
 
       expect(mockConfigManagerLoad).toHaveBeenCalledTimes(1);
-      expect(mockApiClientCapturePaymentIntent).toHaveBeenCalledWith('pi_123');
+      expect(mockApiClientCapturePaymentIntent).toHaveBeenCalledWith('pi_123', undefined);
       expect(mockSpinnerStart).toHaveBeenCalledWith('Loading configuration...');
       expect(mockSpinnerSucceed).toHaveBeenCalledWith('Configuration loaded');
       expect(mockSpinnerStart).toHaveBeenCalledWith('Capturing payment intent...');
@@ -568,6 +649,18 @@ describe('Payments Command', () => {
   });
 
   describe('refund command', () => {
+    it.each([
+      {},
+      { amount: '5000' },
+      { reason: 'others' },
+      { amount: '99', reason: 'others' },
+      { amount: '100abc', reason: 'others' },
+    ])('rejects incomplete or invalid refund options without API calls: %s', async (options) => {
+      mockConfigManagerLoad.mockResolvedValue({ environment: 'test' });
+      await expect(refundAction('pay_456', options)).rejects.toThrow('Command failed');
+      expect(mockApiClientCreateRefund).not.toHaveBeenCalled();
+    });
+
     it('should create refund successfully', async () => {
       const mockConfig = { environment: 'test' };
       const mockRefund = {
@@ -613,7 +706,7 @@ describe('Payments Command', () => {
 
       expect(mockConsoleError).toHaveBeenCalledWith(
         'red:❌ Failed to create refund:',
-        'Invalid reason. Must be one of: duplicate, fraudulent, requested_by_customer'
+        expect.stringContaining('others')
       );
     });
   });

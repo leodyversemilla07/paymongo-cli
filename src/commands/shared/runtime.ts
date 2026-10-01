@@ -47,6 +47,24 @@ export function createApiClient(config: PayMongoConfig): ApiClient {
   return new ApiClient({ config });
 }
 
+/** Own API client cleanup for short-lived commands. */
+export async function withApiClient<T>(
+  config: PayMongoConfig,
+  operation: (client: ApiClient) => Promise<T>
+): Promise<T> {
+  const client = createApiClient(config);
+  try {
+    return await operation(client);
+  } finally {
+    try {
+      await client.close();
+    } catch {
+      // A cleanup failure must not hide a completed mutation or its original error.
+      console.error(chalk.yellow('Warning: could not release API connections.'));
+    }
+  }
+}
+
 export function failCommand(prefix: string, error: unknown, spinner?: Spinner): never {
   spinner?.stop();
   const err = error as Error;

@@ -2,18 +2,25 @@ import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import chalk from 'chalk';
 import type { PayMongoConfig, TunnelInfo, WebhookDataWithSecret } from '../../types/paymongo.js';
-import { CommandError, withRetry } from '../../utils/errors.js';
+import { CommandError, ValidationError, withRetry } from '../../utils/errors.js';
 import type Spinner from '../../utils/spinner.js';
 import ApiClient from '../api/client.js';
 import type ConfigManager from '../config/manager.js';
+import {
+  DEFAULT_FORWARD_TIMEOUT_MS,
+  validateForwardTarget,
+  validateForwardTimeout,
+} from './forwarder.js';
 import { DevProcessManager } from './process-manager.js';
 import DevServer from './server.js';
 
 export interface DevOptions {
   port?: string;
-  noRegister?: boolean;
+  register?: boolean;
   events?: string;
   ngrokToken?: string;
+  forwardTo?: string;
+  forwardTimeout?: string;
   detach?: boolean;
 }
 
@@ -48,25 +55,35 @@ export class DevSessionService {
 
   async run(options: DevOptions): Promise<void> {
     let tunnel: TunnelInfo | undefined;
-
-    if (await this.handleDetachedStart(options)) {
-      return;
-    }
+    let devServer: DevServer | undefined;
+    let stateWriteStarted = false;
 
     try {
+      const port = this.getPort(options);
+      const forwardTimeoutMs = validateForwardTimeout(
+        Number(options.forwardTimeout ?? DEFAULT_FORWARD_TIMEOUT_MS)
+      );
+      if (options.forwardTo !== undefined) validateForwardTarget(options.forwardTo, port);
+      if (await this.handleDetachedStart(options)) return;
       const config = await this.loadConfig();
       if (!config) {
         return;
       }
 
-      const port = this.getPort(options);
       tunnel = await this.createTunnelWithStatus(port, options.ngrokToken);
       const tunnelUrl = tunnel.url() ?? '';
 
-      const devServer = new DevServer(port, config);
+      if (options.forwardTo !== undefined)
+        validateForwardTarget(options.forwardTo, port, tunnelUrl);
+      devServer =
+        options.forwardTo !== undefined
+          ? new DevServer(port, config, { forwardTo: options.forwardTo, forwardTimeoutMs })
+          : new DevServer(port, config);
       await devServer.start();
 
-      await this.cleanupStaleWebhooks(config);
+      if (options.register !== false && config.dev.autoRegisterWebhook !== false) {
+        await this.cleanupStaleWebhooks(config);
+      }
       const { webhookId, webhookUrl } = await this.registerWebhookIfNeeded(
         config,
         options,
@@ -81,6 +98,7 @@ export class DevSessionService {
         webhookId
       );
 
+      stateWriteStarted = true;
       await this.saveState(
         config,
         options,
@@ -91,35 +109,44 @@ export class DevSessionService {
         localWebhookUrl
       );
 
+      const activeServer = devServer;
       await new Promise<void>((resolve) => {
         const cleanup = this.createCleanupHandler(
           {
             config,
-            devServer,
+            devServer: activeServer,
             tunnel,
             webhookId,
           },
-          resolve
+          () => {
+            process.off('SIGINT', onSignal);
+            process.off('SIGTERM', onSignal);
+            resolve();
+          }
         );
-
-        process.once('SIGINT', () => {
+        const onSignal = () => {
           void cleanup();
-        });
-        process.once('SIGTERM', () => {
-          void cleanup();
-        });
+        };
+        process.once('SIGINT', onSignal);
+        process.once('SIGTERM', onSignal);
       });
     } catch (error) {
       this.spinner.stop();
       const err = error as Error;
-      this.printTunnelError(err);
-      await this.cleanupAfterStartupFailure(tunnel);
+      if (err.message.includes('ngrok') || err.message.includes('tunnel'))
+        this.printTunnelError(err);
+      else console.error(chalk.red('Failed to start development session:'), err.message);
+      await this.cleanupAfterStartupFailure(tunnel, devServer, stateWriteStarted);
       throw new CommandError();
     }
   }
 
   private getPort(options: DevOptions): number {
-    return parseInt(options.port || '3000', 10);
+    const port = Number(options.port ?? '3000');
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      throw new ValidationError('Listener port must be an integer between 1 and 65535');
+    }
+    return port;
   }
 
   private getEvents(options: DevOptions): string[] {
@@ -163,11 +190,15 @@ export class DevSessionService {
     }
 
     const args = [entryScript, 'dev', '--port', options.port || '3000'];
-    if (options.noRegister) {
+    if (options.register === false) {
       args.push('--no-register');
     }
     if (options.events) {
       args.push('--events', options.events);
+    }
+    if (options.forwardTo !== undefined) {
+      args.push('--forward-to', options.forwardTo);
+      args.push('--forward-timeout', options.forwardTimeout ?? String(DEFAULT_FORWARD_TIMEOUT_MS));
     }
     if (options.ngrokToken) {
       args.push('--ngrok-token', options.ngrokToken);
@@ -293,7 +324,7 @@ export class DevSessionService {
     options: DevOptions,
     tunnelUrl: string
   ): Promise<RegisteredWebhookResult> {
-    const shouldRegister = !options.noRegister && config.dev.autoRegisterWebhook !== false;
+    const shouldRegister = options.register !== false && config.dev.autoRegisterWebhook !== false;
     if (!shouldRegister) {
       return {};
     }
@@ -314,7 +345,7 @@ export class DevSessionService {
 
       await this.persistRegisteredWebhook(config, webhook, externalWebhookUrl);
 
-      if (webhook.attributes?.secret) {
+      if (webhook.attributes?.secret_key) {
         this.spinner.succeed(`Webhook registered: ${webhook.id} (with signature verification)`);
       } else {
         this.spinner.succeed(`Webhook registered: ${webhook.id}`);
@@ -339,9 +370,9 @@ export class DevSessionService {
     webhook: WebhookDataWithSecret,
     webhookUrl: string
   ): Promise<void> {
-    if (webhook.attributes?.secret) {
+    if (webhook.attributes?.secret_key) {
       config.webhookSecrets = config.webhookSecrets || {};
-      config.webhookSecrets[webhook.id] = webhook.attributes.secret;
+      config.webhookSecrets[webhook.id] = webhook.attributes.secret_key;
     }
 
     config.registeredWebhooks = config.registeredWebhooks || [];
@@ -402,10 +433,10 @@ export class DevSessionService {
     console.log(chalk.gray('  ├─'), chalk.cyan('External (PayMongo sends here):'));
     console.log(chalk.gray('  │  '), chalk.yellow(externalWebhookUrl));
     console.log(chalk.gray('  │'));
-    console.log(chalk.gray('  └─'), chalk.cyan('Local (Your server receives here):'));
+    console.log(chalk.gray('  └─'), chalk.cyan('Local (CLI listener receives here):'));
     console.log(chalk.gray('     '), chalk.green(localWebhookUrl));
     console.log('');
-    console.log(chalk.bold('Forwarding:'));
+    console.log(chalk.bold('Tunnel delivery:'));
     console.log(
       chalk.gray('  '),
       `${chalk.yellow(tunnelUrl)} ${chalk.gray('→')} ${chalk.green(`http://localhost:${port}`)}`
@@ -420,7 +451,9 @@ export class DevSessionService {
     console.log('');
     console.log(
       chalk.gray(
-        '💡 Tip: Use the External URL in PayMongo dashboard, requests will forward to your local server'
+        options.forwardTo !== undefined
+          ? `Application forwarding enabled (timeout ${options.forwardTimeout ?? DEFAULT_FORWARD_TIMEOUT_MS}ms; original body/signature preserved)`
+          : '💡 Tip: The tunnel delivers to this CLI listener. Use --forward-to to deliver to your application'
       )
     );
     console.log(chalk.gray('Press Ctrl+C to stop'));
@@ -447,6 +480,10 @@ export class DevSessionService {
       events: this.getEvents(options),
       startedAt: Date.now(),
       projectName: config.projectName,
+      ...(options.forwardTo !== undefined && {
+        forwardingEnabled: true,
+        forwardTimeoutMs: Number(options.forwardTimeout ?? DEFAULT_FORWARD_TIMEOUT_MS),
+      }),
     });
   }
 
@@ -463,16 +500,18 @@ export class DevSessionService {
       cleanedUp = true;
 
       console.log(`\n${chalk.yellow('Shutting down...')}`);
-      await DevProcessManager.clearState();
+      const localCleanup = await Promise.allSettled([
+        Promise.resolve().then(() => DevProcessManager.clearState()),
+        Promise.resolve().then(() => tunnel?.close()),
+        Promise.resolve().then(() => devServer.stop()),
+      ]);
+      if (tunnel && localCleanup[1]?.status === 'fulfilled')
+        console.log(chalk.yellow('✓'), 'Tunnel closed');
+      if (localCleanup.some((result) => result.status === 'rejected')) {
+        console.error(chalk.yellow('Some local cleanup tasks may not have completed'));
+      }
 
       try {
-        if (tunnel) {
-          await tunnel.close();
-          console.log(chalk.yellow('✓'), 'Tunnel closed');
-        }
-
-        await devServer.stop();
-
         if (webhookId) {
           this.spinner.start('Cleaning up webhook...');
           await new ApiClient({ config }).disableWebhook(webhookId);
@@ -498,16 +537,16 @@ export class DevSessionService {
     };
   }
 
-  private async cleanupAfterStartupFailure(tunnel?: TunnelInfo): Promise<void> {
-    await DevProcessManager.clearState();
-
-    try {
-      if (tunnel) {
-        await tunnel.close();
-      }
-    } catch {
-      // Ignore cleanup errors during shutdown
-    }
+  private async cleanupAfterStartupFailure(
+    tunnel?: TunnelInfo,
+    devServer?: DevServer,
+    clearState = false
+  ): Promise<void> {
+    await Promise.allSettled([
+      Promise.resolve().then(() => (clearState ? DevProcessManager.clearState() : undefined)),
+      Promise.resolve().then(() => devServer?.stop()),
+      Promise.resolve().then(() => tunnel?.close()),
+    ]);
   }
 
   private printTunnelError(error: Error): void {

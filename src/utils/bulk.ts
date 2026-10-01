@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { PaymentDataFull, WebhookData } from '../types/paymongo.js';
 import { PayMongoError } from './errors.js';
+import { redactWebhookSecret } from './webhook-resource.js';
 
 export interface BulkExportData<T = unknown> {
   metadata: {
@@ -39,7 +40,7 @@ export class BulkOperations {
         version: BulkOperations.EXPORT_VERSION,
         environment,
       },
-      data: webhooks,
+      data: webhooks.map(redactWebhookSecret),
     };
 
     const jsonContent = JSON.stringify(exportData, null, 2);

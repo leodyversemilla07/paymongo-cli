@@ -14,6 +14,29 @@ export interface StoredWebhookEvent {
   error?: string;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isStoredEvent(value: unknown): value is StoredWebhookEvent {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.event === 'string' &&
+    typeof value.url === 'string' &&
+    typeof value.timestamp === 'number' &&
+    Number.isFinite(value.timestamp) &&
+    (value.status === 'delivered' || value.status === 'failed') &&
+    isRecord(value.payload) &&
+    isRecord(value.payload.data) &&
+    typeof value.payload.data.id === 'string' &&
+    typeof value.payload.data.type === 'string' &&
+    isRecord(value.payload.data.attributes) &&
+    (value.response === undefined || isRecord(value.response)) &&
+    (value.error === undefined || typeof value.error === 'string')
+  );
+}
+
 class WebhookEventStore {
   private storePath: string;
   private storeDir: string;
@@ -25,7 +48,7 @@ class WebhookEventStore {
   }
 
   private async ensureDir(): Promise<void> {
-    await fs.mkdir(this.storeDir, { recursive: true });
+    await fs.mkdir(this.storeDir, { recursive: true, mode: 0o700 });
   }
 
   async storeEvent(event: StoredWebhookEvent): Promise<void> {
@@ -39,7 +62,7 @@ class WebhookEventStore {
         events.splice(0, events.length - 1000);
       }
 
-      await fs.writeFile(this.storePath, JSON.stringify(events, null, 2));
+      await fs.writeFile(this.storePath, JSON.stringify(events, null, 2), { mode: 0o600 });
     } catch (error) {
       // Silently fail if we can't store events
       console.warn('Failed to store webhook event:', error);
@@ -49,7 +72,8 @@ class WebhookEventStore {
   async loadEvents(): Promise<StoredWebhookEvent[]> {
     try {
       const data = await fs.readFile(this.storePath, 'utf-8');
-      return JSON.parse(data);
+      const parsed: unknown = JSON.parse(data);
+      return Array.isArray(parsed) ? parsed.filter(isStoredEvent) : [];
     } catch (error) {
       if (
         error instanceof Error &&
@@ -68,6 +92,7 @@ class WebhookEventStore {
   }
 
   async getEventsByType(eventType: string, limit: number = 10): Promise<StoredWebhookEvent[]> {
+    if (!Number.isInteger(limit) || limit <= 0) return [];
     const events = await this.loadEvents();
     return events.filter((event) => event.event === eventType).slice(-limit); // Get most recent events
   }

@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import ConfigManager from '../services/config/manager.js';
+import { CommandError } from '../utils/errors.js';
 import Spinner from '../utils/spinner.js';
 
 // Import templates from modular template files
@@ -192,6 +193,7 @@ async function generateWebhookHandler(options: {
   } catch (error) {
     spinner.fail('Generation failed');
     console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
+    throw new CommandError();
   }
 }
 
@@ -240,6 +242,7 @@ async function generatePaymentIntent(options: {
   } catch (error) {
     spinner.fail('Generation failed');
     console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
+    throw new CommandError();
   }
 }
 
@@ -272,6 +275,7 @@ async function generateCheckoutPage(options: { language: string; output?: string
   } catch (error) {
     spinner.fail('Generation failed');
     console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
+    throw new CommandError();
   }
 }
 

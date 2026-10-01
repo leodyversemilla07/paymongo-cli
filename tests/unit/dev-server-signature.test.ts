@@ -71,6 +71,24 @@ describe('DevServer signature verification', () => {
     expect(callVerify(server, header, body)).toBe(true);
   });
 
+  it.each([false, true])('uses the signature matching livemode=%s', (livemode) => {
+    const body = JSON.stringify({
+      data: { id: 'evt_3', type: 'event', attributes: { type: 'payment.paid', livemode } },
+    });
+    const timestamp = '1710000002';
+    const secret = 'whsk_test_secret';
+    const signature = crypto
+      .createHmac('sha256', secret)
+      .update(`${timestamp}.${body}`)
+      .digest('hex');
+    config.webhookSecrets = { hook_123: secret };
+    const server = new DevServer(3000, config);
+    const testHeader = `t=${timestamp},te=${signature},li=`;
+    const liveHeader = `t=${timestamp},te=,li=${signature}`;
+    expect(callVerify(server, livemode ? liveHeader : testHeader, body)).toBe(true);
+    expect(callVerify(server, livemode ? testHeader : liveHeader, body)).toBe(false);
+  });
+
   it('returns false for invalid signature with configured secrets', () => {
     const body = JSON.stringify({
       data: { id: 'evt_2', type: 'event', attributes: { type: 'payment.failed', livemode: false } },

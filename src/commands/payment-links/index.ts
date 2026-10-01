@@ -8,7 +8,11 @@ command
   .addCommand(
     new Command('create')
       .description('Create a payment link')
-      .option('-a, --amount <amount>', 'Amount in centavos (e.g., 10000 for ₱100.00)', '10000')
+      .option(
+        '-a, --amount <amount>',
+        'Integer amount in centavos (100-999999999; e.g., 10000 for ₱100.00)',
+        '10000'
+      )
       .option('-d, --description <description>', 'Payment description (required)')
       .option('-c, --currency <currency>', 'Currency code', 'PHP')
       .option('-r, --remarks <remarks>', 'Internal remarks (not shown to customer)')
@@ -25,7 +29,11 @@ command
   .addCommand(
     new Command('list')
       .description('List payment links')
-      .option('-l, --limit <number>', 'Number of links to show', '10')
+      .option(
+        '-l, --limit <number>',
+        'Maximum links to display from the returned list (1-100; local limit)',
+        '10'
+      )
       .option('-j, --json', 'Output as JSON')
       .action(listAction)
   );

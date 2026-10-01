@@ -2,7 +2,17 @@ import chalk from 'chalk';
 import Table from 'cli-table3';
 import type { SimulationOptions } from '../../services/payments/simulator.js';
 import type { PaymentDataFull } from '../../types/paymongo.js';
+import { RefundCreateSchema } from '../../types/schemas.js';
 import { BulkOperations } from '../../utils/bulk.js';
+import { ValidationError } from '../../utils/errors.js';
+import { redactPaymentResource } from '../../utils/payment-resource.js';
+import {
+  type PaymentIntentCommandOptions,
+  parseCaptureAmount,
+  parsePaymentIntentCreation,
+  printPaymentIntentNextAction,
+  validateIntentAttachment,
+} from '../shared/payment-intents.js';
 import {
   createApiClient,
   createPaymentSimulator,
@@ -66,7 +76,7 @@ export async function importAction(filename: string, options: { json?: boolean }
     spinner.succeed(`Loaded ${payments.length} payments from export`);
 
     if (options.json) {
-      console.log(JSON.stringify({ payments, metadata }, null, 2));
+      console.log(JSON.stringify(redactPaymentResource({ payments, metadata }), null, 2));
       return;
     }
 
@@ -114,7 +124,7 @@ export async function listAction(options: { limit?: string; json?: boolean }) {
     spinner.succeed(`Found ${payments.length} payments`);
 
     if (options.json) {
-      console.log(JSON.stringify(payments, null, 2));
+      console.log(JSON.stringify(redactPaymentResource(payments), null, 2));
       return;
     }
 
@@ -177,7 +187,7 @@ export async function showAction(id: string, options: { json?: boolean }) {
     spinner.succeed('Payment details loaded');
 
     if (options.json) {
-      console.log(JSON.stringify(payment, null, 2));
+      console.log(JSON.stringify(redactPaymentResource(payment), null, 2));
       return;
     }
 
@@ -218,12 +228,7 @@ export async function showAction(id: string, options: { json?: boolean }) {
   }
 }
 
-export async function createIntentAction(options: {
-  amount?: string;
-  currency?: string;
-  description?: string;
-  json?: boolean;
-}) {
+export async function createIntentAction(options: PaymentIntentCommandOptions) {
   const { spinner, configManager } = createPaymentsContext();
 
   try {
@@ -232,23 +237,20 @@ export async function createIntentAction(options: {
       return;
     }
 
-    const amount = parseBoundedInt(
-      options.amount,
-      '10000',
-      'Amount must be a positive number in centavos',
-      (parsed) => parsed > 0
-    );
+    const { attributes, apiOptions } = parsePaymentIntentCreation(options);
 
     spinner.start('Creating payment intent...');
     const paymentIntent = await createApiClient(config).createPaymentIntent(
-      amount,
-      options.currency || 'PHP',
-      options.description
+      attributes.amount,
+      attributes.currency,
+      attributes.description,
+      attributes.payment_method_allowed,
+      apiOptions
     );
     spinner.succeed('Payment intent created');
 
     if (options.json) {
-      console.log(JSON.stringify(paymentIntent, null, 2));
+      console.log(JSON.stringify(redactPaymentResource(paymentIntent), null, 2));
       return;
     }
 
@@ -298,6 +300,11 @@ export async function attachAction(
     }
 
     if (options.simulate) {
+      if (config.environment !== 'test') {
+        throw new ValidationError(
+          'Local payment simulation is only available in the test environment'
+        );
+      }
       const validMethods = ['gcash', 'maya', 'grabpay'];
       const validOutcomes = ['success', 'failure', 'timeout'];
 
@@ -311,18 +318,25 @@ export async function attachAction(
         throw new Error(`Invalid simulation outcome. Must be one of: ${validOutcomes.join(', ')}`);
       }
 
-      const delayMs = options.delay ? parseInt(options.delay, 10) : undefined;
-      if (options.delay && (delayMs === undefined || Number.isNaN(delayMs) || delayMs <= 0)) {
-        throw new Error('Simulation delay must be a positive number in milliseconds');
+      const delayMs = options.delay === undefined ? undefined : Number(options.delay);
+      if (
+        delayMs !== undefined &&
+        (!Number.isSafeInteger(delayMs) || delayMs < 0 || delayMs > 2147483647)
+      ) {
+        throw new ValidationError(
+          'Simulation delay must be an integer between 0 and 2147483647 milliseconds'
+        );
       }
 
-      console.log(`\n${chalk.bold('🧪 Payment Simulation Mode')}`);
-      console.log(chalk.gray('─'.repeat(50)));
-      console.log(`${chalk.bold('Method:')} ${options.method.toUpperCase()}`);
-      console.log(`${chalk.bold('Outcome:')} ${options.outcome}`);
-      console.log(
-        `${chalk.bold('Delay:')} ${delayMs ? `${delayMs}ms` : 'Default for method/outcome'}`
-      );
+      if (!options.json) console.log(`\n${chalk.bold('🧪 Payment Simulation Mode')}`);
+      if (!options.json) {
+        console.log(chalk.gray('─'.repeat(50)));
+        console.log(`${chalk.bold('Method:')} ${options.method.toUpperCase()}`);
+        console.log(`${chalk.bold('Outcome:')} ${options.outcome ?? 'success'}`);
+        console.log(
+          `${chalk.bold('Delay:')} ${delayMs !== undefined ? `${delayMs}ms` : 'Default for method/outcome'}`
+        );
+      }
 
       spinner.start(`Simulating ${options.method} payment...`);
       const simulationOptions: SimulationOptions = {
@@ -337,7 +351,7 @@ export async function attachAction(
       spinner.succeed(`Simulation completed (${result.delayApplied}ms)`);
 
       if (options.json) {
-        console.log(JSON.stringify(result.paymentIntent, null, 2));
+        console.log(JSON.stringify(redactPaymentResource({ simulated: true, ...result }), null, 2));
         return;
       }
 
@@ -362,6 +376,7 @@ export async function attachAction(
       return;
     }
 
+    validateIntentAttachment(intentId, options.paymentMethod ?? '', options.returnUrl);
     spinner.start('Attaching payment method to payment intent...');
     const result = await createApiClient(config).attachPaymentIntent(
       intentId,
@@ -371,7 +386,7 @@ export async function attachAction(
     spinner.succeed('Payment method attached');
 
     if (options.json) {
-      console.log(JSON.stringify(result, null, 2));
+      console.log(JSON.stringify(redactPaymentResource(result), null, 2));
       return;
     }
 
@@ -385,7 +400,8 @@ export async function attachAction(
     console.log(`${chalk.bold('Created:')} ${new Date(attrs.created_at * 1000).toLocaleString()}`);
     console.log(`${chalk.bold('Updated:')} ${new Date(attrs.updated_at * 1000).toLocaleString()}`);
     console.log('');
-    console.log(chalk.gray(`Check status with: paymongo payments show-intent ${result.id}`));
+    printPaymentIntentNextAction(result);
+    console.log(chalk.gray(`Check status with: paymongo intents show ${result.id}`));
   } catch (error) {
     handlePaymentsError('❌ Failed to attach payment method:', spinner, error);
   }
@@ -393,7 +409,10 @@ export async function attachAction(
 
 export const confirmAction = attachAction;
 
-export async function captureAction(intentId: string, options: { json?: boolean }) {
+export async function captureAction(
+  intentId: string,
+  options: { amount?: string; json?: boolean }
+) {
   const { spinner, configManager } = createPaymentsContext();
 
   try {
@@ -402,12 +421,13 @@ export async function captureAction(intentId: string, options: { json?: boolean 
       return;
     }
 
+    const amount = parseCaptureAmount(options.amount);
     spinner.start('Capturing payment intent...');
-    const result = await createApiClient(config).capturePaymentIntent(intentId);
+    const result = await createApiClient(config).capturePaymentIntent(intentId, amount);
     spinner.succeed('Payment intent captured');
 
     if (options.json) {
-      console.log(JSON.stringify(result, null, 2));
+      console.log(JSON.stringify(redactPaymentResource(result), null, 2));
       return;
     }
 
@@ -420,7 +440,10 @@ export async function captureAction(intentId: string, options: { json?: boolean 
     console.log(`${chalk.bold('Description:')} ${attrs.description || 'N/A'}`);
     console.log(`${chalk.bold('Updated:')} ${new Date(attrs.updated_at * 1000).toLocaleString()}`);
     console.log('');
-    console.log(chalk.green('✅ Payment has been captured and will be settled'));
+    if (attrs.status === 'succeeded') {
+      console.log(chalk.green('✅ Payment capture succeeded'));
+    }
+    printPaymentIntentNextAction(result);
   } catch (error) {
     handlePaymentsError('❌ Failed to capture payment intent:', spinner, error);
   }
@@ -438,30 +461,25 @@ export async function refundAction(
       return;
     }
 
-    const validReasons = ['duplicate', 'fraudulent', 'requested_by_customer'];
-    if (options.reason && !validReasons.includes(options.reason)) {
-      throw new Error(`Invalid reason. Must be one of: ${validReasons.join(', ')}`);
+    const result = RefundCreateSchema.safeParse({
+      payment_id: paymentId,
+      amount: options.amount === undefined ? undefined : Number(options.amount),
+      reason: options.reason,
+    });
+    if (!result.success) {
+      throw new ValidationError(result.error.issues.map((issue) => issue.message).join('; '));
     }
-
-    const amount = options.amount
-      ? parseBoundedInt(
-          options.amount,
-          options.amount,
-          'Refund amount must be a positive number in centavos',
-          (parsed) => parsed > 0
-        )
-      : undefined;
 
     spinner.start('Creating refund...');
     const refund = await createApiClient(config).createRefund(
-      paymentId,
-      amount,
-      options.reason as 'duplicate' | 'fraudulent' | 'requested_by_customer' | undefined
+      result.data.payment_id,
+      result.data.amount,
+      result.data.reason
     );
     spinner.succeed('Refund created');
 
     if (options.json) {
-      console.log(JSON.stringify(refund, null, 2));
+      console.log(JSON.stringify(redactPaymentResource(refund), null, 2));
       return;
     }
 

@@ -56,17 +56,24 @@ command
       if (options.copy) {
         // Try to copy to clipboard if available
         try {
-          const { execSync } = await import('node:child_process');
+          const { execFileSync } = await import('node:child_process');
           const bundleJson = teamService.serializeBundle(bundle);
 
           // Try different clipboard commands
           try {
-            execSync(`echo '${bundleJson.replace(/'/g, "'\\''")}' | clip`, { stdio: 'pipe' });
+            // Bundle contents must be stdin, never shell syntax or process arguments.
+            execFileSync('clip', [], {
+              input: bundleJson,
+              stdio: ['pipe', 'ignore', 'pipe'],
+              shell: false,
+            });
             console.log(chalk.green('✅ Copied to clipboard!'));
           } catch {
             try {
-              execSync(`echo '${bundleJson.replace(/'/g, "'\\''")}' | xclip -selection clipboard`, {
-                stdio: 'pipe',
+              execFileSync('xclip', ['-selection', 'clipboard'], {
+                input: bundleJson,
+                stdio: ['pipe', 'ignore', 'pipe'],
+                shell: false,
               });
               console.log(chalk.green('✅ Copied to clipboard!'));
             } catch {

@@ -421,11 +421,10 @@ describe('Login Command', () => {
     });
 
     it('should handle file system errors during credential storage', async () => {
+      const credManager = new CredentialManager();
       mockFsWriteFileSync.mockImplementation(() => {
         throw new Error('Permission denied');
       });
-
-      const credManager = new CredentialManager();
 
       await expect(
         credManager.saveCredentials({

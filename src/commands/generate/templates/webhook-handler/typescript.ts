@@ -1,105 +1,42 @@
-/**
- * TypeScript webhook handler templates for PayMongo integrations
- */
+import { eventHandlersTemplate, PAYLOAD_INTERFACE, signatureTemplate } from './shared.js';
 
-/**
- * Generate event handler switch cases
- */
-function generateEventHandlers(events: string[]): string {
-  return events
-    .map(
-      (event) => `
-      case '${event}':
-        console.log('Processing ${event} event:', data);
-        // Add your ${event} handling logic here
-        break;`
-    )
-    .join('');
-}
-
-/**
- * Express.js TypeScript webhook handler template
- */
+/** Express handler: mount this raw-body route before any express.json middleware. */
 export function expressTemplate(events: string[]): string {
-  const eventHandlers = generateEventHandlers(events);
-
   return `import express, { Request, Response } from 'express';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 const app = express();
-app.use(express.json());
-
-// Webhook secret from PayMongo dashboard
+// PayMongo returns this as attributes.secret_key (whsk_...).
 const WEBHOOK_SECRET = process.env.PAYMONGO_WEBHOOK_SECRET;
 
-interface PayMongoWebhookPayload {
-  data: {
-    id: string;
-    type: string;
-    attributes: {
-      type: string;
-      livemode: boolean;
-      created_at: number;
-      updated_at: number;
-      data: any;
-    };
-  };
-}
+${PAYLOAD_INTERFACE}
 
-function verifySignature(
-  payload: string,
-  signatureHeader: string,
-  secret: string,
-  livemode: boolean
-): boolean {
-  if (!signatureHeader) {
-    return false;
-  }
+${signatureTemplate(true)}
 
-  const parts = signatureHeader.split(',');
-  const timestamp = parts.find((part) => part.startsWith('t='))?.split('=')[1];
-  const testSignature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
-  const liveSignature = parts.find((part) => part.startsWith('li='))?.split('=')[1];
-  const signature = livemode ? liveSignature : testSignature || liveSignature;
-
-  if (!timestamp || !signature) {
-    return false;
-  }
-
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(timestamp + '.' + payload, 'utf8')
-    .digest('hex');
-
-  return crypto.timingSafeEqual(
-    Buffer.from(signature, 'hex'),
-    Buffer.from(expectedSignature, 'hex')
-  );
-}
-
-app.post('/webhooks/paymongo', (req: Request, res: Response) => {
+// Mount before any middleware that parses or changes the body.
+app.post('/webhooks/paymongo', express.raw({ type: 'application/json' }), (req: Request, res: Response) => {
   try {
-    const signature = req.headers['paymongo-signature'] as string;
-    const payload = JSON.stringify(req.body);
-
-    // Verify webhook signature (optional but recommended)
-    if (WEBHOOK_SECRET && !verifySignature(payload, signature, WEBHOOK_SECRET, req.body.data.attributes.livemode)) {
-      console.log('Invalid signature');
-      return res.status(400).json({ error: 'Invalid signature' });
+    if (!Buffer.isBuffer(req.body)) throw new Error('Raw request body is required');
+    const payload = req.body.toString('utf8');
+    const body: PayMongoWebhookPayload = JSON.parse(payload);
+    const signature = req.headers['paymongo-signature'];
+    if (WEBHOOK_SECRET && !verifySignature(
+      payload, typeof signature === 'string' ? signature : undefined,
+      WEBHOOK_SECRET, body.data.attributes.livemode
+    )) {
+      return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    const { data }: PayMongoWebhookPayload = req.body;
+    const { data } = body;
     const eventType = data.attributes.type;
-
-    switch (eventType) {${eventHandlers}
+    switch (eventType) {${eventHandlersTemplate(events)}
       default:
-        console.log('Unhandled event type:', eventType);
+        // Ignore events this integration does not handle.
+        break;
     }
-
-    res.json({ received: true });
-  } catch (error) {
-    console.error('Webhook processing error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(200).json({ received: true });
+  } catch {
+    return res.status(400).json({ error: 'Invalid webhook payload' });
   }
 });
 
@@ -109,101 +46,32 @@ app.listen(PORT, () => {
 });`;
 }
 
-/**
- * Generic TypeScript webhook handler template
- */
+/** Framework-neutral handler: callers must pass the original raw body. */
 export function genericTemplate(events: string[]): string {
-  const eventHandlers = generateEventHandlers(events);
-
-  return `// TypeScript webhook handler for ${events.join(', ')}
-
-import crypto from 'crypto';
+  return `import crypto from 'node:crypto';
 
 const WEBHOOK_SECRET = process.env.PAYMONGO_WEBHOOK_SECRET;
 
-interface PayMongoWebhookPayload {
-  data: {
-    id: string;
-    type: string;
-    attributes: {
-      type: string;
-      livemode: boolean;
-      created_at: number;
-      updated_at: number;
-      data: any;
-    };
-  };
-}
+${PAYLOAD_INTERFACE}
 
-function verifySignature(
-  payload: string,
-  signatureHeader: string,
-  secret: string,
-  livemode: boolean
-): boolean {
-  if (!signatureHeader) {
-    return false;
+${signatureTemplate(true)}
+
+// Pass the original request body, not JSON.stringify(parsedBody).
+export function handleWebhook(rawBody: string, signature?: string): { received: boolean } {
+  const body: PayMongoWebhookPayload = JSON.parse(rawBody);
+  if (WEBHOOK_SECRET && !verifySignature(rawBody, signature, WEBHOOK_SECRET, body.data.attributes.livemode)) {
+    throw new Error('Invalid signature');
   }
-
-  const parts = signatureHeader.split(',');
-  const timestamp = parts.find((part) => part.startsWith('t='))?.split('=')[1];
-  const testSignature = parts.find((part) => part.startsWith('te='))?.split('=')[1];
-  const liveSignature = parts.find((part) => part.startsWith('li='))?.split('=')[1];
-  const signature = livemode ? liveSignature : testSignature || liveSignature;
-
-  if (!timestamp || !signature) {
-    return false;
+  const { data } = body;
+  const eventType = data.attributes.type;
+  switch (eventType) {${eventHandlersTemplate(events)}
+    default:
+      break;
   }
-
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(timestamp + '.' + payload, 'utf8')
-    .digest('hex');
-
-  return crypto.timingSafeEqual(
-    Buffer.from(signature, 'hex'),
-    Buffer.from(expectedSignature, 'hex')
-  );
-}
-
-export function handleWebhook(body: PayMongoWebhookPayload, signature?: string): { received: boolean } {
-  try {
-    const payload = JSON.stringify(body);
-
-    // Verify webhook signature (optional but recommended)
-    if (
-      WEBHOOK_SECRET &&
-      signature &&
-      !verifySignature(payload, signature, WEBHOOK_SECRET, body.data.attributes.livemode)
-    ) {
-      console.log('Invalid signature');
-      throw new Error('Invalid signature');
-    }
-
-    const { data } = body;
-    const eventType = data.attributes.type;
-
-    switch (eventType) {${eventHandlers}
-      default:
-        console.log('Unhandled event type:', eventType);
-    }
-
-    return { received: true };
-  } catch (error) {
-    console.error('Webhook processing error:', error);
-    throw error;
-  }
+  return { received: true };
 }`;
 }
 
-/**
- * Get TypeScript webhook handler template by framework
- */
 export function getWebhookHandlerTemplate(events: string[], framework: string): string {
-  switch (framework) {
-    case 'express':
-      return expressTemplate(events);
-    default:
-      return genericTemplate(events);
-  }
+  return framework === 'express' ? expressTemplate(events) : genericTemplate(events);
 }

@@ -1,46 +1,54 @@
-name: CI
+name: Validation
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [20.x, 22.x]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ['20.19.0', '20.x', '22.13.0', '22.x', '24.x']
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+      - name: Install locked dependencies and build
+        run: npm ci
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Check release metadata
+        run: npm run release:check
 
-    - name: Run linter
-      run: npm run lint
+      - name: Run linter
+        run: npm run lint
 
-    - name: Run tests
-      run: npm test
+      - name: Audit dependencies
+        run: npm audit
 
-    - name: Build project
-      run: npm run build
+      - name: Run tests
+        run: npm test
 
-    - name: Run build tests
-      run: |
-        # Test CLI help commands
-        node bin/paymongo.js --help
-        node bin/paymongo.js init --help
-        node bin/paymongo.js dev --help
-        node bin/paymongo.js login --help
-        node bin/paymongo.js config --help
-        node bin/paymongo.js webhooks --help
+      - name: Test the installed npm tarball
+        run: npm run test:package
+
+      - name: Collect coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '24.x'
+        run: npm test -- --coverage
+
+      - name: Save coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '24.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: error

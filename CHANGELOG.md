@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0-beta.1] - Prepared, unpublished
+
 ### Added
+
+- **Real-Handler Regression Tests** - Added Sources compatibility, team workflow, generator action, synthetic trigger send/replay, webhook-store corruption/retention, and login cryptography/cleanup tests. Replaced copied trigger-helper examples with tests of production helpers. Full local suite passes 1023 tests across 49 files and all unchanged coverage thresholds.
+
+- **Release Safeguards** - Added beta/stable channel selection with tag/manifest/lockfile/changelog checks, strict cross-platform CI, enforced coverage thresholds, clean builds, package file allowlisting, and installed-tarball smoke checks.
+
+- **Opt-in Application Forwarding** - Added `dev --forward-to` and `--forward-timeout`, preserving original webhook bytes/signatures and reporting downstream HTTP status/timing. Includes detached support, loop/body/URL guards, no redirects/retries, and socket cleanup. Default `dev` remains listener-only.
+
+- **Payment Method Commands** - Added `payment-methods create` for documented non-card methods, bank selection and QR Ph/ShopeePay expiry, plus retrieval of existing tokenized methods. Raw card creation is deliberately excluded.
+- **Hosted Checkout Sessions** - Added `checkout create`, `show`, and confirmed `expire` for the documented v1 lifecycle, single-item or JSON line-item input, and redirect/display/receipt options. Session availability is not treated as payment success.
+- **Resource Safety** - New resource commands validate bounded JSON files, sanitize diagnostic output, release HTTP pools, and avoid automatic mutation replay after ambiguous network failure.
+
+- **Documented Intent Lifecycle** - Added `intents attach` and `intents capture`, method selection, manual card authorization, 3D Secure options, and partial capture amounts. Existing `payments` lifecycle commands expose the same flags.
 
 - **New API Types** - Added `SourceData`, `PaymentMethodData`, and `PaymentLinkData` types for PayMongo API coverage.
 - **New API Methods** - Added missing API client methods:
@@ -16,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `createPaymentLink()`, `getPaymentLink()`, `listPaymentLinks()` - Payment link management
   - `createPaymentMethod()`, `getPaymentMethod()` - Payment method operations
 - **New Commands** - Added three new CLI commands:
-  - `paymongo sources` - Create and manage one-time payment sources (GCash, PayMaya, GrabPay)
+  - `paymongo sources` - Legacy source create/retrieve compatibility commands; provider support remains unverified in this audit. Prefer Payment Intents or Hosted Checkout for new integrations.
   - `paymongo payment-links` - Create hosted checkout payment links
   - `paymongo intents` - Manage payment intents (create, show, cancel)
 - **Webhook Signature Utility** - New `src/utils/webhook-verifier.ts` module for verifying PayMongo webhook signatures:
@@ -28,7 +42,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Node Support** - Require Node `^20.19.0 || ^22.13.0 || >=24.0.0`, matching dependency minimums and excluding unsupported odd-numbered versions 21/23.
+- **Dependencies** - Updated Undici to the patched 7.30.x line, Vitest/coverage to patched 4.1.11, and development/transitive dependencies without a forced major upgrade.
+
+- **Payment Method Contract** - Removed an undocumented method status field; modeled mode, nullable billing, and type-specific details. Creation validates documented non-card types and string metadata; unsupported raw-card creation now fails explicitly.
+- **Checkout Version Scope** - Documented the v1 endpoint reference versus the newer v2 quick-start. Advanced v2/Seeds workflows remain outside this implementation.
+
+- **Payment Contracts** - Payment Links use the current flat API shape; refunds require explicit amount/reason. Intent creation enforces minimum integer amounts, PHP currency, and documented method names before API calls.
+- **Local Simulation** - Restricted to the test environment. JSON output is explicitly marked with `simulated: true`; zero-delay runs are supported. The simulator's event helper returns documented payment-event envelopes instead of invented intent events.
+- **Generated Webhook Handlers** - Preserve the original signed raw body. The TypeScript generic handler now accepts raw strings; the Node handler consumes the request stream.
 - **README** - Updated with new command documentation, features, and examples.
+
+### Fixed
+
+- **Release Review Guards** - Enforce test/live key-prefix agreement in the shared API transport, preserve tracked webhooks/secrets when `dev --no-register` or automatic registration is disabled, sanitize legacy Intent/Payments/Link diagnostic JSON, and block publishing from an unfinished changelog section.
+
+- **Login Safety** - Require test/live environments and matching key prefixes before API validation; fail closed if encryption salt cannot be read/persisted, handle initialization failures at the command boundary, and close validation clients. Non-interactive `--key` does not bypass authentication.
+- **Clipboard Safety** - Pass explicit key-bundle exports through clipboard utility stdin without a shell or secrets in process arguments.
+- **Synthetic Delivery History** - Record actual HTTP/transport outcomes rather than pre-marking all attempts delivered; reject non-2xx responses, use high-entropy local IDs, tolerate invalid history records, and request owner-only permissions for new history files/directories.
+- **Generator Exit Status** - Output/generation failures now propagate a command failure, including from an installed tarball.
+- **Legacy Source JSON** - Redact known credentials and billing fields without changing stored/API resources.
+
+- **Config Diagnostics** - Redact API keys in both environments and webhook signing secrets from `config show --json`, without changing explicit backup contents or stored credentials.
+
+- **Webhook Transport** - Collect raw buffers before UTF-8 decoding, bound bodies to 1 MiB, avoid logging malformed JSON contents, and report application failures without mislabeling them as invalid JSON. Startup/shutdown attempt local cleanup independently; validation failures do not clear another session's state.
+
+- **Webhook Alignment** - Persist `secret_key`, use the event envelope's actual type and nested resource IDs, select signatures strictly by test/live mode, and redact signing secrets from output and exports.
+- **API Error Handling** - Preserve validation/authentication failures instead of retrying them as network errors.
+- **Intent Feedback** - Display the actual mode, customer redirects, and `awaiting_capture` state without treating every attachment as a completed payment.
+- **Simulator Validation** - Validate methods/outcomes before delay lookup, honor zero delays, reject timer-overflow input, and map Maya/GrabPay display names to `paymaya`/`grab_pay`.
 
 ## [1.4.14] - 2026-05-10
 

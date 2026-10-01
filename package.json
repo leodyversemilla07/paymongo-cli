@@ -1,19 +1,33 @@
 {
   "name": "paymongo-cli",
-  "version": "1.4.14",
+  "version": "2.0.0-beta.1",
   "description": "Developer-first CLI tool for PayMongo integration development with local webhook forwarding, payment testing, and team collaboration features. See USER_GUIDE.md for comprehensive documentation.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "paymongo": "bin/paymongo.js"
   },
+  "files": [
+    "bin/paymongo.js",
+    "dist/**/*.js",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "USER_GUIDE.md",
+    "API_REFERENCE.md",
+    "INSTALLATION.md",
+    "PAYMONGO_API_ALIGNMENT.md",
+    "RELEASE.md"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "node scripts/build.mjs",
     "build:incremental": "tsc --incremental",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:package": "node scripts/package-smoke.mjs",
+    "release:check": "node scripts/release-metadata.mjs",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "lint:src": "biome check src",
@@ -34,7 +48,7 @@
   },
   "homepage": "https://github.com/leodyversemilla07/paymongo-cli#readme",
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^20.19.0 || ^22.13.0 || >=24.0.0"
   },
   "dependencies": {
     "@inquirer/prompts": "^8.4.0",
@@ -44,17 +58,17 @@
     "commander": "^14.0.3",
     "cosmiconfig": "^9.0.0",
     "ora": "^9.4.0",
-    "undici": "^7.21.0",
+    "undici": "^7.30.0",
     "zod": "^4.4.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.14",
     "@types/node": "^22.19.0",
-    "@vitest/coverage-v8": "^4.1.4",
+    "@vitest/coverage-v8": "^4.1.11",
     "ts-node": "^10.9.2",
-    "tsx": "^4.7.0",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.11"
   },
   "publishConfig": {
     "access": "public"

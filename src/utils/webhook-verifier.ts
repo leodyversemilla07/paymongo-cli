@@ -9,9 +9,9 @@
  *
  * const payload = JSON.stringify(requestBody);
  * const signature = request.headers['paymongo-signature'];
- * const secret = 'whsec_xxx';
+ * const secret = 'whsk_xxx';
  *
- * const isValid = verifyWebhookSignature(payload, signature, secret);
+ * const isValid = verifyWebhookSignature({ payload, signatureHeader: signature, secret });
  * ```
  */
 
@@ -29,7 +29,7 @@ export interface SignatureVerificationOptions {
   signatureHeader: string;
   /**
    * The webhook signing secret from PayMongo
-   * Format: whsec_xxx
+   * Returned as attributes.secret_key (e.g., whsk_xxx)
    */
   secret: string;
   /**
@@ -60,7 +60,7 @@ export function parseSignatureHeader(
     return null;
   }
 
-  const parts = signatureHeader.split(',');
+  const parts = signatureHeader.split(',').map((part) => part.trim());
   const timestampPart = parts.find((p) => p.startsWith('t='));
   const testSigPart = parts.find((p) => p.startsWith('te='));
   const liveSigPart = parts.find((p) => p.startsWith('li='));
@@ -74,7 +74,7 @@ export function parseSignatureHeader(
   }
 
   // Select signature based on livemode
-  const signature = livemode ? liveSignature : testSignature || liveSignature;
+  const signature = livemode ? liveSignature : testSignature;
 
   if (!signature) {
     return null;
@@ -117,6 +117,10 @@ export function verifyWebhookSignature(options: SignatureVerificationOptions): b
 
   const parsed = parseSignatureHeader(signatureHeader, livemode);
   if (!parsed) {
+    return false;
+  }
+
+  if (!/^[a-f0-9]{64}$/i.test(parsed.signature)) {
     return false;
   }
 
@@ -187,9 +191,9 @@ export function verifyWebhook(
  * @returns A test signature header
  */
 export function generateTestSignature(payload: string, secret: string, timestamp?: number): string {
-  const ts = timestamp || Math.floor(Date.now() / 1000);
+  const ts = timestamp ?? Math.floor(Date.now() / 1000);
   const signature = computeSignature(payload, ts.toString(), secret);
-  return `t=${ts},te=${signature},li=${signature}`;
+  return `t=${ts},te=${signature},li=`;
 }
 
 export default {
