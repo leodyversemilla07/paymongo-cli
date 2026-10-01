@@ -2,6 +2,44 @@
 export const PAYMONGO_API_BASE = 'https://api.paymongo.com';
 export const PAYMONGO_API_VERSION = 'v1';
 
+// Payment Intent method names from the Create Payment Intent endpoint reference.
+export const PAYMENT_INTENT_METHODS = [
+  'qrph',
+  'brankas',
+  'card',
+  'dob',
+  'billease',
+  'gcash',
+  'grab_pay',
+  'shopee_pay',
+  'paymaya',
+] as const;
+export const DEFAULT_PAYMENT_INTENT_METHODS = ['card', 'gcash', 'paymaya'];
+export const NON_CARD_PAYMENT_METHOD_TYPES = [
+  'qrph',
+  'brankas',
+  'dob',
+  'billease',
+  'gcash',
+  'grab_pay',
+  'shopee_pay',
+  'paymaya',
+] as const;
+export const CHECKOUT_PAYMENT_METHOD_TYPES = [
+  'shopee_pay',
+  'qrph',
+  'billease',
+  'card',
+  'dob',
+  'dob_ubp',
+  'brankas_bdo',
+  'brankas_landbank',
+  'brankas_metrobank',
+  'gcash',
+  'grab_pay',
+  'paymaya',
+] as const;
+
 // Webhook Events
 export const WEBHOOK_EVENTS = [
   'payment.paid',

@@ -78,19 +78,24 @@ export async function sendWebhookEvent(options: { event?: string; url?: string; 
     console.log(chalk.gray('─'.repeat(30)));
     console.log(JSON.stringify(webhookPayload, null, 2));
 
-    await store.storeEvent({
+    const storedEvent = {
       id: webhookPayload.data.id,
       event: selectedEvent,
       url: webhookUrl,
       payload: webhookPayload,
       timestamp: Math.floor(Date.now() / 1000),
-      status: 'delivered',
-    });
+    };
+    let deliveryRecorded = false;
 
     spinner.start('Sending webhook...');
 
     try {
       const response = await sendWebhookRequest(config, webhookUrl, webhookPayload);
+      await store.storeEvent({
+        ...storedEvent,
+        status: response.statusCode >= 200 && response.statusCode < 300 ? 'delivered' : 'failed',
+      });
+      deliveryRecorded = true;
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         spinner.succeed(`Webhook delivered successfully (HTTP ${response.statusCode})`);
@@ -151,7 +156,13 @@ export async function sendWebhookEvent(options: { event?: string; url?: string; 
         console.log(chalk.gray('  • Webhook handler code for exceptions'));
         throw new CommandError();
       }
+
+      spinner.fail(`Unexpected webhook response (HTTP ${response.statusCode})`);
+      throw new CommandError();
     } catch (error) {
+      if (!deliveryRecorded) {
+        await store.storeEvent({ ...storedEvent, status: 'failed' });
+      }
       const err = error as Error & { code?: string };
 
       if (err.code === 'ECONNREFUSED') {
@@ -222,9 +233,9 @@ export async function replayWebhookEvent(
   }
 ) {
   const { configManager, store } = createTriggerContext();
-  const config = await configManager.load();
 
   try {
+    const config = await configManager.load();
     if (options.list || (!eventId && !options.event)) {
       const events = await store.loadEvents();
 

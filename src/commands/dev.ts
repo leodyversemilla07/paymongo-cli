@@ -14,6 +14,15 @@ command
   .option('-p, --port <port>', 'Port to run the webhook server on', '3000')
   .option('--no-register', 'Skip automatic webhook registration')
   .option(
+    '--forward-to <url>',
+    'Forward original webhook bytes/signature to your application (HTTP loopback or HTTPS)'
+  )
+  .option(
+    '--forward-timeout <ms>',
+    'Application delivery timeout in milliseconds (1–30000)',
+    '10000'
+  )
+  .option(
     '-e, --events <events>',
     'Comma-separated events to listen for',
     'payment.paid,payment.failed'

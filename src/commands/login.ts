@@ -5,10 +5,17 @@ import * as path from 'node:path';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import type { PayMongoConfig } from '../types/paymongo.js';
-import { ApiKeyError, CommandError, NetworkError, PayMongoError } from '../utils/errors.js';
+import {
+  ApiKeyError,
+  CommandError,
+  ConfigError,
+  NetworkError,
+  PayMongoError,
+  ValidationError,
+} from '../utils/errors.js';
 import { validateApiKey } from '../utils/validator.js';
 import { createCredentialValidationConfig } from './shared/auth.js';
-import { createApiClient, createCommandContext } from './shared/runtime.js';
+import { createCommandContext, withApiClient } from './shared/runtime.js';
 
 interface LoginAnswers {
   environment: 'test' | 'live';
@@ -47,7 +54,10 @@ class CredentialManager {
         fs.writeFileSync(saltPath, salt.toString('hex'), { mode: 0o600 });
       }
     } catch {
-      salt = crypto.randomBytes(16);
+      // An ephemeral salt would make newly saved credentials unrecoverable on the next run.
+      throw new ConfigError(
+        'Could not initialize credential encryption. Check local file permissions.'
+      );
     }
 
     return crypto.scryptSync(machineId, salt, 32);
@@ -138,9 +148,12 @@ command
   .option('--logout', 'Clear stored credentials')
   .action(async (options) => {
     const { spinner, configManager } = createCommandContext();
-    const credentialManager = new CredentialManager();
 
     try {
+      if (options.env !== 'test' && options.env !== 'live') {
+        throw new ValidationError('Environment must be test or live');
+      }
+      const credentialManager = new CredentialManager();
       if (options.logout) {
         spinner.start('Clearing credentials...');
         await credentialManager.clearCredentials();
@@ -214,6 +227,21 @@ command
         };
       }
 
+      // Mode labels must agree with the key prefix before any authenticated request.
+      if (
+        !validateApiKey(answers.secretKey, 'secret') ||
+        !answers.secretKey.startsWith(`sk_${answers.environment}_`)
+      ) {
+        throw new ApiKeyError('Secret API key must match the selected environment');
+      }
+      if (
+        answers.publicKey &&
+        (!validateApiKey(answers.publicKey, 'public') ||
+          !answers.publicKey.startsWith(`pk_${answers.environment}_`))
+      ) {
+        throw new ApiKeyError('Public API key must match the selected environment');
+      }
+
       // Validate API key
       spinner.start('Validating API key...');
 
@@ -223,10 +251,8 @@ command
         secretKey: answers.secretKey,
       });
 
-      const apiClient = createApiClient(tempConfig);
-
       try {
-        await apiClient.validateApiKey();
+        await withApiClient(tempConfig, (apiClient) => apiClient.validateApiKey());
         spinner.succeed('API key validated');
       } catch (error) {
         spinner.fail('API key validation failed');
@@ -324,8 +350,10 @@ command
         console.log('');
         console.log(chalk.yellow('💡 Options:'));
         console.log(chalk.gray('• Check your internet connection'));
-        console.log(chalk.gray('• Use "paymongo login --key YOUR_KEY" to skip validation'));
-        console.log(chalk.gray('• Validation can be skipped, but ensure your keys are correct'));
+        console.log(chalk.gray('• Retry after restoring connectivity'));
+        console.log(
+          chalk.gray('• The --key option is non-interactive; it does not skip validation')
+        );
       } else if (err.message.includes('permission') || err.message.includes('access')) {
         console.error(chalk.red('❌ File system error:'), err.message);
         console.log('');

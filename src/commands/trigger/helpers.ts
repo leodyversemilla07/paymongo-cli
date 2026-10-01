@@ -120,7 +120,7 @@ export async function sendWebhookRequest(
 }
 
 export function generateId(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  return crypto.randomBytes(16).toString('hex');
 }
 
 export function generateWebhookPayload(eventType: string): WebhookPayload {

@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { redactPaymentResource } from '../../utils/payment-resource.js';
 import {
   createApiClient,
   createSourcesContext,
@@ -43,7 +44,7 @@ export async function createAction(options: {
     spinner.succeed('Source created');
 
     if (options.json) {
-      console.log(JSON.stringify(source, null, 2));
+      console.log(JSON.stringify(redactPaymentResource(source), null, 2));
       return;
     }
 
@@ -88,7 +89,7 @@ export async function showAction(id: string, options: { json?: boolean }) {
     spinner.succeed('Source details loaded');
 
     if (options.json) {
-      console.log(JSON.stringify(source, null, 2));
+      console.log(JSON.stringify(redactPaymentResource(source), null, 2));
       return;
     }
 

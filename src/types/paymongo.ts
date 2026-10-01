@@ -65,6 +65,8 @@ export interface WebhookData {
     status: 'enabled' | 'disabled';
     created_at: number;
     updated_at: number;
+    livemode?: boolean;
+    secret_key?: string;
   };
 }
 
@@ -124,6 +126,7 @@ export interface PaymentEvent extends WebhookEvent {
 
 // Command Types
 export interface CommandOptions {
+  json?: boolean;
   help?: boolean;
   version?: boolean;
 }
@@ -187,6 +190,11 @@ export interface PaymentDataFull {
   };
 }
 
+export type PaymentIntentCreateOptions = {
+  captureType?: 'automatic' | 'manual';
+  threeDSecure?: 'any' | 'automatic';
+};
+
 // Payment Intent Data
 export interface PaymentIntentData {
   id: string;
@@ -194,8 +202,20 @@ export interface PaymentIntentData {
   attributes: {
     amount: number;
     currency: string;
-    status: 'awaiting_payment_method' | 'awaiting_next_action' | 'processing' | 'succeeded';
+    status:
+      | 'awaiting_payment_method'
+      | 'awaiting_next_action'
+      | 'awaiting_capture'
+      | 'processing'
+      | 'succeeded';
     description?: string;
+    livemode?: boolean;
+    capture_type?: 'automatic' | 'manual';
+    next_action?: {
+      type: string;
+      redirect?: { url: string; return_url?: string };
+    } | null;
+    last_payment_error?: Record<string, unknown> | null;
     payment_method_allowed: string[];
     created_at: number;
     updated_at: number;
@@ -203,13 +223,15 @@ export interface PaymentIntentData {
 }
 
 // Refund Data
+export type RefundReason = 'duplicate' | 'fraudulent' | 'requested_by_customer' | 'others';
+
 export interface RefundData {
   id: string;
   type: 'refund';
   attributes: {
     amount: number;
     currency: string;
-    reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer';
+    reason?: RefundReason;
     status: 'pending' | 'processed' | 'failed';
     payment_id: string;
     created_at: number;
@@ -220,7 +242,7 @@ export interface RefundData {
 // Webhook Data with secret (returned on creation)
 export interface WebhookDataWithSecret extends WebhookData {
   attributes: WebhookData['attributes'] & {
-    secret?: string;
+    secret_key?: string;
   };
 }
 
@@ -256,26 +278,71 @@ export interface SourceData {
   };
 }
 
+export type BillingData = {
+  address?: {
+    line1?: string | null;
+    line2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postal_code?: string | null;
+    country?: string | null;
+  } | null;
+  email?: string | null;
+  name?: string | null;
+  phone?: string | null;
+};
+
+export type PaymentMethodCreateOptions = {
+  bankCode?: string;
+  expirySeconds?: number;
+};
+
 // Payment Method Data
 export interface PaymentMethodData {
   id: string;
   type: 'payment_method';
   attributes: {
-    type: string; // e.g., 'card', 'gcash', 'paymaya'
-    status: 'active' | 'inactive' | 'expired';
-    billing: {
-      address?: {
-        line1?: string;
-        line2?: string;
-        city?: string;
-        state?: string;
-        postal_code?: string;
-        country_code?: string;
-      };
-      email?: string;
-      name?: string;
-      phone?: string;
-    };
+    type: string;
+    livemode: boolean;
+    billing?: BillingData | null;
+    expiry_seconds?: number;
+    details?: {
+      last4?: string;
+      exp_month?: number;
+      exp_year?: number;
+      bank_code?: string;
+    } | null;
+    created_at: number;
+    updated_at: number;
+    metadata?: Record<string, unknown>;
+  };
+}
+
+export type CheckoutLineItem = {
+  amount: number;
+  currency: string;
+  name: string;
+  quantity: number;
+  description?: string;
+  images?: string[];
+};
+
+export interface CheckoutSessionData {
+  id: string;
+  type: 'checkout_session';
+  attributes: {
+    checkout_url: string;
+    livemode: boolean;
+    status?: 'active' | 'expired';
+    line_items?: CheckoutLineItem[];
+    payment_method_types?: string[];
+    payment_intent?: PaymentIntentData | null;
+    payments?: PaymentDataFull[];
+    billing?: BillingData | null;
+    description?: string | null;
+    reference_number?: string | null;
+    success_url?: string | null;
+    cancel_url?: string | null;
     created_at: number;
     updated_at: number;
     metadata?: Record<string, unknown>;
@@ -285,25 +352,18 @@ export interface PaymentMethodData {
 // Payment Link Data
 export interface PaymentLinkData {
   id: string;
-  type: 'payment_link';
-  attributes: {
-    data: {
-      attributes: {
-        amount: number;
-        currency: string;
-        description?: string;
-        remarks?: string;
-        status: 'active' | 'inactive' | 'unpaid' | 'paid';
-        livemode: boolean;
-        checkout_url: string;
-        reference_number: string;
-        created_at: number;
-        updated_at: number;
-        metadata?: Record<string, unknown>;
-      };
-      id: string;
-      type: string;
-    };
-    type: string;
+  amount: number;
+  currency: string;
+  description?: string;
+  remarks?: string;
+  status: 'active' | 'archived';
+  livemode: boolean;
+  url: string;
+  reference_number: string;
+  created_at: string;
+  updated_at: string;
+  metadata: Record<string, unknown>;
+  restrictions?: {
+    completed_sessions?: { count?: number; limit?: number };
   };
 }

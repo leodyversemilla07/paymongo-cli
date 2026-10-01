@@ -3,6 +3,7 @@ import Table from 'cli-table3';
 import { BulkOperations } from '../../utils/bulk.js';
 import { CommandError } from '../../utils/errors.js';
 import { validateEventTypes, validateWebhookUrl } from '../../utils/validator.js';
+import { redactWebhookSecret } from '../../utils/webhook-resource.js';
 import {
   createApiClient,
   createWebhooksContext,
@@ -73,7 +74,9 @@ export async function importAction(
     spinner.succeed(`Loaded ${webhooks.length} webhooks from export`);
 
     if (options.json) {
-      console.log(JSON.stringify({ webhooks, metadata }, null, 2));
+      console.log(
+        JSON.stringify({ webhooks: webhooks.map(redactWebhookSecret), metadata }, null, 2)
+      );
       return;
     }
 
@@ -267,9 +270,9 @@ export async function createAction(options: { url?: string; events?: string }) {
     const webhook = await createApiClient(config).createWebhook(answers.url, answers.events);
     spinner.succeed('Webhook created successfully');
 
-    if (webhook.attributes?.secret) {
+    if (webhook.attributes?.secret_key) {
       config.webhookSecrets = config.webhookSecrets || {};
-      config.webhookSecrets[webhook.id] = webhook.attributes.secret;
+      config.webhookSecrets[webhook.id] = webhook.attributes.secret_key;
       await configManager.save(config);
     }
 
@@ -279,7 +282,7 @@ export async function createAction(options: { url?: string; events?: string }) {
     console.log(chalk.bold('URL:'), webhook.attributes.url);
     console.log(chalk.bold('Events:'), webhook.attributes.events.join(', '));
     console.log(chalk.bold('Status:'), webhook.attributes.status);
-    if (webhook.attributes?.secret) {
+    if (webhook.attributes?.secret_key) {
       console.log(chalk.bold('Signature:'), 'Enabled (secret stored in .paymongo)');
     }
   } catch (error) {
@@ -350,7 +353,7 @@ export async function listAction(options: { json?: boolean; status?: string; eve
     }
 
     if (options.json) {
-      console.log(JSON.stringify(filteredWebhooks, null, 2));
+      console.log(JSON.stringify(filteredWebhooks.map(redactWebhookSecret), null, 2));
       return;
     }
 

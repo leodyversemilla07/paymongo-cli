@@ -1,210 +1,166 @@
-/**
- * Tests for the trigger command helper functions
- * Note: We test the exported utility functions rather than the command itself
- * since the command involves interactive prompts and side effects
- */
+import crypto from 'node:crypto';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-describe('Webhook Payload Generation', () => {
-  // We'll test the payload structure expectations
-  // In a real scenario, you'd export these functions from the module
+const m = vi.hoisted(() => ({ request: vi.fn() }));
+vi.mock('undici', () => ({ request: m.request }));
+const {
+  AVAILABLE_TRIGGER_EVENTS,
+  buildSignatureHeader,
+  generateId,
+  generateWebhookPayload,
+  printJsonResponse,
+  sendWebhookRequest,
+} = await import('../../src/commands/trigger/helpers.js');
 
-  describe('generateWebhookPayload structure', () => {
-    it('should have correct base structure', () => {
-      const basePayload = {
-        data: {
-          id: expect.stringMatching(/^evt_/),
-          type: 'event',
-          attributes: {
-            type: expect.any(String),
-            livemode: false,
-            created_at: expect.any(Number),
-            updated_at: expect.any(Number),
-            data: expect.any(Object),
-          },
+describe('Synthetic trigger helper implementations', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(Date, 'now').mockReturnValue(1700000000000);
+    m.request.mockReset().mockResolvedValue({ statusCode: 200 });
+  });
+  afterEach(() => vi.restoreAllMocks());
+  it('generates high-entropy hexadecimal local ids', () => {
+    const ids = Array.from({ length: 100 }, () => generateId());
+    expect(ids.every((id) => /^[a-f0-9]{32}$/.test(id))).toBe(true);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+  // Only assert the shared envelope. Legacy resource fixtures are not API contract certification.
+  it.each(
+    AVAILABLE_TRIGGER_EVENTS
+  )('wraps synthetic %s in the test-mode event envelope', (type) => {
+    const payload = generateWebhookPayload(type);
+    expect(payload.data.id).toMatch(/^evt_[a-f0-9]{32}$/);
+    expect(payload.data.type).toBe('event');
+    expect(payload.data.attributes).toMatchObject({
+      type,
+      livemode: false,
+      created_at: 1700000000,
+      updated_at: 1700000000,
+    });
+    expect(payload.data.attributes.data).toHaveProperty('id');
+    expect(payload.data.attributes.data).not.toHaveProperty('id', payload.data.id);
+  });
+  it('can create a local generic fixture without performing an API request', () => {
+    expect(generateWebhookPayload('fixture.event').data.attributes.type).toBe('fixture.event');
+    expect(m.request).not.toHaveBeenCalled();
+  });
+  it.each([
+    null,
+    {},
+    { webhookSecrets: {} },
+  ])('omits signing when secrets are not configured', (config) => {
+    expect(buildSignatureHeader(config, 'http://127.0.0.1/hooks', '{}', false)).toBeUndefined();
+  });
+  it('does not sign using an empty secret', () => {
+    expect(
+      buildSignatureHeader(
+        { webhookSecrets: { hook_fixture: '' } },
+        'http://127.0.0.1/hooks',
+        '{}',
+        false
+      )
+    ).toBeUndefined();
+  });
+  it('selects the secret for the registered destination over another stored secret', () => {
+    const target = 'http://127.0.0.1/hooks';
+    const header = buildSignatureHeader(
+      {
+        webhookSecrets: {
+          hook_other: 'other-fixture-secret',
+          hook_match: 'matching-fixture-secret',
         },
-      };
-
-      // Verify structure expectation
-      expect(basePayload.data.type).toBe('event');
-      expect(basePayload.data.attributes.livemode).toBe(false);
-    });
-
-    it('should use correct PayMongo ID prefixes', () => {
-      const prefixes = {
-        event: 'evt_',
-        payment: 'pay_',
-        source: 'src_',
-        paymentIntent: 'pi_',
-        checkoutSession: 'cs_',
-        link: 'plink_',
-      };
-
-      Object.entries(prefixes).forEach(([_type, prefix]) => {
-        expect(prefix).toMatch(/^[a-z]+_$/);
-      });
-    });
-  });
-
-  describe('payment.paid event', () => {
-    it('should have correct payment attributes', () => {
-      const expectedAttributes = [
-        'amount',
-        'currency',
-        'description',
-        'status',
-        'paid_at',
-        'fees',
-        'net_amount',
-        'payment_intent_id',
-        'source',
-      ];
-
-      // Verify expected attributes exist
-      expectedAttributes.forEach((attr) => {
-        expect(typeof attr).toBe('string');
-      });
-    });
-
-    it('should calculate fees correctly', () => {
-      // PayMongo standard fees are ~2.95% for GCash
-      const amount = 100000; // ₱1,000.00 in centavos
-      const fees = 2950; // ₱29.50 in centavos
-      const netAmount = amount - fees;
-
-      expect(netAmount).toBe(97050);
-    });
-  });
-
-  describe('payment.failed event', () => {
-    it('should have zero fees and net amount', () => {
-      const failedPayment = {
-        fees: 0,
-        net_amount: 0,
-        status: 'failed',
-      };
-
-      expect(failedPayment.fees).toBe(0);
-      expect(failedPayment.net_amount).toBe(0);
-      expect(failedPayment.status).toBe('failed');
-    });
-  });
-
-  describe('source.chargeable event', () => {
-    it('should have billing information', () => {
-      const billing = {
-        address: {
-          city: 'Manila',
-          country: 'PH',
-          line1: '123 Test Street',
-          line2: null,
-          postal_code: '1000',
-          state: 'Metro Manila',
-        },
-        email: 'test@example.com',
-        name: 'Test User',
-        phone: '+639123456789',
-      };
-
-      expect(billing.address.country).toBe('PH');
-      expect(billing.email).toMatch(/@example\.com$/);
-    });
-  });
-
-  describe('checkout_session.payment.paid event', () => {
-    it('should have checkout session attributes', () => {
-      const expectedAttributes = [
-        'amount',
-        'currency',
-        'description',
-        'status',
-        'payment_intent_id',
-      ];
-
-      expectedAttributes.forEach((attr) => {
-        expect(typeof attr).toBe('string');
-      });
-    });
-  });
-
-  describe('link.payment.paid event', () => {
-    it('should have payment link attributes', () => {
-      const linkPayment = {
-        archived: false,
-        status: 'paid',
-      };
-
-      expect(linkPayment.archived).toBe(false);
-      expect(linkPayment.status).toBe('paid');
-    });
-  });
-
-  describe('generic event fallback', () => {
-    it('should parse event type correctly', () => {
-      const eventType = 'qrph.expired';
-      const parts = eventType.split('.');
-
-      expect(parts[0]).toBe('qrph');
-      expect(parts[1]).toBe('expired');
-    });
-  });
-});
-
-describe('Event Types', () => {
-  const supportedEvents = [
-    'payment.paid',
-    'payment.failed',
-    'payment.refunded',
-    'payment.refund.updated',
-    'source.chargeable',
-    'checkout_session.payment.paid',
-    'link.payment.paid',
-    'qrph.expired',
-  ];
-
-  it('should support all expected event types', () => {
-    expect(supportedEvents).toHaveLength(8);
-  });
-
-  it('should have valid event type format', () => {
-    supportedEvents.forEach((event) => {
-      expect(event).toMatch(/^[a-z_]+\.[a-z_.]+$/);
-    });
-  });
-
-  it('should include all payment events', () => {
-    const paymentEvents = supportedEvents.filter((e) => e.startsWith('payment.'));
-    expect(paymentEvents.length).toBeGreaterThanOrEqual(3);
-  });
-
-  it('should include source.chargeable event', () => {
-    expect(supportedEvents).toContain('source.chargeable');
-  });
-});
-
-describe('ID Generation', () => {
-  // Test the ID generation algorithm
-  function generateId(): string {
-    return (
-      Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+        registeredWebhooks: [{ id: 'hook_match', url: target }],
+      },
+      target,
+      '{"original":"bytes"}',
+      false
     );
-  }
-
-  it('should generate alphanumeric IDs', () => {
-    const id = generateId();
-    expect(id).toMatch(/^[a-z0-9]+$/);
+    const expected = crypto
+      .createHmac('sha256', 'matching-fixture-secret')
+      .update('1700000000.{"original":"bytes"}')
+      .digest('hex');
+    expect(header).toBe(`t=1700000000,te=${expected},li=`);
   });
-
-  it('should generate unique IDs', () => {
-    const ids = new Set<string>();
-    for (let i = 0; i < 100; i++) {
-      ids.add(generateId());
-    }
-    expect(ids.size).toBe(100);
+  it('supports the legacy single-secret local signing fallback', () => {
+    const expected = crypto
+      .createHmac('sha256', 'fixture-secret')
+      .update('1700000000.{}')
+      .digest('hex');
+    expect(
+      buildSignatureHeader(
+        { webhookSecrets: { hook_fixture: 'fixture-secret' } },
+        'http://127.0.0.1/hooks',
+        '{}',
+        true
+      )
+    ).toBe(`t=1700000000,te=,li=${expected}`);
   });
-
-  it('should generate IDs of reasonable length', () => {
-    const id = generateId();
-    expect(id.length).toBeGreaterThanOrEqual(20);
-    expect(id.length).toBeLessThanOrEqual(26);
+  it.each([
+    false,
+    true,
+  ])('posts the exact serialized payload with mode-specific signing, livemode=%s', async (livemode) => {
+    const target = 'http://127.0.0.1/hooks';
+    const payload = generateWebhookPayload('payment.paid');
+    payload.data.attributes.livemode = livemode;
+    await sendWebhookRequest(
+      { webhookSecrets: { hook_fixture: 'fixture-secret' } },
+      target,
+      payload
+    );
+    const body = JSON.stringify(payload);
+    expect(m.request).toHaveBeenCalledWith(
+      target,
+      expect.objectContaining({
+        method: 'POST',
+        body,
+        signal: expect.any(AbortSignal),
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+          'paymongo-signature': buildSignatureHeader(
+            { webhookSecrets: { hook_fixture: 'fixture-secret' } },
+            target,
+            body,
+            livemode
+          ),
+        }),
+      })
+    );
+  });
+  it('does not add a fabricated signature for an unsigned fixture', async () => {
+    await sendWebhookRequest(
+      null,
+      'http://127.0.0.1/hooks',
+      generateWebhookPayload('payment.paid')
+    );
+    expect(m.request.mock.calls[0]?.[1].headers).not.toHaveProperty('paymongo-signature');
+  });
+  it('handles an envelope without mode attributes as test-mode local transport', async () => {
+    await sendWebhookRequest(null, 'http://127.0.0.1/hooks', {
+      data: { id: 'evt_fixture', type: 'event', attributes: {} },
+    });
+    expect(m.request).toHaveBeenCalledOnce();
+  });
+  it('reads JSON responses when the content type declares JSON', async () => {
+    const json = vi.fn().mockResolvedValue({ accepted: true });
+    const response = {
+      headers: { 'content-type': 'application/json; charset=utf-8' },
+      body: { json },
+    };
+    expect(await printJsonResponse(response as Parameters<typeof printJsonResponse>[0])).toEqual({
+      accepted: true,
+    });
+    expect(json).toHaveBeenCalledOnce();
+  });
+  it.each([
+    {},
+    { 'content-type': 'text/plain' },
+  ])('does not parse other response formats as JSON', async (headers) => {
+    const json = vi.fn();
+    expect(
+      await printJsonResponse({ headers, body: { json } } as Parameters<
+        typeof printJsonResponse
+      >[0])
+    ).toBeNull();
+    expect(json).not.toHaveBeenCalled();
   });
 });

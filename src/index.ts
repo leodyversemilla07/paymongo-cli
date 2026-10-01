@@ -43,6 +43,8 @@ program.addCommand(await import('./commands/payments.js').then((m) => m.default)
 program.addCommand((await import('./commands/sources/index.js')).default);
 program.addCommand((await import('./commands/payment-links/index.js')).default);
 program.addCommand((await import('./commands/intents/index.js')).default);
+program.addCommand((await import('./commands/payment-methods/index.js')).default);
+program.addCommand((await import('./commands/checkout/index.js')).default);
 program.addCommand(await import('./commands/trigger.js').then((m) => m.default));
 program.addCommand(await import('./commands/generate.js').then((m) => m.default));
 program.addCommand(await import('./commands/doctor.js').then((m) => m.default));
@@ -59,8 +61,9 @@ EXAMPLES
     $ paymongo login                                    # Authenticate with PayMongo API keys
 
   Development:
-    $ paymongo dev                                       # Start development server with webhook forwarding
+    $ paymongo dev                                       # Start the CLI webhook listener via ngrok
     $ paymongo dev --port 4000                          # Use custom port for webhook server
+    $ paymongo dev --port 4000 --forward-to http://127.0.0.1:3000/webhooks/paymongo # Relay to your app
     $ paymongo dev --detach                              # Run server in background
     $ paymongo dev status                                # Check background server status
 
@@ -91,9 +94,19 @@ EXAMPLES
     $ paymongo payment-links show pl_123                  # Show payment link details
 
   Payment Intents:
-    $ paymongo intents create --amount 10000             # Create payment intent for ₱100
+    $ paymongo intents create --amount 10000 --methods gcash # Create a PHP intent for ₱100
+    $ paymongo intents create --amount 50000 --methods card --capture-type manual # Authorize a card hold
+    $ paymongo intents attach pi_123 --payment-method pm_456 --return-url https://example.com/return
+    $ paymongo intents capture pi_123 --amount 25000      # Partial capture of an authorized hold
     $ paymongo intents show pi_123                        # Show payment intent details
     $ paymongo intents cancel pi_123                     # Cancel a payment intent
+
+  Payment Methods and Hosted Checkout:
+    $ paymongo payment-methods create --type gcash        # Use returned pm_... for intent attachment
+    $ paymongo payment-methods create --type dob --bank-code bpi
+    $ paymongo checkout create --name "Order" --amount 50000 # Get a hosted payment URL (v1)
+    $ paymongo checkout show cs_123                       # Check session and payment intent status
+    $ paymongo checkout expire cs_123 --yes               # Disable the checkout URL (not a refund)
 
   Code Generation:
     $ paymongo generate webhook-handler                  # Generate webhook handler boilerplate

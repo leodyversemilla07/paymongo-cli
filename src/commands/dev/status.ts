@@ -39,6 +39,13 @@ const statusCommand = new Command('status')
     console.log(chalk.bold('Configuration:'));
     console.log(chalk.gray('  Port:'), state.port);
     console.log(chalk.gray('  Events:'), state.events.join(', '));
+    console.log(
+      chalk.gray('  Application forwarding:'),
+      state.forwardingEnabled ? 'Enabled' : 'Disabled (listener only)'
+    );
+    if (state.forwardingEnabled && state.forwardTimeoutMs !== undefined) {
+      console.log(chalk.gray('  Delivery timeout:'), `${state.forwardTimeoutMs}ms`);
+    }
     if (state.webhookId) {
       console.log(chalk.gray('  Webhook ID:'), state.webhookId);
     }

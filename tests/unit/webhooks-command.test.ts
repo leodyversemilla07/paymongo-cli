@@ -239,7 +239,7 @@ describe('Webhooks Command', () => {
           status: 'enabled',
           created_at: 1609459200,
           updated_at: 1609459200,
-          secret: 'secret123',
+          secret_key: 'secret123',
         },
       });
     });
@@ -293,7 +293,7 @@ describe('Webhooks Command', () => {
           status: 'enabled',
           created_at: 1609459200,
           updated_at: 1609459200,
-          secret: 'secret123',
+          secret_key: 'secret123',
         },
       });
     });
@@ -356,6 +356,19 @@ describe('Webhooks Command', () => {
       await listAction({ json: true });
 
       expect(console.log).toHaveBeenCalledWith(JSON.stringify([mockWebhook], null, 2));
+    });
+
+    it('redacts documented signing secrets from JSON output', async () => {
+      mockApiClientListWebhooks.mockResolvedValue([
+        { ...mockWebhook, attributes: { ...mockWebhook.attributes, secret_key: 'whsk_private' } },
+      ]);
+      await listAction({ json: true });
+      expect(console.log).toHaveBeenCalledWith(JSON.stringify([mockWebhook], null, 2));
+      const output = jest
+        .mocked(console.log)
+        .mock.calls.map((call) => call.join(' '))
+        .join('\n');
+      expect(output).not.toContain('whsk_private');
     });
 
     it('should handle no webhooks found', async () => {

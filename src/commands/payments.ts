@@ -10,6 +10,11 @@ import {
   refundAction,
   showAction,
 } from './payments/actions.js';
+import {
+  addPaymentIntentAttachOptions,
+  addPaymentIntentCaptureOptions,
+  addPaymentIntentCreateOptions,
+} from './shared/payment-intents.js';
 
 const command = new Command('payments');
 
@@ -46,50 +51,33 @@ command
       .action(showAction)
   )
   .addCommand(
-    new Command('create-intent')
-      .description('Create a payment intent')
-      .option('-a, --amount <amount>', 'Amount in centavos (e.g., 10000 for ₱100.00)', '10000')
-      .option('-c, --currency <currency>', 'Currency code', 'PHP')
-      .option('-d, --description <description>', 'Payment description')
-      .option('-j, --json', 'Output as JSON')
-      .action(createIntentAction)
+    addPaymentIntentCreateOptions(
+      new Command('create-intent').description('Create a payment intent')
+    ).action(createIntentAction)
   )
   .addCommand(
-    new Command('attach')
-      .alias('confirm')
-      .description('Attach a payment method to a payment intent')
-      .arguments('<intentId>')
-      .option(
-        '-p, --payment-method <id>',
-        'Payment method ID to attach (required unless --simulate)'
-      )
-      .option('-r, --return-url <url>', 'Return URL after payment processing')
-      .option('-j, --json', 'Output as JSON')
-      .option('-s, --simulate', 'Enable payment simulation mode')
-      .option('-m, --method <method>', 'Payment method for simulation (gcash, maya, grabpay)')
-      .option(
-        '-o, --outcome <outcome>',
-        'Simulation outcome (success, failure, timeout)',
-        'success'
-      )
-      .option('-d, --delay <ms>', 'Custom simulation delay in milliseconds')
-      .action(attachAction)
+    addPaymentIntentAttachOptions(
+      new Command('attach')
+        .alias('confirm')
+        .description('Attach a payment method to a payment intent')
+        .argument('<intentId>')
+    ).action(attachAction)
   )
   .addCommand(
-    new Command('capture')
-      .description('Capture an authorized payment intent')
-      .arguments('<intentId>')
-      .option('-j, --json', 'Output as JSON')
-      .action(captureAction)
+    addPaymentIntentCaptureOptions(
+      new Command('capture')
+        .description('Capture an authorized payment intent')
+        .argument('<intentId>')
+    ).action(captureAction)
   )
   .addCommand(
     new Command('refund')
       .description('Create a refund for a payment')
       .arguments('<paymentId>')
-      .option('-a, --amount <amount>', 'Refund amount in centavos (defaults to full amount)')
-      .option(
+      .requiredOption('-a, --amount <amount>', 'Refund amount in centavos (integer, minimum 100)')
+      .requiredOption(
         '-r, --reason <reason>',
-        'Refund reason: duplicate, fraudulent, requested_by_customer'
+        'Refund reason: duplicate, fraudulent, requested_by_customer, others'
       )
       .option('-j, --json', 'Output as JSON')
       .action(refundAction)

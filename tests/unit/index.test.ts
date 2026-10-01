@@ -101,8 +101,18 @@ describe('CLI Entry Point (index.ts)', () => {
     expect(result.stdout).toContain('EXAMPLES');
     expect(result.stdout).toContain('$ paymongo init');
     expect(result.stdout).toContain('$ paymongo dev');
+    expect(result.stdout).toContain('payment-methods');
+    expect(result.stdout).toContain('checkout');
     expect(result.stderr).toBe('');
   }, 15000);
+
+  it.each(['payment-methods', 'checkout'])('registers the %s command group', async (command) => {
+    const result = await runCli([command, 'create', '--help']);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain(`paymongo ${command} create`);
+    expect(result.stdout).toContain('--json');
+    expect(result.stderr).toBe('');
+  });
 
   it('should display version information when --version is passed', async () => {
     const result = await runCli(['--version']);

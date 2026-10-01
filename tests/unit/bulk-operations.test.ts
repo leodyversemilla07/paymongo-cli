@@ -42,6 +42,20 @@ describe('BulkOperations', () => {
   };
 
   describe('exportWebhooks', () => {
+    it('does not export webhook signing secrets or mutate the source', async () => {
+      const filepath = path.join(tmpDir, 'webhooks.json');
+      const webhook = {
+        ...sampleWebhook,
+        attributes: { ...sampleWebhook.attributes, secret_key: 'whsk_private' },
+      };
+      await BulkOperations.exportWebhooks([webhook], filepath, 'test');
+      const raw = await fs.readFile(filepath, 'utf-8');
+      expect(raw).not.toContain('whsk_private');
+      expect(raw).not.toContain('secret_key');
+      expect(JSON.parse(raw).data).toEqual([sampleWebhook]);
+      expect(webhook.attributes.secret_key).toBe('whsk_private');
+    });
+
     it('should write valid JSON with metadata and data', async () => {
       const filepath = path.join(tmpDir, 'webhooks.json');
 

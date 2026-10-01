@@ -1,9 +1,18 @@
-import * as crypto from 'node:crypto';
 import * as http from 'node:http';
 import chalk from 'chalk';
 import type { PayMongoConfig, WebhookEventPayload } from '../../types/paymongo.js';
+import { NetworkError } from '../../utils/errors.js';
 import Logger from '../../utils/logger.js';
+import { verifyWebhook } from '../../utils/webhook-verifier.js';
 import { AnalyticsService } from '../analytics/service.js';
+import { FORWARDING_HOP_HEADER, validateForwardTarget, WebhookForwarder } from './forwarder.js';
+
+const MAX_WEBHOOK_BYTES = 1024 * 1024;
+
+export interface DevServerOptions {
+  forwardTo?: string;
+  forwardTimeoutMs?: number;
+}
 
 /**
  * Development server for receiving PayMongo webhooks locally.
@@ -15,12 +24,17 @@ export class DevServer {
   private config: PayMongoConfig;
   private analytics: AnalyticsService;
   private logger: Logger;
+  private forwarder?: WebhookForwarder;
 
-  constructor(port: number, config: PayMongoConfig) {
+  constructor(port: number, config: PayMongoConfig, options: DevServerOptions = {}) {
     this.port = port;
     this.config = config;
     this.analytics = new AnalyticsService(config);
     this.logger = new Logger();
+    if (options.forwardTo !== undefined) {
+      validateForwardTarget(options.forwardTo, port);
+      this.forwarder = new WebhookForwarder(options.forwardTo, options.forwardTimeoutMs);
+    }
 
     this.server = http.createServer((req, res) => {
       this.handleWebhookRequest(req, res);
@@ -41,8 +55,11 @@ export class DevServer {
   }
 
   async stop(): Promise<void> {
+    this.forwarder?.close();
     return new Promise((resolve) => {
+      const deadline = setTimeout(() => this.server.closeAllConnections(), 1000);
       this.server.close(() => {
+        clearTimeout(deadline);
         this.logger.warning('Webhook server stopped');
         resolve();
       });
@@ -58,20 +75,50 @@ export class DevServer {
       return;
     }
 
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk.toString();
-    });
+    if (req.headers[FORWARDING_HOP_HEADER] !== undefined) {
+      res.writeHead(508, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Forwarding loop detected' }));
+      req.resume();
+      return;
+    }
 
+    const chunks: Buffer[] = [];
+    let bytes = 0;
+    let oversized = false;
+    let incomplete = false;
+    req.on('data', (chunk: Buffer | string) => {
+      if (oversized) return;
+      const data = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
+      bytes += data.length;
+      if (bytes > MAX_WEBHOOK_BYTES) {
+        oversized = true;
+        chunks.length = 0;
+        res.writeHead(413, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Webhook body exceeds 1 MiB' }));
+        return;
+      }
+      chunks.push(data);
+    });
+    req.on('error', () => {
+      incomplete = true;
+      chunks.length = 0;
+      if (!res.destroyed && !res.writableEnded) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Incomplete webhook request' }));
+      }
+    });
     req.on('end', () => {
-      void this.processWebhookBody(body, req, res);
+      if (oversized || incomplete) return;
+      const rawBody = Buffer.concat(chunks);
+      void this.processWebhookBody(rawBody.toString('utf8'), req, res, rawBody);
     });
   }
 
   private async processWebhookBody(
     body: string,
     req: http.IncomingMessage,
-    res: http.ServerResponse
+    res: http.ServerResponse,
+    rawBody: Buffer = Buffer.from(body)
   ): Promise<void> {
     try {
       const event = JSON.parse(body);
@@ -85,7 +132,7 @@ export class DevServer {
 
         // Record failed analytics event
         await this.analytics.recordEvent({
-          type: event.data?.type || 'unknown',
+          type: event.data?.attributes?.type || 'unknown',
           success: false,
           error: 'Invalid signature',
           data: event.data?.attributes,
@@ -96,10 +143,16 @@ export class DevServer {
       // Log the webhook event
       await this.logWebhookEvent(event);
 
+      if (this.forwarder) {
+        await this.forwardToApplication(rawBody, req, res);
+        return;
+      }
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: true }));
-    } catch (error) {
-      this.logger.error('Failed to process webhook:', (error as Error).message);
+    } catch {
+      // JSON parsing errors can include excerpts containing payment or billing data.
+      this.logger.error('Failed to process webhook');
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Invalid JSON' }));
 
@@ -112,11 +165,50 @@ export class DevServer {
     }
   }
 
+  private async forwardToApplication(
+    body: Buffer,
+    req: http.IncomingMessage,
+    res: http.ServerResponse
+  ): Promise<void> {
+    const started = performance.now();
+    try {
+      const result = await this.forwarder?.forward(body, req.headers);
+      if (!result) return;
+      const successful = result.statusCode >= 200 && result.statusCode < 300;
+      const message = `Application delivery: HTTP ${result.statusCode} (${result.durationMs}ms)`;
+      if (successful) this.logger.success(message);
+      else this.logger.failure(message);
+      if (res.destroyed || res.writableEnded) return;
+      res.writeHead(successful ? 200 : 502, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          success: successful,
+          forwarded: successful,
+          downstreamStatus: result.statusCode,
+          durationMs: result.durationMs,
+        })
+      );
+    } catch (error) {
+      const timedOut =
+        error instanceof NetworkError && error.message === 'Application forwarding timed out';
+      const durationMs = Math.round(performance.now() - started);
+      const message = timedOut ? 'Application delivery timed out' : 'Application delivery failed';
+      this.logger.failure(`${message} (${durationMs}ms)`);
+      if (res.destroyed || res.writableEnded) return;
+      res.writeHead(timedOut ? 504 : 502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: message, forwarded: false, durationMs }));
+    }
+  }
+
   private async logWebhookEvent(event: WebhookEventPayload): Promise<void> {
     const timestamp = new Date().toLocaleTimeString();
-    const eventType = event.data?.type || 'unknown';
+    const eventType =
+      typeof event.data?.attributes?.type === 'string' ? event.data.attributes.type : 'unknown';
     const eventId = event.data?.id || 'unknown';
-    const isPaymentEvent = eventType.startsWith('payment');
+    const resource = event.data?.attributes?.data as
+      | { id?: string; type?: string; attributes?: { amount?: number; status?: string } }
+      | undefined;
+    const isPaymentEvent = resource?.type === 'payment';
 
     // Record analytics event
     await this.analytics.recordEvent({
@@ -130,19 +222,19 @@ export class DevServer {
     console.log(chalk.blue(`[${timestamp}]`), chalk.bold(eventType.toUpperCase()));
 
     if (isPaymentEvent) {
-      const attributes = event.data.attributes as { amount?: number; status?: string };
+      const attributes = resource?.attributes || {};
       const amount = attributes.amount ?? 0;
       const status = attributes.status ?? 'unknown';
 
       console.log(chalk.gray('└─'), `Amount: ₱${(amount / 100).toFixed(2)}`);
       console.log(chalk.gray('└─'), `Status: ${status}`);
-      console.log(chalk.gray('└─'), `Payment ID: ${eventId}`);
+      console.log(chalk.gray('└─'), `Payment ID: ${resource?.id || 'unknown'}`);
     }
 
-    console.log(
-      chalk.gray('└─'),
-      `View: https://dashboard.paymongo.com/${isPaymentEvent ? 'payments' : 'webhooks'}/${eventId}`
-    );
+    console.log(chalk.gray('└─'), `Event ID: ${eventId}`);
+    if (isPaymentEvent && resource?.id) {
+      console.log(chalk.gray('└─'), `View: https://dashboard.paymongo.com/payments/${resource.id}`);
+    }
   }
 
   private verifyWebhookSignature(
@@ -150,76 +242,34 @@ export class DevServer {
     body: string,
     event?: WebhookEventPayload
   ): boolean {
-    // Check if signature verification is enabled in config
     if (!this.config.dev.verifyWebhookSignatures) {
       this.logger.warn('Webhook signature verification disabled in config');
-      return true; // Allow all requests when verification is disabled
+      return true;
     }
 
-    const signatureHeader = req.headers['paymongo-signature'] as string;
-    if (!signatureHeader) {
+    const signatureHeader = req.headers['paymongo-signature'];
+    if (typeof signatureHeader !== 'string') {
       this.logger.failure('Signature verification required but no signature header found');
       return false;
     }
 
-    // Parse signature header: t=<timestamp>,te=<test-signature>,li=<live-signature>
-    const signatureParts = signatureHeader.split(',');
-    if (signatureParts.length < 2) {
-      this.logger.failure('Invalid signature format');
-      return false;
-    }
-
-    const timestamp = signatureParts.find((part) => part.startsWith('t='))?.split('=')[1];
-    const testSignature = signatureParts.find((part) => part.startsWith('te='))?.split('=')[1];
-    const liveSignature = signatureParts.find((part) => part.startsWith('li='))?.split('=')[1];
-    const livemode = Boolean(
-      (event?.data?.attributes as { livemode?: boolean } | undefined)?.livemode
-    );
-    const signature = livemode ? liveSignature : testSignature || liveSignature;
-
-    if (!timestamp || !signature) {
-      this.logger.failure('Missing timestamp or signature in header');
-      return false;
-    }
-
-    const webhookSecrets = this.config.webhookSecrets || {};
-    const secretKeys = Object.values(webhookSecrets).filter(
+    const secretKeys = Object.values(this.config.webhookSecrets || {}).filter(
       (secret) => typeof secret === 'string' && secret.length > 0
-    ) as string[];
-
+    );
     if (secretKeys.length === 0) {
       this.logger.failure('Signature verification enabled but no webhook secrets are configured');
       return false;
     }
 
-    // Try to verify with each available secret
-    let isValid = false;
-    for (const secret of secretKeys) {
-      try {
-        const expectedSignature = crypto
-          .createHmac('sha256', secret)
-          .update(`${timestamp}.${body}`)
-          .digest('hex');
-
-        if (
-          crypto.timingSafeEqual(
-            Buffer.from(signature, 'hex'),
-            Buffer.from(expectedSignature, 'hex')
-          )
-        ) {
-          isValid = true;
-          break;
-        }
-      } catch (_error) {}
-    }
-
+    const isValid = secretKeys.some((secret) =>
+      verifyWebhook(body, signatureHeader, secret, event)
+    );
     if (isValid) {
       this.logger.success('Signature verified successfully');
-      return true;
     } else {
       this.logger.failure('Signature verification failed');
-      return false;
     }
+    return isValid;
   }
 }
 

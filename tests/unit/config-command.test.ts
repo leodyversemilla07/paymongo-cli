@@ -83,7 +83,7 @@ await import('../../src/services/config/manager.js');
 await import('../../src/utils/spinner.js');
 
 describe('Config Command', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
 
     // Mock console methods
@@ -113,6 +113,8 @@ describe('Config Command', () => {
     jest.mocked(fs.mkdirSync).mockImplementation(() => undefined);
     jest.mocked(path.join).mockImplementation((...args) => args.join('/'));
     jest.mocked(path.resolve).mockImplementation((p) => p);
+    // Cold dependency transforms belong in setup, not the first timed action test.
+    await import('../../src/commands/config.js');
   });
 
   afterEach(() => {
@@ -172,7 +174,17 @@ describe('Config Command', () => {
       await showAction({ json: true });
 
       expect(mockConfigManagerLoad).toHaveBeenCalledTimes(1);
-      expect(console.log).toHaveBeenCalledWith(JSON.stringify(mockConfig, null, 2));
+      expect(console.log).toHaveBeenCalledWith(
+        JSON.stringify(
+          {
+            ...mockConfig,
+            apiKeys: { test: { public: '[REDACTED]', secret: '[REDACTED]' } },
+          },
+          null,
+          2
+        )
+      );
+      expect(JSON.stringify(jest.mocked(console.log).mock.calls)).not.toContain('sk_test_123');
     });
 
     it('should handle no configuration found', async () => {

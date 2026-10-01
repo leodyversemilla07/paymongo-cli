@@ -35,12 +35,12 @@ describe('Webhook Verifier', () => {
       expect(result?.isLivemode).toBe(true);
     });
 
-    it('should fall back to live signature when test signature is missing', () => {
+    it('should reject a live-only signature in test mode', () => {
       const liveSig = 'live_sig_xyz789';
       const header = `t=${testTimestamp},li=${liveSig}`;
       const result = parseSignatureHeader(header, false);
 
-      expect(result?.signature).toBe(liveSig);
+      expect(result).toBeNull();
     });
 
     it('should return null for invalid header', () => {
@@ -119,6 +119,35 @@ describe('Webhook Verifier', () => {
       });
 
       expect(result).toBe(false);
+    });
+
+    it('rejects a valid signature supplied for the wrong environment', () => {
+      expect(
+        verifyWebhookSignature({
+          payload: testPayload,
+          signatureHeader: `t=${testTimestamp},te=,li=${testSignature}`,
+          secret: testSecret,
+          livemode: false,
+        })
+      ).toBe(false);
+      expect(
+        verifyWebhookSignature({
+          payload: testPayload,
+          signatureHeader: `t=${testTimestamp},te=${testSignature},li=`,
+          secret: testSecret,
+          livemode: true,
+        })
+      ).toBe(false);
+    });
+
+    it('rejects malformed hex even when its decoded prefix matches', () => {
+      expect(
+        verifyWebhookSignature({
+          payload: testPayload,
+          signatureHeader: `t=${testTimestamp},te=${testSignature}zz`,
+          secret: testSecret,
+        })
+      ).toBe(false);
     });
 
     it('should reject tampered payload', () => {
@@ -237,7 +266,7 @@ describe('Webhook Verifier', () => {
 
       expect(header).toContain('t=');
       expect(header).toContain('te=');
-      expect(header).toContain('li=');
+      expect(header).toMatch(/,li=$/);
 
       // Verify the generated signature can be validated
       const result = verifyWebhookSignature({

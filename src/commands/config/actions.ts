@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import chalk from 'chalk';
 import type { PayMongoConfig } from '../../types/paymongo.js';
+import { redactConfigSecrets } from '../../utils/config-resource.js';
 import { CommandError } from '../../utils/errors.js';
 import {
   checkConfigConflicts,
@@ -30,7 +31,7 @@ export async function showAction(options: { json?: boolean }) {
     spinner.succeed('Configuration loaded');
 
     if (options.json) {
-      console.log(JSON.stringify(config, null, 2));
+      console.log(JSON.stringify(redactConfigSecrets(config), null, 2));
       return;
     }
 

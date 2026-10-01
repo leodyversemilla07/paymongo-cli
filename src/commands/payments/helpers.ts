@@ -26,6 +26,7 @@ export function getStatusColor(status: string) {
     case 'pending':
     case 'awaiting_payment_method':
     case 'awaiting_next_action':
+    case 'awaiting_capture':
     case 'processing':
       return chalk.yellow;
     case 'failed':

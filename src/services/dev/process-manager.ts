@@ -13,6 +13,8 @@ export interface DevProcessState {
   events: string[];
   startedAt: number;
   projectName: string;
+  forwardingEnabled?: boolean;
+  forwardTimeoutMs?: number;
 }
 
 const STATE_DIR = path.join(os.homedir(), '.paymongo-cli');
