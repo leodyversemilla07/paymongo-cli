@@ -36,15 +36,15 @@ npm run test:package
 
 ### Coverage gate — passing locally
 
-The full-project run passes **1023 tests across 49 files**, with no lowered
+The full-project run passes **1025 tests across 49 files**, with no lowered
 thresholds or additional production-code exclusions:
 
 | Metric | Actual | Required |
 | --- | ---: | ---: |
-| Statements | 85.22% | 80% |
-| Branches | 77.85% | 75% |
-| Functions | 88.96% | 85% |
-| Lines | 85.22% | 80% |
+| Statements | 85.36% | 80% |
+| Branches | 77.87% | 75% |
+| Functions | 89.52% | 85% |
+| Lines | 85.37% | 80% |
 
 Tests execute real legacy Sources, team, generator, login, and trigger handlers,
 plus event-store retention/corruption paths. Login tests use real AES-GCM and CBC
@@ -57,8 +57,8 @@ verification remain separate gates. Never bypass or weaken the coverage check.
 
 - [x] Reach the enforced coverage targets with meaningful regression tests (local run).
 - [ ] Finalize the candidate's changelog date and update prepared/unpublished labels when publication is approved.
-- [ ] Review and commit all intended files, including currently untracked files.
-- [ ] Open a review PR against main/develop and obtain green remote CI for the candidate commit on the declared OS/Node matrix. Feature-branch pushes alone do not match the CI trigger.
+- [x] Review and commit all intended files, including previously untracked files.
+- [x] Open a review PR against main/develop and validate the declared OS/Node matrix: [PR #1](https://github.com/leodyversemilla07/paymongo-cli/pull/1), all 15 jobs passed on `38152bf`. Require green latest-head CI for every subsequent change before merge/release.
 - [ ] With explicit account authorization, use **test keys only** to verify a
   non-card method creation/attachment and the redirect flow for an enabled channel.
 - [ ] Verify Checkout v1 create/show, a completed test payment, and expiration of a
@@ -71,6 +71,16 @@ verification remain separate gates. Never bypass or weaken the coverage check.
 - [ ] Check that the chosen version is still unused in the intended registries.
 - [ ] Configure publishing credentials: NPM_TOKEN with appropriate access and the
   GitHub Packages permissions/association. No credentials belong in source or logs.
+
+The user has authorized testing, review, merge, and beta release after the gates
+pass. Test-account preflight currently finds no local project configuration or
+stored PayMongo credentials, so account-level checks are blocked. Configure test
+keys locally; do not send credentials through chat. A fresh packed installation
+with `--ignore-scripts=false` loads the native ngrok binding successfully, but
+neither this nor mocked tests proves actual PayMongo delivery or tunnel operation.
+Repository `NPM_TOKEN` is present; its validity/access and branch protections still
+need verification. Do not finalize the release date or push a tag while gates
+remain incomplete.
 
 A dependency audit is a point-in-time check, not proof of complete security.
 Provider-specific limits, legacy Sources, synthetic fixtures, existing mutation

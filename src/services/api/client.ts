@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Pool } from 'undici';
 import type {
   ApiResponse,
@@ -169,6 +170,26 @@ export class ApiClient {
     };
   }
 
+  private getSecretApiKey(): string {
+    const env = this.config.environment;
+    const secretKey = this.config.apiKeys[env]?.secret;
+    if (!secretKey) {
+      throw new ApiKeyError('Secret API key not found', 'secret');
+    }
+    if (!['test', 'live'].includes(env) || !secretKey.startsWith(`sk_${env}_`)) {
+      throw new ApiKeyError('Secret API key does not match the configured environment', 'secret');
+    }
+    return secretKey;
+  }
+
+  private getWebhookCacheKey(id?: string): string {
+    // Validate before touching persisted cache; isolate modes and merchant credentials.
+    // Neither cache keys nor files contain the original API key.
+    const credentialHash = createHash('sha256').update(this.getSecretApiKey()).digest('hex');
+    const scope = `${this.config.environment}_${credentialHash}`;
+    return id === undefined ? `webhooks_${scope}` : `webhook_${scope}_${id}`;
+  }
+
   private async makeRequest(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
@@ -210,15 +231,7 @@ export class ApiClient {
     }
 
     // Prepare headers with authentication
-    const env = this.config.environment;
-    const secretKey = this.config.apiKeys[env]?.secret;
-
-    if (!secretKey) {
-      throw new ApiKeyError('Secret API key not found', 'secret');
-    }
-    if (!['test', 'live'].includes(env) || !secretKey.startsWith(`sk_${env}_`)) {
-      throw new ApiKeyError('Secret API key does not match the configured environment', 'secret');
-    }
+    const secretKey = this.getSecretApiKey();
 
     const headers = {
       ...this.defaultHeaders,
@@ -350,13 +363,13 @@ export class ApiClient {
     );
 
     // Invalidate webhook list cache when creating new webhook
-    await this.cache.invalidate(`webhooks_${this.config.environment}`);
+    await this.cache.invalidate(this.getWebhookCacheKey());
 
     return result;
   }
 
   async listWebhooks(): Promise<WebhookData[]> {
-    const cacheKey = `webhooks_${this.config.environment}`;
+    const cacheKey = this.getWebhookCacheKey();
 
     // Try cache first for list operations
     const cached = await this.cache.get<WebhookData[]>(cacheKey);
@@ -376,7 +389,7 @@ export class ApiClient {
   }
 
   async getWebhook(id: string): Promise<WebhookData> {
-    const cacheKey = `webhook_${id}`;
+    const cacheKey = this.getWebhookCacheKey(id);
 
     // Try cache first
     const cached = await this.cache.get<WebhookData>(cacheKey);
@@ -400,8 +413,8 @@ export class ApiClient {
     updates: { url?: string; events?: string[]; status?: 'enabled' | 'disabled' }
   ): Promise<WebhookData> {
     // Invalidate cache when updating
-    await this.cache.invalidate(`webhook_${id}`);
-    await this.cache.invalidate(`webhooks_${this.config.environment}`);
+    await this.cache.invalidate(this.getWebhookCacheKey(id));
+    await this.cache.invalidate(this.getWebhookCacheKey());
 
     return withRetry(() =>
       this.makeRequest('PUT', `/v1/webhooks/${id}`, {
@@ -416,8 +429,8 @@ export class ApiClient {
 
   async disableWebhook(id: string): Promise<WebhookData> {
     // Invalidate cache when deleting
-    await this.cache.invalidate(`webhook_${id}`);
-    await this.cache.invalidate(`webhooks_${this.config.environment}`);
+    await this.cache.invalidate(this.getWebhookCacheKey(id));
+    await this.cache.invalidate(this.getWebhookCacheKey());
 
     return withRetry(() =>
       this.makeRequest('POST', `/v1/webhooks/${id}/disable`).then(
@@ -427,8 +440,8 @@ export class ApiClient {
   }
 
   async enableWebhook(id: string): Promise<WebhookData> {
-    await this.cache.invalidate(`webhook_${id}`);
-    await this.cache.invalidate(`webhooks_${this.config.environment}`);
+    await this.cache.invalidate(this.getWebhookCacheKey(id));
+    await this.cache.invalidate(this.getWebhookCacheKey());
 
     return withRetry(() =>
       this.makeRequest('POST', `/v1/webhooks/${id}/enable`).then(

@@ -131,9 +131,56 @@ describe('ApiClient', () => {
       const client = new ApiClient({ config });
       await expect(client.getPaymentMethod('pm_fixture')).rejects.toBeInstanceOf(ApiKeyError);
       await expect(client.createPaymentMethod('gcash')).rejects.toThrow('configured environment');
+      // Even an existing cache entry must not bypass the credential guard.
+      mockCache.get.mockResolvedValue({ id: 'hook_fixture', attributes: {} });
+      await expect(client.listWebhooks()).rejects.toThrow('configured environment');
+      await expect(client.getWebhook('hook_fixture')).rejects.toThrow('configured environment');
       expect(mockPoolRequest).not.toHaveBeenCalled();
       expect(mockCache.get).not.toHaveBeenCalled();
       await client.close();
+    });
+    it.each([
+      'list',
+      'show',
+    ] as const)('isolates %s webhook cache entries by mode and account', async (operation) => {
+      mockPoolRequest.mockResolvedValue({
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        body: { json: async () => ({ data: operation === 'list' ? [] : { id: 'hook_fixture' } }) },
+      });
+      const keys: string[] = [];
+      for (const [environment, secret] of [
+        ['test', 'sk_test_merchant_one_fixture'],
+        ['test', 'sk_test_merchant_two_fixture'],
+        ['live', 'sk_live_merchant_one_fixture'],
+      ] as const) {
+        const client = new ApiClient({
+          config: {
+            ...validConfig,
+            environment,
+            apiKeys: { [environment]: { public: '', secret } },
+          },
+        });
+        try {
+          if (operation === 'list') await client.listWebhooks();
+          else await client.getWebhook('hook_fixture');
+          const key = mockCache.get.mock.lastCall?.[0];
+          expect(key).toMatch(new RegExp(`^webhooks?_${environment}_[a-f0-9]{64}`));
+          expect(key).not.toContain(secret);
+          expect(mockCache.set.mock.lastCall?.[0]).toBe(key);
+          if (key) keys.push(key);
+          if (operation === 'show') {
+            await client.enableWebhook('hook_fixture');
+            expect(mockCache.invalidate).toHaveBeenCalledWith(key);
+            expect(mockCache.invalidate).toHaveBeenCalledWith(
+              key?.replace(/^webhook_/, 'webhooks_').replace(/_hook_fixture$/, '')
+            );
+          }
+        } finally {
+          await client.close();
+        }
+      }
+      expect(new Set(keys).size).toBe(3);
     });
     it('uses the explicitly configured live key when its prefix matches (transport mocked)', async () => {
       const secret = 'sk_live_synthetic_fixture';
