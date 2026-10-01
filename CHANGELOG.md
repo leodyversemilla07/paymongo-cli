@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.0.0-beta.1] - Prepared, unpublished
+## [2.0.0-beta.1] - 2026-10-01
+
+Community-built beta, not a production certification. Real PayMongo test-payment,
+Checkout completion, and upstream ngrok webhook verification remain outstanding.
+The beta release proceeds with those limitations documented; no live payment
+operations were performed. Stable installations remain on the `latest` channel.
 
 ### Added
 
-- **Real-Handler Regression Tests** - Added Sources compatibility, team workflow, generator action, synthetic trigger send/replay, webhook-store corruption/retention, and login cryptography/cleanup tests. Replaced copied trigger-helper examples with tests of production helpers. Full local suite passes 1023 tests across 49 files and all unchanged coverage thresholds.
+- **Real-Handler Regression Tests** - Added Sources compatibility, team workflow, generator action, synthetic trigger send/replay, webhook-store corruption/retention, and login cryptography/cleanup tests. Replaced copied trigger-helper examples with tests of production helpers. Full local suite passes 1025 tests across 49 files and all unchanged coverage thresholds.
 
 - **Release Safeguards** - Added beta/stable channel selection with tag/manifest/lockfile/changelog checks, strict cross-platform CI, enforced coverage thresholds, clean builds, package file allowlisting, and installed-tarball smoke checks.
 
@@ -54,6 +59,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **README** - Updated with new command documentation, features, and examples.
 
 ### Fixed
+
+- **Webhook Cache Isolation** - Validate credentials before cached reads and isolate persisted entries and invalidations by environment and credential fingerprint, without storing raw API keys in cache keys.
+- **CI Test Isolation** - Mocked dev-session tests use a synthetic ngrok token rather than relying on credentials inherited from a developer shell.
+- **Publishing Authentication Preflight** - Manual release-workflow runs check npm authentication without publishing; tag releases require authentication plus the full validation matrix.
 
 - **Release Review Guards** - Enforce test/live key-prefix agreement in the shared API transport, preserve tracked webhooks/secrets when `dev --no-register` or automatic registration is disabled, sanitize legacy Intent/Payments/Link diagnostic JSON, and block publishing from an unfinished changelog section.
 

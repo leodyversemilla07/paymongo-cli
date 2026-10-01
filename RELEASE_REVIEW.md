@@ -1,7 +1,8 @@
-# Prepared beta review
+# Beta release review
 
-Candidate: **2.0.0-beta.1**, still unpublished. This report is not a complete
-PayMongo API certification or approval to publish.
+Version: **2.0.0-beta.1**, approved for beta publication with account-level
+verification deferred. This review snapshot is not proof of registry publication
+or complete PayMongo API/production certification.
 
 ## Scope reviewed
 
@@ -16,9 +17,10 @@ PayMongo API certification or approval to publish.
 - The curated candidate includes the earlier changes and previously untracked
   files. With explicit authorization, it was committed as `0108fc1` and pushed to
   `release/beta-2.0.0-prep`; draft [PR #1](https://github.com/leodyversemilla07/paymongo-cli/pull/1)
-  targets main. Subsequent authorization covers testing, review, merging, and a
-  beta release after the required gates pass. No release tag, publication, or
-  merge has been performed.
+  targets main. The user subsequently requested merge and beta release after
+  being informed that account verification cannot run without local test setup.
+  Proceed with that limitation disclosed, without claiming manual tests passed.
+  Final release metadata, latest-head CI, and registry authentication remain gates.
 
 ## Findings fixed during review
 
@@ -33,7 +35,8 @@ PayMongo API certification or approval to publish.
    Tests cover creation, retrieval, attachment, capture, cancellation, and lists.
 4. **A prepared changelog could pass a publishing check.** Explicit tag checks now
    require a valid finalized ISO release date. The ordinary preparation check
-   remains usable; the current candidate's tag check intentionally exits with 1.
+   remains usable. The prepared candidate correctly failed that gate; following
+   release approval, the finalized 2026-10-01 date permits explicit-tag validation.
 5. **Session tests depended on a developer's ngrok environment.** The first remote
    CI run exposed missing-token timeouts in otherwise mocked dev-session tests.
    Tests now stub a synthetic token and restore the environment afterward, so
@@ -58,9 +61,9 @@ failure exits, and malformed history handling.
 - Actual npm tarball installs and runs: bin shim/version/help/verifier checks and
   a real generator-write-failure nonzero exit check.
 - Local verification is on Windows/Node 24. All 15 remote OS/Node jobs passed on
-  `38152bf` in [run 36846155696](https://github.com/leodyversemilla07/paymongo-cli/actions/runs/36846155696).
-  The initial run exposed the test isolation finding above. Any subsequent cache
-  fix/review commit also requires green latest-head CI before merge/release.
+  `2998cbe` in [run 36849258153](https://github.com/leodyversemilla07/paymongo-cli/actions/runs/36849258153).
+  The initial run exposed the test isolation finding above. Final release metadata
+  changes also require green latest-head CI before merge/release.
 - A fresh packed installation with `--ignore-scripts=false` passed CLI checks and
   loaded the native ngrok binding. This does not prove tunnel connectivity; npm
   lifecycle-policy approval remains separate from explicit script suppression.
@@ -73,22 +76,24 @@ failure exits, and malformed history handling.
 
 ## Remaining gates and limits
 
-- Require green remote CI on the latest head of draft PR #1. The user authorized
-  merge/release after testing and review, but manual verification remains blocked.
-  Do not use a v* tag to test CI or bypass incomplete gates.
+- Require green remote CI on the final head of PR #1 and successful registry
+  authentication before publishing. Manual verification is deferred for this beta,
+  not completed. Do not use a v* tag merely to test CI or bypass failed checks.
 - Configure test credentials locally and identify an enabled merchant channel,
   then perform the authorized test-mode resource and webhook verification with
   an independently verifying local app and cleanup of created test resources.
   Never paste credentials into chat, source, PRs, or logs.
 - Verify native ngrok operation and fresh installation without suppressed scripts.
 - Configure publishing credentials/permissions and branch/environment protections.
-- Finalize changelog date and prepared/unpublished labels only after release approval.
+- Release approval is recorded and the changelog date is finalized to 2026-10-01.
+  Keep beta publication distinct from stable promotion and production approval.
 - Legacy Sources provider/redirect contracts, synthetic resource snapshots,
   existing mutation retry/idempotency, pagination/provider limits, and Checkout v2
   remain outside the completed audit. Compatibility tests do not validate those
   provider contracts. Reconcile ambiguous mutation outcomes before retrying;
   do not use unfinished legacy mutation workflows for live payment operations.
 
-The next step is latest-head CI and local test-account setup/verification.
-Merge and beta publication are authorized only after completing the gates, not
-as a substitute for them. See RELEASE.md for the operative checklist.
+Next: validate final metadata, merge the green reviewed PR, run nonpublishing
+registry-authentication preflight, and publish the exact merged commit to beta.
+Test-account verification remains necessary before stable/production promotion.
+See RELEASE.md for the operative checklist.

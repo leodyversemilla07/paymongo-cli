@@ -29,12 +29,14 @@ PayMongo CLI is a **community-built, unofficial** terminal-first tool for develo
 
 ---
 
-## Prepared 2.0 Beta
+## 2.0 Beta
 
-`2.0.0-beta.1` is a prepared, unpublished candidate. After it is approved and
-published, install with `npm install -g paymongo-cli@beta`; stable installs remain
-on the `latest` channel. See [Release Checklist](RELEASE.md) for migration/readiness
-gates and outstanding authorized test-mode verification.
+`2.0.0-beta.1` targets the **beta** channel. Once available in the registry,
+install with `npm install -g paymongo-cli@beta`; stable installs remain on `latest`.
+This community-built prerelease passes automated CI, but real PayMongo test-payment,
+Checkout completion, and upstream ngrok webhook verification remain outstanding.
+It is not full API or production certification. See [Release Checklist](RELEASE.md)
+for migration notes, validation evidence, and remaining verification.
 
 ## Installation
 

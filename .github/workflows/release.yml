@@ -3,6 +3,8 @@ name: Release
 on:
   push:
     tags: ['v*']
+  # A manual run checks npm authentication only; it cannot publish or create a tag.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,10 +15,30 @@ concurrency:
 
 jobs:
   validate:
+    if: github.event_name == 'push'
     uses: ./.github/workflows/ci.yml
 
+  publishing-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          registry-url: https://registry.npmjs.org
+      - name: Verify npm authentication without publishing
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo '::error::Configure the repository NPM_TOKEN secret before publishing.'
+            exit 1
+          fi
+          npm whoami --registry https://registry.npmjs.org > /dev/null
+          echo 'npm authentication succeeded. Publish scope and 2FA policy are verified by the actual publish operation.'
+
   release:
-    needs: validate
+    if: github.event_name == 'push'
+    needs: [validate, publishing-preflight]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -84,3 +106,5 @@ jobs:
             ```
 
             Community-built CLI. Checkout commands currently target the documented v1 lifecycle.
+            Beta only: real PayMongo test-payment and upstream ngrok webhook verification remain outstanding.
+            Automated CI is not full API or production certification. Do not promote this prerelease to latest.

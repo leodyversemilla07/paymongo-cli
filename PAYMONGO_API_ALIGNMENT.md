@@ -170,12 +170,15 @@ Do not describe this CLI as covering the entire PayMongo API. Follow-up work inc
 
 ## Release readiness
 
-`2.0.0-beta.1` is prepared but unpublished. Dependencies have been patched, and
-release metadata, package allowlisting, installed-tarball smoke checks, and strict
-cross-platform CI have been added. Local full-project coverage now passes the
-unchanged thresholds: 85.22% statements, 77.85% branches, 88.96% functions, and
-85.22% lines, with 1023 tests across 49 files. Publishing still requires reviewed
-commits, green remote CI, and separately authorized real test-mode verification. See [Release Checklist](RELEASE.md).
+`2.0.0-beta.1` is approved for the beta channel with outstanding account-level
+verification explicitly documented. Dependencies have been patched, and release
+metadata, package allowlisting, installed-tarball smoke checks, and strict
+cross-platform CI have been added. Local full-project coverage passes unchanged
+thresholds: 85.36% statements, 77.87% branches, 89.52% functions, and 85.37% lines,
+with 1025 tests across 49 files. Publishing requires green latest-head CI and
+registry authentication. Actual test payments, Checkout completion, and upstream
+ngrok webhook verification remain unperformed; beta publication is not provider
+contract or production certification. See [Release Checklist](RELEASE.md).
 
 ## Validation strategy
 

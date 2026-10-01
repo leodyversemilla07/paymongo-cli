@@ -1,9 +1,11 @@
 # Release readiness and procedure
 
-## Prepared candidate: 2.0.0-beta.1
+## Beta release: 2.0.0-beta.1
 
-This is a **prepared, unpublished prerelease**, not a production certification or
-official PayMongo product. The major version reflects changes to existing JSON
+This prerelease is approved for the **beta** channel with outstanding account-level
+verification documented below. Approval or a dated changelog does not itself prove
+registry publication; confirm the GitHub release and registry state.
+It is not a production certification or official PayMongo product. The major version reflects changes to existing JSON
 contracts, required refund inputs, simulator envelopes, and generated handler APIs.
 
 ### Automated gates
@@ -53,12 +55,12 @@ Sources compatibility tests and shared synthetic-envelope tests do **not** certi
 provider support or the unreviewed resource fixtures. Remote CI and real account
 verification remain separate gates. Never bypass or weaken the coverage check.
 
-### Manual gates still required
+### Release checklist and deferred beta verification
 
 - [x] Reach the enforced coverage targets with meaningful regression tests (local run).
-- [ ] Finalize the candidate's changelog date and update prepared/unpublished labels when publication is approved.
+- [x] Approve beta publication and finalize the changelog date: 2026-10-01.
 - [x] Review and commit all intended files, including previously untracked files.
-- [x] Open a review PR against main/develop and validate the declared OS/Node matrix: [PR #1](https://github.com/leodyversemilla07/paymongo-cli/pull/1), all 15 jobs passed on `38152bf`. Require green latest-head CI for every subsequent change before merge/release.
+- [x] Open a review PR against main/develop and validate the declared OS/Node matrix: [PR #1](https://github.com/leodyversemilla07/paymongo-cli/pull/1), all 15 jobs passed on `2998cbe`. Require green latest-head CI for every subsequent change before merge/release.
 - [ ] With explicit account authorization, use **test keys only** to verify a
   non-card method creation/attachment and the redirect flow for an enabled channel.
 - [ ] Verify Checkout v1 create/show, a completed test payment, and expiration of a
@@ -72,15 +74,21 @@ verification remain separate gates. Never bypass or weaken the coverage check.
 - [ ] Configure publishing credentials: NPM_TOKEN with appropriate access and the
   GitHub Packages permissions/association. No credentials belong in source or logs.
 
-The user has authorized testing, review, merge, and beta release after the gates
-pass. Test-account preflight currently finds no local project configuration or
-stored PayMongo credentials, so account-level checks are blocked. Configure test
-keys locally; do not send credentials through chat. A fresh packed installation
-with `--ignore-scripts=false` loads the native ngrok binding successfully, but
-neither this nor mocked tests proves actual PayMongo delivery or tunnel operation.
-Repository `NPM_TOKEN` is present; its validity/access and branch protections still
-need verification. Do not finalize the release date or push a tag while gates
-remain incomplete.
+The user requested merge and release after being informed of the missing local
+test-account setup. This beta proceeds with **real account verification deferred**,
+not falsely marked complete. Configure test keys locally before completing the
+unchecked payment, Checkout, and upstream-webhook checks; never send credentials
+through chat. A fresh packed installation with `--ignore-scripts=false` loads the
+native ngrok binding, but this and mocked tests do not prove actual delivery or
+tunnel operation. Production/stable promotion requires completing that verification.
+
+Require green latest-head CI, successful registry authentication, and unused
+version/tag checks before tagging. Repository `NPM_TOKEN` is configured, but token
+presence is not proof of validity or publishing access. A manual run of the Release
+workflow (`gh workflow run release.yml --ref main`) checks npm authentication only;
+it does not publish or create tags. Tag runs require that preflight plus the full
+validation matrix before publication. Main currently has no branch protection;
+configure protections before broader/stable rollout. Do not bypass failed checks.
 
 A dependency audit is a point-in-time check, not proof of complete security.
 Provider-specific limits, legacy Sources, synthetic fixtures, existing mutation
@@ -93,8 +101,8 @@ package metadata automatically. Keep the changelog section and tag consistent.
 
 ```bash
 npm run release:check
-# After approval, finalize the changelog date/status, review and commit,
-# complete manual test-mode verification, and obtain green CI:
+# After approval, finalize release metadata, review and merge,
+# obtain green CI and credential preflight, and document any beta deferrals:
 npm run release:check -- v2.0.0-beta.1
 git tag -a v2.0.0-beta.1 -m "Release 2.0.0-beta.1"
 git push origin v2.0.0-beta.1
